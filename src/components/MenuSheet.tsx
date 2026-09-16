@@ -1,16 +1,19 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
 import { prefs, useSoundOn } from '../lib/prefs'
+import { disablePush, enablePush, pushConfigured, pushState, type PushState } from '../lib/push'
 import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
 
-export type View = 'lista' | 'contas'
+export type View = 'lista' | 'contas' | 'desejos'
 
 interface Props {
   open: boolean
   view: View
   me: string
+  /** sem sala (modo demonstração) o aviso no celular não aparece */
+  roomId?: string
   onClose: () => void
   onChangeView: (view: View) => void
   onSwitchPerson: () => void
@@ -29,6 +32,16 @@ const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }>
     ),
   },
   {
+    id: 'desejos',
+    label: 'lista de desejos',
+    hint: 'o que a gente quer comprar',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden>
+        <path d="M12 20.2 4.8 13a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7A4.6 4.6 0 0 1 19.2 13Z" />
+      </svg>
+    ),
+  },
+  {
     id: 'contas',
     label: 'contas do mês',
     hint: 'o que falta pagar',
@@ -42,8 +55,22 @@ const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }>
   },
 ]
 
-export function MenuSheet({ open, view, me, onClose, onChangeView, onSwitchPerson }: Props) {
+const PUSH_LABEL: Record<PushState, string> = {
+  ligado: 'ligado',
+  desligado: 'desligado',
+  bloqueado: 'bloqueado no aparelho',
+  'instale-primeiro': 'instale na tela inicial',
+  indisponível: 'não dá neste aparelho',
+}
+
+export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwitchPerson }: Props) {
   const soundOn = useSoundOn()
+  const [push, setPush] = useState<PushState>('desligado')
+  const [pushBusy, setPushBusy] = useState(false)
+
+  useEffect(() => {
+    if (open && roomId && pushConfigured()) void pushState().then(setPush)
+  }, [open, roomId])
   const reduced = useReducedMotion()
   const spring = reduced ? { duration: 0 } : { type: 'spring' as const, stiffness: 380, damping: 34 }
 
@@ -115,6 +142,33 @@ export function MenuSheet({ open, view, me, onClose, onChangeView, onSwitchPerso
                 <span>você é {me}</span>
                 <small>trocar</small>
               </button>
+
+              {roomId && pushConfigured() && (
+                <button
+                  className="sheet-option"
+                  aria-pressed={push === 'ligado'}
+                  disabled={pushBusy}
+                  onClick={() => {
+                    if (push === 'bloqueado' || push === 'indisponível' || push === 'instale-primeiro') return
+                    haptic('light')
+                    setPushBusy(true)
+                    const action = push === 'ligado' ? disablePush() : enablePush(roomId, me)
+                    void action
+                      .then(setPush)
+                      .catch(() => setPush('desligado'))
+                      .finally(() => setPushBusy(false))
+                  }}
+                >
+                  <span className="sheet-icon" aria-hidden>
+                    <svg viewBox="0 0 24 24">
+                      <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9Z" />
+                      <path d="M13.7 19.5a2 2 0 0 1-3.4 0" />
+                    </svg>
+                  </span>
+                  <span>avisos no celular</span>
+                  <small>{pushBusy ? '…' : PUSH_LABEL[push]}</small>
+                </button>
+              )}
 
               <button
                 className="sheet-option"

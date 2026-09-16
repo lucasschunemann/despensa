@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { notifyOthers } from '../lib/notify'
 import { supabase } from '../lib/supabase'
 import type { Item } from '../lib/types'
 import { uuid } from '../lib/uuid'
@@ -124,7 +125,9 @@ export function useItems(roomId: string, me: string): ItemsStore {
           if (error) {
             setItems((prev) => prev.filter((i) => i.id !== item.id))
             setError(error.message)
+            return
           }
+          notifyOthers(roomId, me, 'item', name)
         })
     },
     [roomId, me],

@@ -53,6 +53,38 @@ Segundo módulo do app: contas da casa, para os mesmos dois. Mesma régua de des
   progresso do mês, mês deslizando na troca, "mês fechado" ao zerar
 - Fora de escopo por enquanto: categorias, gráficos, orçamento por categoria, exportação
 
+## Lista de desejos (16/09/2026)
+Terceiro módulo. O que dá sentido a ele é o **cofre**: não é vitrine, é fila de espera.
+
+- `wishes` (título, preço, foto, `want_level` 1-3, `wanted_by text[]`, status) e `room_settings`
+  (quanto dá para guardar por mês)
+- **Fila**: o que os dois querem vem primeiro, depois o nível de vontade, depois o mais antigo
+  (`src/lib/wishes.ts`). A soma acumulada dividida pelo que se guarda por mês diz em que mês cada
+  desejo sai ("dá em outubro")
+- **Corações**: `toggle_want` é RPC para dois toques simultâneos não se sobrescreverem. Quando os
+  dois querem, o card ganha contorno
+- **Fotos**: balde público `desejos`, caminho `<room_id>/<wish_id>.webp`, reduzidas no navegador
+  antes de subir (`src/lib/image.ts`). Público de propósito: os ids são aleatórios e a foto precisa
+  carregar direto, inclusive do cache do app
+- Comprou → oferece lançar nas contas do mês, igual ao mercado
+
+## Avisos no celular (16/09/2026)
+- `push_subscriptions` guarda a assinatura de cada aparelho; a Edge Function `notificar`
+  (`supabase/functions/notificar/`) confere a sala pelo token de quem chamou e dispara com a chave
+  de serviço, nunca para quem mandou
+- Os avisos são **agrupados numa janela de 12s** (`src/lib/notify.ts`): cinco itens seguidos viram
+  um aviso só
+- O handler fica em `public/push-sw.js` e entra no service worker por `importScripts`
+- Chaves VAPID: pública no `.env` e na Vercel; as duas em `.vapid.local.json` (fora do git)
+- Depende de o Lucas publicar a função uma vez: [docs/AVISOS.md](docs/AVISOS.md)
+- Falta: aviso de conta vencendo (precisa de algo acordando todo dia)
+
+## Reações e easter eggs
+- Segurar o dedo num item abre os emojis; a reação vai por broadcast e sobe na tela do outro,
+  sem gravar nada no banco
+- Palavras com brincadeira em `src/lib/eggs.ts` (tomate, cerveja, ovo, chocolate, pizza, bolo,
+  sorvete, café, vinho, flores, viagem, gato)
+
 ## Dados por item
 - Nome (texto livre)
 - Quantidade

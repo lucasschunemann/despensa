@@ -36,3 +36,28 @@ export interface Expense {
   created_by: string
   created_at: string
 }
+
+export type WishStatus = 'querendo' | 'comprado'
+
+export interface Wish {
+  id: string
+  room_id: string
+  title: string
+  price_cents: number
+  link: string | null
+  image_url: string | null
+  /** 1 um dia · 2 quero · 3 quero muito */
+  want_level: number
+  wanted_by: string[]
+  status: WishStatus
+  bought_at: string | null
+  bought_by: string | null
+  created_by: string
+  created_at: string
+}
+
+export const WANT_LABEL: Record<number, string> = {
+  1: 'um dia',
+  2: 'quero',
+  3: 'quero muito',
+}

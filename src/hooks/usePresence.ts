@@ -2,10 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+export interface Reaction {
+  id: number
+  person: string
+  emoji: string
+  about: string
+}
+
 export interface Presence {
   online: string[]
   typing: string | null
+  /** última reação recebida da outra pessoa (ou enviada por você) */
+  reaction: Reaction | null
   notifyTyping: () => void
+  sendReaction: (emoji: string, about: string) => void
 }
 
 // Quem está com o app aberto agora e quem está escrevendo. Não passa pelo banco:
@@ -13,6 +23,7 @@ export interface Presence {
 export function usePresence(roomId: string, me: string): Presence {
   const [online, setOnline] = useState<string[]>([])
   const [typing, setTyping] = useState<string | null>(null)
+  const [reaction, setReaction] = useState<Reaction | null>(null)
   const channel = useRef<RealtimeChannel | null>(null)
   const lastSent = useRef(0)
   const clearTyping = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -30,6 +41,11 @@ export function usePresence(roomId: string, me: string): Presence {
         setTyping(person)
         if (clearTyping.current) clearTimeout(clearTyping.current)
         clearTyping.current = setTimeout(() => setTyping(null), 2600)
+      })
+      .on('broadcast', { event: 'reaction' }, ({ payload }) => {
+        const { person, emoji, about } = payload as Partial<Reaction>
+        if (!person || !emoji || person === me) return
+        setReaction({ id: Date.now(), person, emoji, about: about ?? '' })
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') void room.track({ person: me })
@@ -51,5 +67,18 @@ export function usePresence(roomId: string, me: string): Presence {
     void channel.current?.send({ type: 'broadcast', event: 'typing', payload: { person: me } })
   }, [me])
 
-  return { online, typing, notifyTyping }
+  const sendReaction = useCallback(
+    (emoji: string, about: string) => {
+      // aparece também na sua tela: você vê o que mandou
+      setReaction({ id: Date.now(), person: me, emoji, about })
+      void channel.current?.send({
+        type: 'broadcast',
+        event: 'reaction',
+        payload: { person: me, emoji, about },
+      })
+    },
+    [me],
+  )
+
+  return { online, typing, reaction, notifyTyping, sendReaction }
 }

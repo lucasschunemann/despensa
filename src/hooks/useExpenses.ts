@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { notifyOthers } from '../lib/notify'
 import { supabase } from '../lib/supabase'
 import type { Expense, Split } from '../lib/types'
 import { uuid } from '../lib/uuid'
@@ -192,6 +193,7 @@ export function useExpenses(roomId: string, me: string, month: string): Expenses
   const togglePaid = useCallback(
     (expense: Expense) => {
       const paying = expense.status === 'pendente'
+      if (paying) notifyOthers(roomId, me, 'conta', expense.title)
       patch(expense, {
         status: paying ? 'pago' : 'pendente',
         paid_by: paying ? me : null,
@@ -199,7 +201,7 @@ export function useExpenses(roomId: string, me: string, month: string): Expenses
         settled: false,
       })
     },
-    [patch, me],
+    [patch, me, roomId],
   )
 
   // toca no chip da divisão: meio a meio → só minha → só dela → meio a meio

@@ -18,10 +18,29 @@ Resumo para quem já conhece:
 No iOS, adicione à Tela de Início **a partir do link com `?sala=`**: o app da tela inicial não compartilha
 dados com o Safari, então o código precisa estar na URL salva.
 
-## Os dois módulos
+## Os três módulos
 
-O menu (botão no topo direito) troca entre **lista de mercado** e **contas do mês**. O módulo aberto
-fica na URL (`#lista` / `#contas`), então recarregar volta onde estava.
+O menu (botão no topo direito) troca entre **lista de mercado**, **lista de desejos** e
+**contas do mês**. O módulo aberto fica na URL (`#lista` / `#desejos` / `#contas`), então recarregar
+volta onde estava.
+
+## Lista de desejos
+
+- **Lançar**: `abajur 320`. O último número é o preço.
+- **Foto**: toque na moldura do card e escolha a foto. Ela é reduzida no próprio celular antes de
+  subir, então carrega rápido na tela do outro.
+- **Coração**: toque para dizer que você também quer. Quando os dois querem, o card ganha contorno
+  e sobe na fila.
+- **Vontade**: o chip alterna entre "um dia", "quero" e "quero muito". Junto com os corações, é o que
+  define a ordem da fila.
+- **Cofre**: diga quanto dá para guardar por mês e cada desejo mostra em que mês a fila chega nele.
+- **Comprou**: arraste para a direita. Chove dinheiro e o app oferece lançar nas contas do mês.
+
+## Avisos no celular
+
+Opcional, e precisa de uma configuração à parte: veja [docs/AVISOS.md](docs/AVISOS.md).
+Quando ligado, o celular avisa que a outra pessoa colocou item na lista, pagou conta ou pôs um
+desejo. Os avisos são juntados numa janela de 12 segundos, para cinco itens virarem um aviso só.
 
 ## Contas do mês
 
@@ -65,7 +84,8 @@ fica na URL (`#lista` / `#contas`), então recarregar volta onde estava.
   um ponto, e "Bela está escrevendo" aparece acima do campo enquanto ela digita. Isso não passa pelo
   banco, é só o canal ao vivo.
 - **Item que chega do outro** entra com um realce que se apaga sozinho.
-- Escreva "tomate" e veja o que acontece.
+- **Reagir**: segure o dedo num item e escolha um emoji. Ele sobe na tela da outra pessoa na hora.
+- Escreva "tomate" e veja o que acontece. Tem mais palavras escondidas em `src/lib/eggs.ts`.
 - **Som e vibração**: os três momentos (adicionar, pegar, zerar) têm som sintetizado na hora, sem
   arquivo de áudio. O ícone no topo liga e desliga. Vibração funciona no Android; o iPhone ignora.
 - **Finalizar compra**: guarda um snapshot raw da lista em `list_archives` (só os 3 últimos ficam),
@@ -76,7 +96,7 @@ fica na URL (`#lista` / `#contas`), então recarregar volta onde estava.
 
 `npm run dev` e abra **`http://localhost:5173/?demo=1`**: roda a interface com itens de mentira,
 sem Supabase e sem tocar na lista real. Serve para ajustar animação e layout à vontade.
-Variações: `&contas=1` (módulo financeiro), `&menu=1` (menu aberto), `&vazio=1` (sem dados),
+Variações: `&contas=1` (financeiro), `&desejos=1` (desejos), `&menu=1` (menu aberto), `&vazio=1` (sem dados),
 `&quem=1` (tela de quem é você), `&digitando=1` (aviso de "está escrevendo"). Esse modo só existe
 em desenvolvimento.
 
@@ -87,7 +107,12 @@ Onde fica cada coisa:
 | Cores, tipografia, espaçamentos | `src/index.css` (topo, seção Tokens) |
 | Avatares, marca "d" e tomate | `src/components/Avatar.tsx` |
 | Presença e "está escrevendo" | `src/hooks/usePresence.ts` |
-| Easter egg do tomate | `src/components/TomatoToss.tsx` |
+| Palavras com easter egg | `src/lib/eggs.ts` e `src/components/Toss.tsx` |
+| Reações entre vocês | `src/components/ReactionBurst.tsx` |
+| Tela dos desejos | `src/components/WishesScreen.tsx` e `WishCard.tsx` |
+| Fila do cofre | `src/lib/wishes.ts` |
+| Foto do desejo | `src/lib/image.ts` |
+| Avisos no celular | `src/lib/push.ts`, `public/push-sw.js`, `supabase/functions/notificar/` |
 | Sons dos três momentos | `src/lib/sound.ts` |
 | Vibração | `src/lib/haptics.ts` |
 | Linha do item: arrastar, check, risco | `src/components/ItemRow.tsx` |

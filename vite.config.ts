@@ -24,6 +24,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // handlers de notificação entram no service worker gerado
+        importScripts: ['push-sw.js'],
         // guarda o app em cache para abrir instantâneo e aguentar sinal ruim no mercado;
         // os dados continuam vindo do Supabase em tempo real quando há conexão.
         globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2}'],

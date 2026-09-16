@@ -4,15 +4,19 @@ import { haptic } from '../lib/haptics'
 import { formatBRL, toCents } from '../lib/money'
 import { sound } from '../lib/sound'
 
-// Aparece logo depois de finalizar a compra: o valor do mercado vira conta do mês.
-export function MarketBill({
-  onConfirm,
-  onClose,
-}: {
+interface Props {
+  question: string
+  confirmHint: (amount: string) => string
+  emptyHint: string
+  initial?: string
   onConfirm: (amountCents: number) => void
   onClose: () => void
-}) {
-  const [text, setText] = useState('')
+}
+
+// Cartão que pergunta um valor e lança nas contas: usado ao fechar a compra do mercado
+// e ao marcar um desejo como comprado.
+export function AmountPrompt({ question, confirmHint, emptyHint, initial = '', onConfirm, onClose }: Props) {
+  const [text, setText] = useState(initial)
   const cents = text.trim() ? toCents(text.trim().replace(/^r\$\s*/i, '')) : 0
   const valid = Number.isFinite(cents) && cents > 0
 
@@ -32,7 +36,7 @@ export function MarketBill({
       }}
     >
       <div className="market-bill-top">
-        <p>Quanto deu no mercado?</p>
+        <p>{question}</p>
         <button type="button" className="market-skip" onClick={onClose}>
           agora não
         </button>
@@ -46,7 +50,7 @@ export function MarketBill({
           placeholder="0,00"
           inputMode="decimal"
           autoFocus
-          aria-label="Valor da compra"
+          aria-label="Valor"
         />
         <motion.button
           type="submit"
@@ -63,9 +67,7 @@ export function MarketBill({
         </motion.button>
       </div>
 
-      <p className="market-hint">
-        {valid ? `vai virar a conta “Mercado” de ${formatBRL(cents)}` : 'entra nas contas do mês, já paga'}
-      </p>
+      <p className="market-hint">{valid ? confirmHint(formatBRL(cents)) : emptyHint}</p>
     </motion.form>
   )
 }

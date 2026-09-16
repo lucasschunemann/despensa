@@ -4,8 +4,11 @@ import { Avatar, Mark } from './components/Avatar'
 import { FinanceScreen } from './components/FinanceScreen'
 import { ListScreen } from './components/ListScreen'
 import { MenuSheet, type View } from './components/MenuSheet'
+import { ReactionBurst } from './components/ReactionBurst'
+import { WishesScreen } from './components/WishesScreen'
 import { useExpenses } from './hooks/useExpenses'
 import { useItems } from './hooks/useItems'
+import { useWishes } from './hooks/useWishes'
 import { usePresence } from './hooks/usePresence'
 import { haptic } from './lib/haptics'
 import { monthKey } from './lib/month'
@@ -154,12 +157,16 @@ function Room({
   person: string
   onSwitchPerson: () => void
 }) {
-  const [view, setView] = useState<View>(() => (location.hash === '#contas' ? 'contas' : 'lista'))
+  const [view, setView] = useState<View>(() => {
+    const hash = location.hash.slice(1)
+    return hash === 'contas' || hash === 'desejos' ? hash : 'lista'
+  })
   const [month, setMonth] = useState(monthKey)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const items = useItems(roomId, person)
   const expenses = useExpenses(roomId, person, month)
+  const wishes = useWishes(roomId, person)
   const presence = usePresence(roomId, person)
 
   // o módulo fica na URL, então recarregar (ou abrir o atalho) volta onde estava
@@ -170,7 +177,25 @@ function Room({
   return (
     <>
       <AnimatePresence mode="wait" initial={false}>
-        {view === 'lista' ? (
+        {view === 'desejos' ? (
+          <motion.div
+            key="desejos"
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ type: 'spring', stiffness: 460, damping: 38 }}
+          >
+            <WishesScreen
+              store={wishes}
+              me={person}
+              presence={presence}
+              onOpenMenu={() => setMenuOpen(true)}
+              onRegisterExpense={(title, amountCents) =>
+                expenses.add({ title, amountCents, dueDay: null }, { paid: true })
+              }
+            />
+          </motion.div>
+        ) : view === 'lista' ? (
           <motion.div
             key="lista"
             initial={{ opacity: 0, x: -16 }}
@@ -208,10 +233,13 @@ function Room({
         )}
       </AnimatePresence>
 
+      <ReactionBurst reaction={presence.reaction} me={person} />
+
       <MenuSheet
         open={menuOpen}
         view={view}
         me={person}
+        roomId={roomId}
         onClose={() => setMenuOpen(false)}
         onChangeView={setView}
         onSwitchPerson={onSwitchPerson}

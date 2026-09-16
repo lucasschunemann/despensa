@@ -206,6 +206,15 @@ arquivo novo. **É sempre o mesmo caminho:**
 Já rodou e não tem certeza? Rodar de novo só devolve `already exists`, que quer dizer "já estava
 feito". Não estraga nada.
 
+### O que já existe para rodar
+
+| Arquivo | Para quê | Sem ele |
+|---|---|---|
+| `20260915000000_init.sql` | lista de mercado | o app não abre |
+| `20260916000000_financeiro.sql` | contas do mês | a aba contas dá erro |
+| `20260917000000_desejos.sql` | lista de desejos e fotos | a aba desejos dá erro |
+| `20260918000000_avisos.sql` | avisos no celular | o menu não liga os avisos ([guia](AVISOS.md)) |
+
 ### Módulo financeiro (arquivo `20260916000000_financeiro.sql`)
 
 Esse é o das contas do mês. Sem ele, a aba **contas do mês** abre com erro vermelho na tela.
@@ -233,6 +242,7 @@ Para ver as contas cruas depois: **Table Editor** → `expenses`.
 | Bolinha **vermelha** ou item só aparece depois de recarregar | A sincronização ao vivo caiu | Recarregue a página. Se continuar, confira sua internet |
 | "Request rate limit reached" | Muitas entradas novas da mesma internet em 1 hora (limite de 30) | Espere uma hora. Acontece mais quando se testa muito com janela anônima |
 | "Could not find the function public.ensure_month" ou erro vermelho na aba contas | O banco do módulo financeiro não foi criado | Rode a migration `20260916000000_financeiro.sql` (seção acima) |
+| Erro vermelho na aba desejos, ou a foto não sobe | Falta a migration dos desejos | Rode `20260917000000_desejos.sql` |
 | No painel, o projeto aparece como **Paused** (pausado) | No plano grátis, projeto sem uso por uma semana é pausado | Clique em **Restore project** (restaurar) e espere uns minutos. Nada é perdido |
 
 ---

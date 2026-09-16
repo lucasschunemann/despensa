@@ -6,10 +6,13 @@ import { PersonPicker } from '../App'
 import { FinanceScreen } from '../components/FinanceScreen'
 import { ListScreen } from '../components/ListScreen'
 import { MenuSheet, type View } from '../components/MenuSheet'
+import { ReactionBurst } from '../components/ReactionBurst'
+import { WishesScreen } from '../components/WishesScreen'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
+import type { Presence, Reaction } from '../hooks/usePresence'
 import { monthKey } from '../lib/month'
-import type { Expense, Item } from '../lib/types'
+import type { Expense, Item, Wish } from '../lib/types'
 import { uuid } from '../lib/uuid'
 
 const ITEMS: Array<[string, string | null, string, boolean]> = [
@@ -45,12 +48,30 @@ const EXPENSES: Array<Partial<Expense>> = [
   },
 ]
 
+const WISHES: Array<Partial<Wish>> = [
+  { title: 'Abajur de mesa', price_cents: 32000, want_level: 3, wanted_by: ['Lucas', 'Bela'] },
+  { title: 'Cafeteira italiana', price_cents: 18900, want_level: 2, wanted_by: ['Bela'] },
+  { title: 'Poltrona de leitura', price_cents: 149000, want_level: 2, wanted_by: ['Lucas'] },
+  { title: 'Jogo de panelas', price_cents: 89000, want_level: 1, wanted_by: [] },
+  {
+    title: 'Luminária de chão',
+    price_cents: 42000,
+    status: 'comprado',
+    bought_by: 'Bela',
+    bought_at: '2026-09-10T12:00:00Z',
+    wanted_by: ['Lucas', 'Bela'],
+  },
+]
+
 export default function DemoApp() {
   const params = new URLSearchParams(location.search)
   const vazio = params.has('vazio')
-  const [view, setView] = useState<View>(params.has('contas') ? 'contas' : 'lista')
+  const [view, setView] = useState<View>(
+    params.has('contas') ? 'contas' : params.has('desejos') ? 'desejos' : 'lista',
+  )
   const [menuOpen, setMenuOpen] = useState(params.has('menu'))
   const [month, setMonth] = useState(MONTH)
+  const [savingsCents, setSavingsCents] = useState(50000)
 
   const [items, setItems] = useState<Item[]>(() =>
     (vazio ? [] : ITEMS).map(([name, quantity, added_by, picked], i) => ({
@@ -186,10 +207,81 @@ export default function DemoApp() {
     [expenses, month],
   )
 
-  const presence = {
+  const [wishes, setWishes] = useState<Wish[]>(() =>
+    (vazio ? [] : WISHES).map((w, i) => ({
+      id: uuid(),
+      room_id: 'demo',
+      title: 'Desejo',
+      price_cents: 0,
+      link: null,
+      image_url: null,
+      want_level: 2,
+      wanted_by: [],
+      status: 'querendo',
+      bought_at: null,
+      bought_by: null,
+      created_by: 'Lucas',
+      created_at: new Date(Date.now() - (WISHES.length - i) * 60000).toISOString(),
+      ...w,
+    })),
+  )
+
+  const patchWish = (id: string, changes: Partial<Wish>) =>
+    setWishes((prev) => prev.map((w) => (w.id === id ? { ...w, ...changes } : w)))
+
+  const wishesStore = {
+    wishes,
+    savingsCents,
+    ready: true,
+    connection: 'live' as const,
+    error: null,
+    clearError: () => {},
+    add: (title: string, priceCents: number) =>
+      setWishes((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          room_id: 'demo',
+          title,
+          price_cents: priceCents,
+          link: null,
+          image_url: null,
+          want_level: 2,
+          wanted_by: ['Lucas'],
+          status: 'querendo' as const,
+          bought_at: null,
+          bought_by: null,
+          created_by: 'Lucas',
+          created_at: new Date().toISOString(),
+        },
+      ]),
+    toggleWant: (wish: Wish) =>
+      patchWish(wish.id, {
+        wanted_by: wish.wanted_by.includes('Lucas')
+          ? wish.wanted_by.filter((p) => p !== 'Lucas')
+          : [...wish.wanted_by, 'Lucas'],
+      }),
+    cycleLevel: (wish: Wish) => patchWish(wish.id, { want_level: (wish.want_level % 3) + 1 }),
+    setPrice: (wish: Wish, price_cents: number) => patchWish(wish.id, { price_cents }),
+    setImage: () => {},
+    markBought: (wish: Wish) =>
+      patchWish(wish.id, {
+        status: wish.status === 'querendo' ? 'comprado' : 'querendo',
+        bought_by: wish.status === 'querendo' ? 'Lucas' : null,
+        bought_at: wish.status === 'querendo' ? new Date().toISOString() : null,
+      }),
+    remove: (wish: Wish) => setWishes((prev) => prev.filter((w) => w.id !== wish.id)),
+    restore: (wish: Wish) => setWishes((prev) => [...prev, wish]),
+    setSavings: setSavingsCents,
+  }
+
+  const [reaction, setReaction] = useState<Reaction | null>(null)
+  const presence: Presence = {
     online: ['Bela'],
     typing: params.has('digitando') ? 'Bela' : null,
+    reaction,
     notifyTyping: () => {},
+    sendReaction: (emoji, about) => setReaction({ id: Date.now(), person: 'Lucas', emoji, about }),
   }
 
   if (params.has('quem')) {
@@ -205,7 +297,17 @@ export default function DemoApp() {
 
   return (
     <>
-      {view === 'lista' ? (
+      {view === 'desejos' ? (
+        <WishesScreen
+          store={wishesStore}
+          me="Lucas"
+          presence={presence}
+          onOpenMenu={() => setMenuOpen(true)}
+          onRegisterExpense={(title, amountCents) =>
+            expensesStore.add({ title, amountCents, dueDay: null }, { paid: true })
+          }
+        />
+      ) : view === 'lista' ? (
         <ListScreen
           store={itemsStore}
           me="Lucas"
@@ -226,10 +328,13 @@ export default function DemoApp() {
         />
       )}
 
+      <ReactionBurst reaction={reaction} me="Lucas" />
+
       <MenuSheet
         open={menuOpen}
         view={view}
         me="Lucas"
+        roomId={params.has('push') ? '00000000-0000-0000-0000-000000000000' : undefined}
         onClose={() => setMenuOpen(false)}
         onChangeView={setView}
         onSwitchPerson={() => {}}

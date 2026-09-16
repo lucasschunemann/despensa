@@ -19,6 +19,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
   onToggle: (item: Item) => void
   onRemove: (item: Item) => void
+  onLongPress: (item: Item) => void
 }
 
 export function ItemRow({
@@ -31,6 +32,7 @@ export function ItemRow({
   onOpenChange,
   onToggle,
   onRemove,
+  onLongPress,
 }: Props) {
   const picked = item.status === 'pegado'
   const reduced = useReducedMotion()
@@ -42,6 +44,21 @@ export function ItemRow({
     ? { duration: 0.12 }
     : { type: 'spring' as const, stiffness: 420, damping: 34, mass: 0.8 }
   const crossed = useRef(false)
+  const press = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pressed = useRef(false)
+
+  // segurar o dedo parado abre as reações; qualquer arrasto cancela
+  const startPress = () => {
+    pressed.current = false
+    press.current = setTimeout(() => {
+      pressed.current = true
+      haptic('medium')
+      onLongPress(item)
+    }, 480)
+  }
+  const cancelPress = () => {
+    if (press.current) clearTimeout(press.current)
+  }
 
   // enquanto arrasta para a direita, a marca de "pegado" vai aparecendo
   const pickOpacity = useTransform(x, [0, PICK_THRESHOLD * 0.5, PICK_THRESHOLD], [0, 0.5, 1])
@@ -86,7 +103,12 @@ export function ItemRow({
         dragConstraints={{ left: -ACTION_WIDTH, right: PICK_WIDTH }}
         dragElastic={{ left: 0.04, right: 0.12 }}
         dragMomentum={false}
+        onPointerDown={startPress}
+        onPointerUp={cancelPress}
+        onPointerCancel={cancelPress}
+        onDragStart={cancelPress}
         onDrag={(_, info) => {
+          cancelPress()
           // um toque de vibração no momento em que passa do ponto de marcar
           const past = info.offset.x > PICK_THRESHOLD
           if (past !== crossed.current) {
@@ -121,6 +143,11 @@ export function ItemRow({
           aria-pressed={picked}
           aria-label={picked ? `Desmarcar ${item.name}` : `Marcar ${item.name} como pegado`}
           onClick={() => {
+            // acabou de abrir as reações: esse clique não marca o item
+            if (pressed.current) {
+              pressed.current = false
+              return
+            }
             // gaveta aberta: o toque fecha em vez de marcar
             if (Math.abs(x.get()) > 2) {
               onOpenChange(false)

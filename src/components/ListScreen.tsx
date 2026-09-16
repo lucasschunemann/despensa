@@ -4,18 +4,19 @@ import type { ItemsStore } from '../hooks/useItems'
 import type { Presence } from '../hooks/usePresence'
 import { useViewportFit } from '../hooks/useViewportFit'
 import { haptic } from '../lib/haptics'
+import { eggFor } from '../lib/eggs'
 import { formatBRL } from '../lib/money'
 import { sound } from '../lib/sound'
 import type { Item } from '../lib/types'
 import { AppHeader } from './AppHeader'
 import { Avatar } from './Avatar'
 import { Composer } from './Composer'
-import { MarketBill } from './MarketBill'
+import { AmountPrompt } from './AmountPrompt'
 import { CompleteOverlay } from './CompleteOverlay'
 import { HoldButton } from './HoldButton'
 import { ItemRow } from './ItemRow'
 import { Skeleton } from './Skeleton'
-import { TomatoToss } from './TomatoToss'
+import { Toss } from './Toss'
 
 interface Props {
   store: ItemsStore
@@ -42,7 +43,8 @@ export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }
   } = store
   const [openId, setOpenId] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
-  const [tomatoes, setTomatoes] = useState(0)
+  const [egg, setEgg] = useState<{ id: number; emoji: string } | null>(null)
+  const [reactTo, setReactTo] = useState<Item | null>(null)
   const [askAmount, setAskAmount] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [deleted, setDeleted] = useState<Item | null>(null)
@@ -98,7 +100,8 @@ export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }
 
   const handleAdd = (name: string, quantity: string | null) => {
     add(name, quantity)
-    if (/tomate/i.test(name)) setTomatoes((n) => n + 1)
+    const found = eggFor(name)
+    if (found) setEgg({ id: Date.now(), emoji: found.emoji })
     sound.add()
     haptic('light')
     scrollToEnd()
@@ -229,6 +232,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }
                 onOpenChange={(open) => setOpenId(open ? item.id : null)}
                 onToggle={handleToggle}
                 onRemove={handleRemove}
+                onLongPress={setReactTo}
               />
             ))}
 
@@ -257,6 +261,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }
                 onOpenChange={(open) => setOpenId(open ? item.id : null)}
                 onToggle={handleToggle}
                 onRemove={handleRemove}
+                onLongPress={setReactTo}
               />
             ))}
           </AnimatePresence>
@@ -289,6 +294,38 @@ export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }
 
       <div className="dock">
         <AnimatePresence>
+          {reactTo && (
+            <motion.div
+              className="reaction-picker"
+              initial={{ opacity: 0, y: 14, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 14, scale: 0.94 }}
+              transition={{ type: 'spring', stiffness: 460, damping: 32 }}
+            >
+              <span className="reaction-about">{reactTo.name}</span>
+              <div className="reaction-emojis">
+                {['❤️', '😂', '👍', '🔥', '😮', '🙏'].map((emoji, i) => (
+                  <motion.button
+                    key={emoji}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.03 * i, type: 'spring', stiffness: 520, damping: 30 }}
+                    whileTap={{ scale: 0.86 }}
+                    onClick={() => {
+                      presence.sendReaction(emoji, reactTo.name)
+                      haptic('light')
+                      setReactTo(null)
+                    }}
+                  >
+                    {emoji}
+                  </motion.button>
+                ))}
+              </div>
+              <button className="reaction-close" onClick={() => setReactTo(null)}>
+                fechar
+              </button>
+            </motion.div>
+          )}
           {notice && (
             <motion.div
               className="toast"
@@ -338,7 +375,10 @@ export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }
         </AnimatePresence>
         <AnimatePresence>
           {askAmount && onRegisterMarket && (
-            <MarketBill
+            <AmountPrompt
+              question="Quanto deu no mercado?"
+              emptyHint="entra nas contas do mês, já paga"
+              confirmHint={(valor) => `vai virar a conta “Mercado” de ${valor}`}
               onClose={() => setAskAmount(false)}
               onConfirm={(cents) => {
                 onRegisterMarket(cents)
@@ -352,9 +392,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }
         <Composer onAdd={handleAdd} onFocus={() => scrollToEnd()} onTyping={presence.notifyTyping} />
       </div>
       <AnimatePresence>
-        {tomatoes > 0 && (
-          <TomatoToss key={tomatoes} onDone={() => setTomatoes(0)} />
-        )}
+        {egg && <Toss key={egg.id} emoji={egg.emoji} onDone={() => setEgg(null)} />}
       </AnimatePresence>
       <CompleteOverlay show={celebrating} />
     </div>
