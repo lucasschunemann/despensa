@@ -1,4 +1,4 @@
-export const PEOPLE = ['Lucas', 'Bela'] as const
+export const PEOPLE = ['Bela', 'Lucas'] as const
 export type Person = (typeof PEOPLE)[number]
 
 export type ItemStatus = 'pendente' | 'pegado'

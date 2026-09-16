@@ -1,6 +1,7 @@
 // Só existe em desenvolvimento (?demo=1): roda a interface com dados de mentira,
 // para ajustar animação e visual sem depender do Supabase nem mexer na lista real.
 import { useCallback, useMemo, useState } from 'react'
+import { PersonPicker } from '../App'
 import { ListScreen } from '../components/ListScreen'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Item } from '../lib/types'
@@ -16,7 +17,8 @@ const SEED: Array<[string, string | null, string, boolean]> = [
 ]
 
 export default function DemoApp() {
-  const vazio = new URLSearchParams(location.search).has('vazio')
+  const params = new URLSearchParams(location.search)
+  const vazio = params.has('vazio')
   const [items, setItems] = useState<Item[]>(() =>
     (vazio ? [] : SEED).map(([name, quantity, added_by, picked], i) => ({
       id: uuid(),
@@ -49,6 +51,7 @@ export default function DemoApp() {
   const store: ItemsStore = useMemo(
     () => ({
       items,
+      arrivals: [],
       ready: true,
       connection: 'live',
       error: null,
@@ -73,5 +76,27 @@ export default function DemoApp() {
     [items, add],
   )
 
-  return <ListScreen store={store} me="Lucas" onSwitchPerson={() => {}} />
+  if (params.has('quem')) {
+    return (
+      <div className="app gate">
+        <div className="gate-inner">
+          <h1>quem é você?</h1>
+          <PersonPicker onPick={() => {}} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <ListScreen
+      store={store}
+      me="Lucas"
+      presence={{
+        online: ['Bela'],
+        typing: params.has('digitando') ? 'Bela' : null,
+        notifyTyping: () => {},
+      }}
+      onSwitchPerson={() => {}}
+    />
+  )
 }

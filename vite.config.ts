@@ -26,7 +26,7 @@ export default defineConfig({
       workbox: {
         // guarda o app em cache para abrir instantâneo e aguentar sinal ruim no mercado;
         // os dados continuam vindo do Supabase em tempo real quando há conexão.
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2}'],
         navigateFallbackDenylist: [/^\/api/],
       },
     }),

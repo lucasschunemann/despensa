@@ -34,11 +34,17 @@ dados com o Safari, então o código precisa estar na URL salva.
 
   Número sozinho também vale (`ovos 12`). A lista fica em `src/lib/parse.ts`: se acrescentar uma
   unidade lá, acrescente aqui também.
-- **Pegado**: toque no item. Toque de novo desfaz.
+- **Pegado**: toque no item, ou arraste para a direita. Toque de novo desfaz.
 - **Apagar**: arraste o item para a esquerda. Dá para desfazer por 5 segundos.
 - **Finalizar**: segure o botão. A barra preenchendo é o aviso, no lugar de uma caixa de confirmação.
-- **Avatares**: cada um tem o seu (`src/components/Avatar.tsx`), e ele só aparece nos itens que a
-  outra pessoa adicionou. O avatar do topo dá um pulinho a cada item que você marca.
+- **Avatares**: os dois gatos com tomate, em `public/avatars/`. Aparecem só nos itens que a outra
+  pessoa adicionou. O avatar do topo dá um pulinho a cada item que você marca.
+  Para trocar as imagens: `node scripts/avatars.mjs <imagem-da-bela> <imagem-do-lucas>`.
+- **Quem está junto**: se a outra pessoa estiver com o app aberto, o avatar dela aparece no topo com
+  um ponto, e "Bela está escrevendo" aparece acima do campo enquanto ela digita. Isso não passa pelo
+  banco, é só o canal ao vivo.
+- **Item que chega do outro** entra com um realce que se apaga sozinho.
+- Escreva "tomate" e veja o que acontece.
 - **Som e vibração**: os três momentos (adicionar, pegar, zerar) têm som sintetizado na hora, sem
   arquivo de áudio. O ícone no topo liga e desliga. Vibração funciona no Android; o iPhone ignora.
 - **Finalizar compra**: guarda um snapshot raw da lista em `list_archives` (só os 3 últimos ficam),
@@ -49,14 +55,17 @@ dados com o Safari, então o código precisa estar na URL salva.
 
 `npm run dev` e abra **`http://localhost:5173/?demo=1`**: roda a interface com itens de mentira,
 sem Supabase e sem tocar na lista real. Serve para ajustar animação e layout à vontade.
-`?demo=1&vazio=1` começa com a lista vazia. Esse modo só existe em desenvolvimento.
+Variações: `&vazio=1` (lista vazia), `&quem=1` (tela de quem é você), `&digitando=1` (aviso de
+"está escrevendo"). Esse modo só existe em desenvolvimento.
 
 Onde fica cada coisa:
 
 | O quê | Arquivo |
 |---|---|
 | Cores, tipografia, espaçamentos | `src/index.css` (topo, seção Tokens) |
-| Avatares e marca "d" | `src/components/Avatar.tsx` |
+| Avatares, marca "d" e tomate | `src/components/Avatar.tsx` |
+| Presença e "está escrevendo" | `src/hooks/usePresence.ts` |
+| Easter egg do tomate | `src/components/TomatoToss.tsx` |
 | Sons dos três momentos | `src/lib/sound.ts` |
 | Vibração | `src/lib/haptics.ts` |
 | Linha do item: arrastar, check, risco | `src/components/ItemRow.tsx` |

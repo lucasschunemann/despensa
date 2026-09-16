@@ -7,6 +7,8 @@ export type Connection = 'connecting' | 'live' | 'offline'
 
 export interface ItemsStore {
   items: Item[]
+  /** ids que acabaram de chegar da outra pessoa, para destacar por alguns segundos */
+  arrivals: string[]
   ready: boolean
   connection: Connection
   error: string | null
@@ -23,8 +25,11 @@ export function useItems(roomId: string, me: string): ItemsStore {
   const [ready, setReady] = useState(false)
   const [connection, setConnection] = useState<Connection>('connecting')
   const [error, setError] = useState<string | null>(null)
+  const [arrivals, setArrivals] = useState<string[]>([])
   // Inserts otimistas ainda não confirmados: um refetch no meio não pode apagá-los.
   const pending = useRef(new Map<string, Item>())
+  // Tudo que este aparelho criou nesta sessão, para não destacar os próprios itens.
+  const mine = useRef(new Set<string>())
 
   const refetch = useCallback(async () => {
     const { data, error } = await supabase
@@ -57,7 +62,13 @@ export function useItems(roomId: string, me: string): ItemsStore {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'items', filter: `room_id=eq.${roomId}` },
-        (p) => upsert(p.new as Item),
+        (p) => {
+          const row = p.new as Item
+          upsert(row)
+          if (mine.current.has(row.id)) return
+          setArrivals((prev) => [...prev, row.id])
+          setTimeout(() => setArrivals((prev) => prev.filter((id) => id !== row.id)), 2400)
+        },
       )
       .on(
         'postgres_changes',
@@ -102,6 +113,7 @@ export function useItems(roomId: string, me: string): ItemsStore {
         picked_at: null,
       }
       pending.current.set(item.id, item)
+      mine.current.add(item.id)
       setItems((prev) => [...prev, item])
 
       void supabase
@@ -155,6 +167,7 @@ export function useItems(roomId: string, me: string): ItemsStore {
   // volta um item apagado exatamente como estava (inclusive o id)
   const restore = useCallback((item: Item) => {
     pending.current.set(item.id, item)
+    mine.current.add(item.id)
     setItems((prev) => [...prev, item])
 
     void supabase
@@ -187,6 +200,7 @@ export function useItems(roomId: string, me: string): ItemsStore {
 
   return {
     items,
+    arrivals,
     ready,
     connection,
     error,

@@ -23,9 +23,12 @@ Resolver bem UMA coisa: adicionar item rápido, ver a lista organizada, marcar c
 - **Só tema claro.** O modo escuro foi removido a pedido do Lucas
 - Paleta monocromática: tinta `#0a0a0a` sobre branco. A única cor fora disso é o vermelho do apagar
   e as cores dos avatares
-- **Avatares**: Lucas é uma caneca de chope de óculos escuros, Bela é um ovo cozido de cabelo rosa.
-  Traço chapado, poucas cores, espírito japonês fofo. É o único lugar lúdico do app, por contraste
-  com o resto, que é tipografia e branco
+- **Avatares**: são dois memes de gato com tomate, escolhidos pelo Lucas (16/09/2026). Bela é o gato
+  que joga o tomate, Lucas é o gato que desvia dos tomates. Arquivos em `public/avatars/`, gerados
+  por `scripts/avatars.mjs` (versão inteira, sem recorte redondo, para as telas grandes; versão
+  fechada no gato, redonda, para os avatares pequenos). São o único lugar lúdico do app, por
+  contraste com o resto, que é tipografia e branco
+- Na tela "quem é você?", **Bela vem primeiro** (ordem de `PEOPLE` em `src/lib/types.ts`)
 
 ## Direção de design e experiência
 Referência visual: cruzamento entre a linguagem Apple (iOS/macOS) e o minimalismo do Notion. Isso significa fundo limpo, hierarquia tipográfica clara, pouco ruído visual, componentes simples, não uma tela cheia de cor ou ícone decorativo. Minimalismo aqui é ponto de partida, não é sinônimo de estático: a personalidade do produto vive nas animações e microinterações, não em elementos visuais parados na tela. Ou seja, tela parada deve parecer quase simples demais; é a resposta a cada ação do usuário que carrega a sofisticação.
@@ -68,6 +71,15 @@ que a chavinha de silencioso do aparelho cala o app.
 Outras microinterações: régua de progresso no topo, etiqueta da quantidade reconhecida enquanto
 digita, entrada em cascata na primeira carga, avatar do topo pulsando a cada item marcado, e
 **segurar para finalizar** (`HoldButton`) com o texto invertendo conforme a barra passa.
+
+Conviver a dois é o que o app tem de diferente, então isso aparece na tela:
+- **Presença ao vivo** (`usePresence`): o avatar da outra pessoa aparece no topo, com um ponto, quando
+  ela está com o app aberto. Vai por canal do Realtime, sem tocar no banco
+- **"Bela está escrevendo"** acima do campo, por broadcast, no máximo um aviso a cada 1,5s
+- **Item que chega do outro** entra com um realce que se apaga em ~2s
+- **Arrastar para a direita marca como pegado** (esquerda continua apagando), com vibração no momento
+  em que passa do ponto
+- **Easter egg**: escreveu "tomate", os gatos jogam tomate na tela (`TomatoToss`)
 
 ## Referência de experiência (com ressalva)
 Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em tablet de autoatendimento na loja física — não o app mobile, que tem reclamações de confiabilidade em avaliações de usuários. O que vale copiar é a sensação de interação num ambiente controlado (hardware dedicado, sem concorrência de atenção), não o app em si.

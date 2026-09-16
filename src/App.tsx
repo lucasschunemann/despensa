@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Avatar, Mark } from './components/Avatar'
 import { ListScreen } from './components/ListScreen'
 import { useItems } from './hooks/useItems'
+import { usePresence } from './hooks/usePresence'
 import { haptic } from './lib/haptics'
 import { joinRoom } from './lib/room'
 import { sound } from './lib/sound'
@@ -99,27 +100,12 @@ export default function App() {
   if (!person) {
     return (
       <Gate title="quem é você?">
-        <div className="people">
-          {PEOPLE.map((p, i) => (
-            <motion.button
-              key={p}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * i, type: 'spring', stiffness: 420, damping: 30 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => {
-                // primeiro toque da sessão: libera o áudio do navegador
-                sound.unlock()
-                haptic('light')
-                save(PERSON_KEY, p)
-                setPerson(p)
-              }}
-            >
-              <Avatar person={p} size={64} />
-              {p}
-            </motion.button>
-          ))}
-        </div>
+        <PersonPicker
+          onPick={(p) => {
+            save(PERSON_KEY, p)
+            setPerson(p)
+          }}
+        />
       </Gate>
     )
   }
@@ -128,6 +114,31 @@ export default function App() {
     save(PERSON_KEY, null)
     setPerson(null)
   }} />
+}
+
+export function PersonPicker({ onPick }: { onPick: (person: string) => void }) {
+  return (
+    <div className="people">
+      {PEOPLE.map((p, i) => (
+        <motion.button
+          key={p}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.06 * i, type: 'spring', stiffness: 380, damping: 30 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => {
+            // primeiro toque da sessão: libera o áudio do navegador
+            sound.unlock()
+            haptic('light')
+            onPick(p)
+          }}
+        >
+          <Avatar person={p} size={104} variant="full" />
+          {p}
+        </motion.button>
+      ))}
+    </div>
+  )
 }
 
 function Room({
@@ -140,7 +151,15 @@ function Room({
   onSwitchPerson: () => void
 }) {
   const store = useItems(roomId, person)
-  return <ListScreen store={store} me={person} onSwitchPerson={onSwitchPerson} />
+  const presence = usePresence(roomId, person)
+  return (
+    <ListScreen
+      store={store}
+      me={person}
+      presence={presence}
+      onSwitchPerson={onSwitchPerson}
+    />
+  )
 }
 
 function Gate({ title, children }: { title: string; children: React.ReactNode }) {

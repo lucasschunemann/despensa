@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ItemsStore } from '../hooks/useItems'
+import type { Presence } from '../hooks/usePresence'
 import { useViewportFit } from '../hooks/useViewportFit'
 import { haptic } from '../lib/haptics'
 import { prefs, useSoundOn } from '../lib/prefs'
@@ -12,19 +13,33 @@ import { CompleteOverlay } from './CompleteOverlay'
 import { HoldButton } from './HoldButton'
 import { ItemRow } from './ItemRow'
 import { Skeleton } from './Skeleton'
+import { TomatoToss } from './TomatoToss'
 
 interface Props {
   store: ItemsStore
   me: string
+  presence: Presence
   onSwitchPerson: () => void
 }
 
-export function ListScreen({ store, me, onSwitchPerson }: Props) {
-  const { items, ready, connection, error, clearError, add, toggle, remove, restore, finishShopping } =
-    store
+export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
+  const {
+    items,
+    arrivals,
+    ready,
+    connection,
+    error,
+    clearError,
+    add,
+    toggle,
+    remove,
+    restore,
+    finishShopping,
+  } = store
   const [openId, setOpenId] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
   const [pulse, setPulse] = useState(0)
+  const [tomatoes, setTomatoes] = useState(0)
   const [deleted, setDeleted] = useState<Item | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -79,6 +94,7 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
 
   const handleAdd = (name: string, quantity: string | null) => {
     add(name, quantity)
+    if (/tomate/i.test(name)) setTomatoes((n) => n + 1)
     sound.add()
     haptic('light')
     scrollToEnd()
@@ -119,6 +135,21 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
       <header className="header">
         <h1 className="wordmark">despensa</h1>
         <div className="header-actions">
+          <AnimatePresence>
+            {presence.online.map((person) => (
+              <motion.span
+                key={person}
+                className="presence"
+                title={`${person} está com o app aberto`}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              >
+                <Avatar person={person} size={24} />
+              </motion.span>
+            ))}
+          </AnimatePresence>
           <button
             className="icon-button"
             aria-pressed={soundOn}
@@ -196,6 +227,32 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
 
         {ready && items.length === 0 && (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="empty-cats" aria-hidden>
+              <motion.span
+                initial={{ x: 12, rotate: 8, opacity: 0 }}
+                animate={{ x: 0, rotate: -4, opacity: 1, y: [0, -5, 0] }}
+                transition={{
+                  x: { type: 'spring', stiffness: 220, damping: 18, delay: 0.1 },
+                  rotate: { type: 'spring', stiffness: 220, damping: 18, delay: 0.1 },
+                  opacity: { duration: 0.4, delay: 0.1 },
+                  y: { duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 0.6 },
+                }}
+              >
+                <Avatar person="Bela" size={92} variant="full" />
+              </motion.span>
+              <motion.span
+                initial={{ x: -12, rotate: -8, opacity: 0 }}
+                animate={{ x: 0, rotate: 5, opacity: 1, y: [0, -5, 0] }}
+                transition={{
+                  x: { type: 'spring', stiffness: 220, damping: 18, delay: 0.2 },
+                  rotate: { type: 'spring', stiffness: 220, damping: 18, delay: 0.2 },
+                  opacity: { duration: 0.4, delay: 0.2 },
+                  y: { duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 1.4 },
+                }}
+              >
+                <Avatar person="Lucas" size={92} variant="full" />
+              </motion.span>
+            </div>
             <p className="empty-title">Lista vazia</p>
             <p className="empty-hint">Digite aí embaixo. Dá para incluir a quantidade: “2 leite”.</p>
           </motion.div>
@@ -209,6 +266,7 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
                 item={item}
                 me={me}
                 open={openId === item.id}
+                fresh={arrivals.includes(item.id)}
                 enterDelay={firstPaint.current ? index * 0.035 : 0}
                 exitDelay={0}
                 onOpenChange={(open) => setOpenId(open ? item.id : null)}
@@ -236,6 +294,7 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
                 item={item}
                 me={me}
                 open={openId === item.id}
+                fresh={arrivals.includes(item.id)}
                 enterDelay={firstPaint.current ? (pending.length + index) * 0.035 : 0}
                 exitDelay={index * 0.035}
                 onOpenChange={(open) => setOpenId(open ? item.id : null)}
@@ -285,8 +344,36 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
-        <Composer onAdd={handleAdd} onFocus={() => scrollToEnd()} />
+        <AnimatePresence>
+          {presence.typing && (
+            <motion.p
+              className="typing"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 36 }}
+            >
+              <Avatar person={presence.typing} size={18} />
+              {presence.typing} está escrevendo
+              <span className="dots" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <motion.i
+                    key={i}
+                    animate={{ opacity: [0.2, 1, 0.2] }}
+                    transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.16 }}
+                  />
+                ))}
+              </span>
+            </motion.p>
+          )}
+        </AnimatePresence>
+        <Composer onAdd={handleAdd} onFocus={() => scrollToEnd()} onTyping={presence.notifyTyping} />
       </div>
+      <AnimatePresence>
+        {tomatoes > 0 && (
+          <TomatoToss key={tomatoes} onDone={() => setTomatoes(0)} />
+        )}
+      </AnimatePresence>
       <CompleteOverlay show={celebrating} />
     </div>
   )

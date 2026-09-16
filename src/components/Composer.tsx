@@ -5,9 +5,10 @@ import { parseEntry } from '../lib/parse'
 interface Props {
   onAdd: (name: string, quantity: string | null) => void
   onFocus: () => void
+  onTyping: () => void
 }
 
-export function Composer({ onAdd, onFocus }: Props) {
+export function Composer({ onAdd, onFocus, onTyping }: Props) {
   const [text, setText] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const reduced = useReducedMotion()
@@ -33,7 +34,10 @@ export function Composer({ onAdd, onFocus }: Props) {
         <input
           ref={input}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value)
+            if (e.target.value.trim()) onTyping()
+          }}
           onFocus={onFocus}
           placeholder="Adicionar item"
           aria-label="Novo item"
