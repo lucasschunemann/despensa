@@ -48,6 +48,9 @@ export function WishCard({
   const reduced = useReducedMotion()
   const x = useMotionValue(0)
   const crossed = useRef(false)
+  // arrastar começando na foto, no preço ou no chip não pode virar toque neles ao soltar
+  const dragged = useRef(false)
+  const wasDrag = () => dragged.current || Math.abs(x.get()) > 2
   const file = useRef<HTMLInputElement>(null)
   const [burst, setBurst] = useState(0)
   // "realizando": o cartão vira luz antes de ir para "já compramos"
@@ -128,6 +131,12 @@ export function WishCard({
         dragConstraints={{ left: -ACTION_WIDTH, right: BUY_WIDTH }}
         dragElastic={{ left: 0.04, right: 0.12 }}
         dragMomentum={false}
+        onPointerDown={() => {
+          dragged.current = false
+        }}
+        onDragStart={() => {
+          dragged.current = true
+        }}
         onDrag={(_, info) => {
           const past = info.offset.x > BUY_THRESHOLD
           if (past !== crossed.current) {
@@ -150,7 +159,9 @@ export function WishCard({
       >
         <button
           className="wish-photo"
-          onClick={() => file.current?.click()}
+          onClick={() => {
+            if (!wasDrag()) file.current?.click()
+          }}
           aria-label={wish.image_url ? `Trocar a foto de ${wish.title}` : `Adicionar foto de ${wish.title}`}
         >
           {wish.image_url ? (
@@ -186,7 +197,7 @@ export function WishCard({
           </div>
 
           <div className="wish-meta">
-            <button className="wish-level" onClick={() => onCycleLevel(wish)}>
+            <button className="wish-level" onClick={() => !wasDrag() && onCycleLevel(wish)}>
               {WANT_LABEL[wish.want_level]}
             </button>
             {bought ? (
@@ -200,8 +211,8 @@ export function WishCard({
         <button
           className={`wish-hearts${mine ? ' is-mine' : ''}`}
           onClick={() => {
-            if (Math.abs(x.get()) > 2) {
-              onOpenChange(false)
+            if (wasDrag()) {
+              if (!dragged.current) onOpenChange(false)
               return
             }
             if (!mine) setBurst((n) => n + 1)

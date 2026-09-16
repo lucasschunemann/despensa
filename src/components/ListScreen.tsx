@@ -14,8 +14,7 @@ import { AppHeader } from './AppHeader'
 import { Avatar } from './Avatar'
 import { CompleteOverlay } from './CompleteOverlay'
 import { Composer } from './Composer'
-import { Awning, CartIcon, ProductMark, ProductTile } from './Gondola'
-import { HoldButton } from './HoldButton'
+import { CartIcon, CartSection, MarketRow, ProductMark } from './Market'
 import { Skeleton } from './Skeleton'
 import { Toss } from './Toss'
 
@@ -52,12 +51,13 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
   const [flights, setFlights] = useState<Flight[]>([])
   const [cartBump, setCartBump] = useState(0)
   const [rolling, setRolling] = useState(false)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const scroller = useRef<HTMLDivElement>(null)
   const cart = useRef<HTMLSpanElement>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const nearBottom = useRef(true)
-  // o que já estava na gôndola ao abrir entra em cascata; o que chega depois cai do alto
+  // o que já estava na lista ao abrir entra em cascata; o que chega depois tem o emoji pulando
   const known = useRef<Set<string> | null>(null)
 
   const onShelf = items
@@ -107,14 +107,14 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
     add(name, quantity)
     const found = eggFor(name)
     if (found) setEgg({ id: Date.now(), emoji: found.emoji })
-    // o som de pousar vem quando o produto bate na prateleira
-    setTimeout(() => sound.drop(), reduced ? 0 : 220)
+    sound.add()
     haptic('light')
     scrollToEnd()
   }
 
-  // pegar: o produto sai da prateleira e voa até o carrinho do topo
+  // pegar: o emoji sai da linha e voa até o carrinho do topo
   const handlePick = (item: Item, from: DOMRect) => {
+    setOpenId(null)
     sound.pick()
     haptic('medium')
     const to = cart.current?.getBoundingClientRect()
@@ -138,6 +138,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
 
   const handleRemove = (item: Item) => {
     setActionsFor(null)
+    setOpenId(null)
     sound.undo()
     haptic('medium')
     remove(item)
@@ -192,7 +193,6 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
           </motion.span>
         }
       />
-      <Awning />
 
       <AnimatePresence>
         {ready && connection !== 'live' && (
@@ -219,7 +219,8 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
       </AnimatePresence>
 
       <div
-        className="scroll gondola-scroll"
+        className="scroll"
+        onPointerDown={() => setOpenId(null)}
         ref={scroller}
         onScroll={(e) => {
           const el = e.currentTarget
@@ -229,105 +230,69 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
         {!ready && <Skeleton />}
 
         {ready && items.length === 0 && (
-          <motion.div className="empty-gondola" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* gôndola vazia: sobrou só os dois gatos na prateleira */}
-            <div className="empty-shelf">
+          <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="empty-cats" aria-hidden>
               <motion.span
-                initial={{ y: -70, opacity: 0, rotate: -10 }}
-                animate={{ y: 0, opacity: 1, rotate: -3 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 15, delay: 0.15 }}
+                initial={{ x: 12, rotate: 8, opacity: 0 }}
+                animate={{ x: 0, rotate: -4, opacity: 1, y: [0, -5, 0] }}
+                transition={{
+                  x: { type: 'spring', stiffness: 220, damping: 18, delay: 0.1 },
+                  rotate: { type: 'spring', stiffness: 220, damping: 18, delay: 0.1 },
+                  opacity: { duration: 0.4, delay: 0.1 },
+                  y: { duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 0.6 },
+                }}
               >
                 <Avatar person="Bela" size={88} variant="full" />
               </motion.span>
               <motion.span
-                initial={{ y: -70, opacity: 0, rotate: 10 }}
-                animate={{ y: 0, opacity: 1, rotate: 4 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 15, delay: 0.3 }}
+                initial={{ x: -12, rotate: -8, opacity: 0 }}
+                animate={{ x: 0, rotate: 5, opacity: 1, y: [0, -5, 0] }}
+                transition={{
+                  x: { type: 'spring', stiffness: 220, damping: 18, delay: 0.2 },
+                  rotate: { type: 'spring', stiffness: 220, damping: 18, delay: 0.2 },
+                  opacity: { duration: 0.4, delay: 0.2 },
+                  y: { duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 1.4 },
+                }}
               >
                 <Avatar person="Lucas" size={88} variant="full" />
               </motion.span>
             </div>
-            <p className="empty-title">Gôndola vazia</p>
-            <p className="empty-hint">Escreva aí embaixo e o produto cai na prateleira. “2 leite”.</p>
+            <p className="empty-title">Lista vazia</p>
+            <p className="empty-hint">Digite aí embaixo. Dá para incluir a quantidade: “2 leite”.</p>
           </motion.div>
         )}
 
-        {onShelf.length > 0 && (
-          <ul className="shelves">
-            <AnimatePresence initial={false} mode="popLayout">
-              {onShelf.map((item, index) => (
-                <ProductTile
-                  key={item.id}
-                  item={item}
-                  me={me}
-                  fresh={arrivals.includes(item.id)}
-                  dropping={Boolean(known.current && !known.current.has(item.id))}
-                  enterDelay={index * 0.04}
-                  onPick={handlePick}
-                  onLongPress={(i) => setActionsFor(i)}
-                />
-              ))}
-            </AnimatePresence>
-          </ul>
-        )}
+        <ul className="mlist">
+          <AnimatePresence initial={false} mode="popLayout">
+            {onShelf.map((item, index) => (
+              <MarketRow
+                key={item.id}
+                item={item}
+                me={me}
+                open={openId === item.id}
+                fresh={arrivals.includes(item.id)}
+                arriving={Boolean(known.current && !known.current.has(item.id))}
+                enterDelay={index * 0.035}
+                onOpenChange={(open) => setOpenId(open ? item.id : null)}
+                onPick={handlePick}
+                onRemove={handleRemove}
+                onLongPress={setActionsFor}
+              />
+            ))}
+          </AnimatePresence>
+        </ul>
 
         <AnimatePresence>
           {inCart.length > 0 && (
-            <motion.section
-              className={`basket${allPicked ? ' is-full' : ''}`}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-            >
-              <div className="basket-head">
-                <motion.span
-                  className="basket-cart"
-                  animate={rolling ? { x: 360, rotate: [0, -4, 0] } : { x: 0 }}
-                  transition={rolling ? { duration: 0.9, ease: [0.5, 0, 0.9, 0.6] } : { duration: 0 }}
-                >
-                  <CartIcon size={30} rolling={rolling} />
-                </motion.span>
-                <span className="basket-title">
-                  no carrinho
-                  <small>
-                    {inCart.length} de {items.length}
-                  </small>
-                </span>
-              </div>
-
-              <ul className="basket-items">
-                <AnimatePresence initial={false}>
-                  {inCart.map((item, index) => (
-                    <motion.li
-                      key={item.id}
-                      layout
-                      initial={{ scale: 0.3, opacity: 0, y: -16 }}
-                      animate={
-                        rolling
-                          ? { x: 360, opacity: 0, transition: { duration: 0.6, delay: index * 0.02 } }
-                          : { scale: 1, opacity: 1, y: 0, x: 0 }
-                      }
-                      exit={{ scale: 0.6, opacity: 0 }}
-                      transition={{ type: 'spring', stiffness: 520, damping: 26, delay: 0.5 }}
-                    >
-                      <button className="chip-item" onClick={() => handleReturn(item)} aria-label={`Devolver ${item.name} à prateleira`}>
-                        <ProductMark name={item.name} size={15} />
-                        <span>{item.name}</span>
-                      </button>
-                    </motion.li>
-                  ))}
-                </AnimatePresence>
-              </ul>
-
-              <div className="basket-finish">
-                <HoldButton label="Segure para finalizar" onComplete={handleFinish} />
-                <span className="finish-note">
-                  {allPicked ? 'a lista vai para o histórico' : 'o que ficou na prateleira fica para a próxima'}
-                </span>
-              </div>
-            </motion.section>
+            <CartSection
+              key="cart"
+              items={inCart}
+              total={items.length}
+              rolling={rolling}
+              allPicked={allPicked}
+              onReturn={handleReturn}
+              onFinish={handleFinish}
+            />
           )}
         </AnimatePresence>
       </div>
@@ -369,7 +334,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
                   fechar
                 </button>
                 <button className="action-delete" onClick={() => handleRemove(actionsFor)}>
-                  tirar da gôndola
+                  apagar item
                 </button>
               </div>
             </motion.div>
@@ -393,7 +358,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
             >
-              <span>{deleted.name} saiu da gôndola</span>
+              <span>{deleted.name} apagado</span>
               <button onClick={handleUndo}>Desfazer</button>
             </motion.div>
           )}

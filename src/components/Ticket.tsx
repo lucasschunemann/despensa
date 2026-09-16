@@ -47,6 +47,9 @@ export function Ticket({
   const timers = useRef<Array<ReturnType<typeof setTimeout>>>([])
   const x = useMotionValue(0)
   const crossed = useRef(false)
+  // arrastar começando em cima de um botão não pode virar toque nele ao soltar
+  const dragged = useRef(false)
+  const wasDrag = () => dragged.current || Math.abs(x.get()) > 2
 
   const spring = reduced
     ? { duration: 0.12 }
@@ -136,6 +139,12 @@ export function Ticket({
         dragMomentum={false}
         animate={phase === 'stamp' ? { y: [0, 3, -1, 0] } : { y: 0 }}
         transition={{ duration: 0.22 }}
+        onPointerDown={() => {
+          dragged.current = false
+        }}
+        onDragStart={() => {
+          dragged.current = true
+        }}
         onDrag={(_, info) => {
           const past = info.offset.x > PAY_THRESHOLD
           if (past !== crossed.current) {
@@ -170,7 +179,10 @@ export function Ticket({
               <small>divisão</small>
               <button
                 className="ticket-split"
-                onClick={() => onCycleSplit(expense)}
+                onClick={() => {
+                  if (wasDrag()) return
+                  onCycleSplit(expense)
+                }}
                 aria-label={`Divisão: ${expense.split === 'meio' ? 'meio a meio' : `só ${expense.split}`}`}
               >
                 {expense.split === 'meio' ? (
@@ -205,7 +217,14 @@ export function Ticket({
           initial={false}
           animate={phase === 'tear' ? 'tear' : 'idle'}
           transition={{ duration: 0.45, ease: [0.4, 0, 0.7, 0.3] }}
-          onClick={pay}
+          onClick={() => {
+            if (wasDrag()) {
+              // tocar com a gaveta aberta só fecha
+              if (!dragged.current) onOpenChange(false)
+              return
+            }
+            pay()
+          }}
           aria-label={`Pagar ${expense.title}`}
         >
           <small>vence</small>

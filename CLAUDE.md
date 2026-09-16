@@ -40,17 +40,20 @@ Base minimalista comum (branco, tinta, Plus Jakarta Sans), mas cada módulo fala
 ação. Referências do Lucas: app de mercado "Fresh" (cartão de produto com canto recortado) e
 cartões de embarque (picote, recortes redondos, código de barras).
 
-- **Início** (`HomeScreen`, tela padrão): saudação pela hora, quem está com o app aberto, e um
+- **Início** (`HomeScreen`): o Lucas aprovou como está. **O app sempre abre aqui**, mesmo que o
+  endereço tenha um módulo; a única exceção é tocar num aviso do celular, que chega com
+  `?abrir=<módulo>`. Saudação pela hora, quem está com o app aberto, e um
   cartão por módulo já na linguagem dele (prateleira com os emojis do que falta, bilhete preto das
   contas com a próxima a vencer, vidro sobre névoa dos desejos). Tocar no nome do módulo volta
   para cá
-- **Mercado = gôndola de feira** (`Gondola.tsx`): toldo listrado com borda em ondinha que desenrola,
-  produtos em duas colunas sobre tábuas de prateleira, canto recortado com o "+". O emoji do
-  produto sai de um dicionário local (`src/lib/products.ts`), nunca de IA. Adicionar = o produto
-  cai do alto e quica; pegar = voa em arco até o carrinho do topo; o carrinho embaixo guarda os
-  pegos em cinza (tocar devolve à prateleira); finalizar = o carrinho vai embora rodando. Toque
-  longo abre reações e "tirar da gôndola"
-- **Contas = cartão de embarque** (`Ticket.tsx`, `Receipt.tsx`): cada conta pendente é um bilhete
+- **Mercado = lista limpa com emoji** (`Market.tsx`). A gôndola (toldo, prateleiras, cartões em
+  grade) foi testada e **rejeitada pelo Lucas** em 17/09/2026; os emojis ficaram. Cada item é uma
+  linha: emoji numa caixinha (dicionário local `src/lib/products.ts`, nunca IA), nome, quantidade,
+  e o círculo de pegar do lado do polegar. Pegar (tocar ou arrastar à direita) = o check desenha e o
+  emoji voa em arco até o contador do topo; arrastar à esquerda apaga; toque longo reage. Os pegos
+  viram **uma linha só** com os emojis empilhados, que abre para devolver; finalizar = o carrinho
+  sai rodando
+- **Contas = cartão de embarque** (`Ticket.tsx`, `Receipt.tsx`), o módulo preferido do Lucas: cada conta pendente é um bilhete
   preto com canhoto picotado (vencimento) e código de barras estável pelo id. Pagar (tocar no
   canhoto ou arrastar) = laser lê o código, carimbo PAGO bate, canhoto rasga e cai. Paga vira
   bilhete tracejado com carimbo pequeno (tocar desmarca). Lançar = o bilhete "sai da impressora".
@@ -178,8 +181,9 @@ Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em
 
 ## Decisões de interface (16/09/2026)
 - **Campo de adicionar fixo embaixo**. O app tem a altura da área visível (`useViewportFit` via visualViewport), então o teclado encolhe o app em vez de empurrar a tela. Mobile first: alcance do polegar
-- **Mercado**: gôndola em ordem de chegada, pegos vão para o carrinho (ver "Linguagem visual por módulo")
-- **Contas e desejos: apagar é arrastar para a esquerda**, pagar/realizar é arrastar para a direita. No mercado, apagar fica no toque longo. Sempre com desfazer
+- **Mercado**: lista em ordem de chegada, pegos recolhidos numa linha (ver "Linguagem visual por módulo")
+- **Nos três módulos, apagar é arrastar para a esquerda** e pegar/pagar/realizar é arrastar para a direita. Sempre com desfazer
+- **Arrastar nunca vira toque**: começar o arrasto em cima de um botão (canhoto, foto, coração) não aciona o botão ao soltar. Foi um bug real: arrastar para apagar pagava a conta
 - **O avatar de quem adicionou só aparece nos itens do outro**, para tirar ruído repetido
 - **Interruptores** são trilho + bolinha com caixa própria (`.switch`): a bolinha anda dentro do trilho, nunca por cima do texto
 - Cor e tema: ver Branding (monocromático, só claro)

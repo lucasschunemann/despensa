@@ -22,20 +22,20 @@ function phrase({ kind, subjects }: Pending, person: string): { title: string; b
     return {
       title: subjects.length === 1 ? `${person} colocou um item na lista` : `${person} colocou ${subjects.length} itens`,
       body: list,
-      url: '/#lista',
+      url: '/?abrir=lista',
     }
   }
   if (kind === 'conta') {
     return {
       title: subjects.length === 1 ? `${person} pagou uma conta` : `${person} pagou ${subjects.length} contas`,
       body: list,
-      url: '/#contas',
+      url: '/?abrir=contas',
     }
   }
   return {
     title: subjects.length === 1 ? `${person} quer uma coisa nova` : `${person} colocou ${subjects.length} desejos`,
     body: list,
-    url: '/#desejos',
+    url: '/?abrir=desejos',
   }
 }
 

@@ -40,7 +40,7 @@ export function Composer({ onAdd, onFocus, onTyping }: Props) {
             if (e.target.value.trim()) onTyping()
           }}
           onFocus={onFocus}
-          placeholder="Pôr na gôndola: 2 leite"
+          placeholder="Adicionar item"
           aria-label="Novo item"
           autoComplete="off"
           autoCorrect="on"

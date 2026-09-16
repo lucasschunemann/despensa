@@ -2039,7 +2039,7 @@ input {
   text-transform: uppercase;
 }
 
-/* ═══ MERCADO: gôndola de feira ═══════════════════════════════════════════ */
+/* ═══ MERCADO ═════════════════════════════════════════════════════════════ */
 .wordmark-button {
   display: flex;
   align-items: center;
@@ -2056,32 +2056,6 @@ input {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-/* listras de toldo com a barra em ondinha: cada onda é uma listra */
-.awning {
-  flex: none;
-  height: 24px;
-  margin: 2px 0 4px;
-  transform-origin: top center;
-  background: repeating-linear-gradient(90deg, var(--ink) 0 18px, #ecece8 18px 36px);
-  -webkit-mask:
-    linear-gradient(#000 0 0) top / 100% 14px no-repeat,
-    radial-gradient(circle 9px at 9px 14px, #000 97%, transparent) 0 0 / 18px 24px repeat-x;
-  mask:
-    linear-gradient(#000 0 0) top / 100% 14px no-repeat,
-    radial-gradient(circle 9px at 9px 14px, #000 97%, transparent) 0 0 / 18px 24px repeat-x;
-  animation: sway 6s ease-in-out 1.2s infinite;
-}
-
-@keyframes sway {
-  0%,
-  100% {
-    transform: skewX(0deg);
-  }
-  50% {
-    transform: skewX(-1.2deg);
-  }
 }
 
 .cart-pill {
@@ -2111,63 +2085,6 @@ input {
   overflow: visible;
 }
 
-.gondola-scroll {
-  padding-top: 14px;
-}
-
-/* prateleiras: produtos em duas colunas; a tábua é desenhada no fundo, a cada fileira */
-.shelves {
-  --tile: 128px;
-  --gap: 30px;
-  list-style: none;
-  margin: 0 0 8px;
-  padding: 0 0 18px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: var(--tile);
-  gap: var(--gap) 12px;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0 calc(var(--tile) + 9px),
-    var(--ink) calc(var(--tile) + 9px) calc(var(--tile) + 13px),
-    #e6e6e2 calc(var(--tile) + 13px) calc(var(--tile) + 18px),
-    transparent calc(var(--tile) + 18px) calc(var(--tile) + var(--gap))
-  );
-}
-
-.product {
-  position: relative;
-  min-width: 0;
-}
-
-.product-face {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 12px 12px 12px 14px;
-  border-radius: 22px;
-  background: #f2f2ef;
-  text-align: left;
-  /* canto de baixo recortado, onde o botão encaixa (como etiqueta de gôndola) */
-  -webkit-mask: radial-gradient(circle 25px at calc(100% - 19px) calc(100% - 19px), transparent 24px, #000 25px);
-  mask: radial-gradient(circle 25px at calc(100% - 19px) calc(100% - 19px), transparent 24px, #000 25px);
-  transition: background 300ms ease;
-}
-
-.product.is-fresh .product-face {
-  background: #e7e7e2;
-}
-
-.product-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-  margin-bottom: auto;
-}
-
 .product-emoji {
   line-height: 1;
 }
@@ -2175,80 +2092,151 @@ input {
 .product-initial {
   display: grid;
   place-items: center;
+  width: 1.7em;
+  height: 1.7em;
   border-radius: 50%;
   background: var(--bg);
   color: var(--text-2);
   font-weight: 700;
+  line-height: 1;
 }
 
-.product-name {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+/* linha do item: emoji numa caixinha, nome, e o "pegar" do lado do polegar */
+.mlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mrow {
+  position: relative;
   overflow: hidden;
-  padding-right: 34px;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.22;
-  letter-spacing: -0.005em;
 }
 
-.product-qty {
-  margin-top: 5px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--ink);
-  color: var(--bg);
-  font-family: var(--font-numeric);
-  font-size: 11px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.product-notch {
+.mrow-behind {
   position: absolute;
+  top: 4px;
+  bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mrow-behind.is-pick {
+  left: 0;
   right: 0;
-  bottom: 0;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #f2f2ef;
+  padding-left: 16px;
+  background: var(--field);
+  color: var(--ink);
   pointer-events: none;
 }
 
-.product-notch svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 2.2;
-  stroke-linecap: round;
+.mrow-behind.is-delete {
+  right: 0;
+  width: 92px;
+  justify-content: center;
+  background: var(--danger);
+  color: #fff;
 }
 
-/* ─── Carrinho ──────────────────────────────────────────────────────────── */
-.basket {
-  margin: 6px 0 12px;
-  padding: 16px 14px 14px;
-  border-radius: 24px;
-  border: 1.5px solid var(--ink);
+.mrow-face {
+  position: relative;
+  background: var(--bg);
+  touch-action: pan-y;
+}
+
+.mrow-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 66px;
+  padding: 8px 2px;
+  text-align: left;
+}
+
+.mrow-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #f2f2ef;
+}
+
+.mrow.is-fresh .mrow-mark {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.mrow-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 0;
+}
+
+/* a régua só existe na coluna do texto, alinhada ao nome, não embaixo do emoji */
+.mrow + .mrow .mrow-text::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 60px;
+  right: 0;
+  border-top: 1px solid var(--line);
+}
+
+.mrow-name {
+  position: relative;
+  align-self: flex-start;
+  max-width: 100%;
+  font-size: 16.5px;
+  font-weight: 550;
+  letter-spacing: -0.005em;
+}
+
+.mrow-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.mrow-qty {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+/* carrinho: uma linha, emojis empilhados; abre para devolver */
+.cart {
+  margin: 14px 0 12px;
+  padding: 4px 14px 16px;
+  border-radius: 22px;
+  background: #f5f5f3;
   overflow: hidden;
 }
 
-.basket-head {
+.cart-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  text-align: left;
 }
 
-.basket-cart {
+.cart-head-icon {
   display: flex;
   color: var(--ink);
 }
 
-.basket-title {
+.cart-head-text {
   display: flex;
   flex-direction: column;
   font-size: 15px;
@@ -2256,54 +2244,97 @@ input {
   line-height: 1.15;
 }
 
-.basket-title small {
+.cart-head-text small {
   font-family: var(--font-numeric);
   font-size: 12px;
   font-weight: 500;
   color: var(--text-3);
 }
 
-.basket-items {
+.cart-stack {
+  display: flex;
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.cart-stack-item {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: -9px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 2px #f5f5f3;
+}
+
+.cart-chevron {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--text-3);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cart-items {
   list-style: none;
   margin: 0;
   padding: 0;
+  overflow: hidden;
+}
+
+.cart-item {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chip-item {
-  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  max-width: 100%;
-  padding: 6px 11px 6px 8px;
-  border-radius: 999px;
-  background: var(--field);
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 0;
+  text-align: left;
 }
 
-.chip-item .product-emoji {
-  filter: grayscale(1);
-  opacity: 0.8;
+.cart-item-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--bg);
 }
 
-.chip-item span:last-child {
+.cart-item-mark .product-emoji,
+.cart-stack-item .product-emoji {
+  filter: grayscale(0.7);
+}
+
+.cart-item-name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 14px;
+  color: var(--text-3);
   text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
 }
 
-.basket-finish {
+.cart-item-back {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.cart-finish {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 10px;
+}
+
+.cart-finish .button-hold {
+  background: var(--bg);
 }
 
 .flight {
@@ -2315,29 +2346,9 @@ input {
   height: 36px;
   display: grid;
   place-items: center;
-  font-size: 30px;
+  font-size: 26px;
   line-height: 1;
   pointer-events: none;
-}
-
-.empty-gondola {
-  padding: 9vh 8px 0;
-  text-align: center;
-}
-
-.empty-shelf {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 6px;
-  margin: 0 20px 26px;
-  padding-bottom: 6px;
-  border-bottom: 4px solid var(--ink);
-  box-shadow: 0 5px 0 #e6e6e2;
-}
-
-.empty-shelf span {
-  line-height: 0;
 }
 
 .composer-emoji {
@@ -2433,6 +2444,12 @@ input {
 .wish-float {
   position: relative;
   border-radius: 26px;
+  /* a camada que flutua é transparente: não pode engolir o toque no "Apagar" que fica atrás */
+  pointer-events: none;
+}
+
+.wish-float > * {
+  pointer-events: auto;
 }
 
 .wishes-app .wish-face {
@@ -2829,7 +2846,6 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .awning,
   .home-mist,
   .pulse-dot {
     animation: none;

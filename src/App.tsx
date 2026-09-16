@@ -158,9 +158,16 @@ function Room({
   person: string
   onSwitchPerson: () => void
 }) {
+  // o app sempre abre no início. A exceção é tocar num aviso do celular, que chega com
+  // ?abrir=contas (por exemplo) e cai direto no módulo do aviso.
   const [view, setView] = useState<View>(() => {
-    const hash = location.hash.slice(1)
-    return hash === 'contas' || hash === 'desejos' || hash === 'lista' ? hash : 'inicio'
+    const url = new URL(location.href)
+    const target = url.searchParams.get('abrir')
+    if (target) {
+      url.searchParams.delete('abrir')
+      history.replaceState(null, '', url)
+    }
+    return target === 'contas' || target === 'desejos' || target === 'lista' ? target : 'inicio'
   })
   const goHome = () => {
     setMonth(monthKey())
@@ -174,10 +181,10 @@ function Room({
   const wishes = useWishes(roomId, person)
   const presence = usePresence(roomId, person)
 
-  // o módulo fica na URL, então recarregar (ou abrir o atalho) volta onde estava
+  // restos do tempo em que o módulo ficava no endereço (#contas etc.)
   useEffect(() => {
-    history.replaceState(null, '', `${location.pathname}${location.search}#${view}`)
-  }, [view])
+    if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`)
+  }, [])
 
   return (
     <>

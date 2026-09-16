@@ -20,12 +20,12 @@ dados com o Safari, então o código precisa estar na URL salva.
 
 ## Início e módulos
 
-O app abre no **início**: um cartão por módulo, cada um já com a cara do seu. Tocar abre o módulo;
-tocar no nome do módulo (com a setinha) volta. O menu (topo direito) também troca entre eles.
-O módulo aberto fica na URL (`#inicio` / `#lista` / `#desejos` / `#contas`).
+O app **sempre abre no início**: um cartão por módulo, cada um já com a cara do seu. Tocar abre o
+módulo; tocar no nome do módulo (com a setinha) volta. O menu (topo direito) também troca entre eles.
+Tocar num aviso do celular abre direto no módulo do aviso.
 
-- **Mercado** é uma gôndola: o produto cai na prateleira, voa para o carrinho quando é pego,
-  e o carrinho vai embora rodando quando a compra fecha. Toque longo: reagir ou tirar da gôndola.
+- **Mercado** é uma lista limpa com o emoji de cada produto. Pegar faz o emoji voar até o
+  contador do topo; os pegos ficam numa linha só, que abre para devolver.
 - **Contas** são cartões de embarque: pagar lê o código de barras, carimba e rasga o canhoto.
 - **Desejos** são vidro sobre névoa: o desejo realizado vira luz.
 
@@ -117,7 +117,7 @@ Onde fica cada coisa:
 | Reações entre vocês | `src/components/ReactionBurst.tsx` |
 | Tela dos desejos | `src/components/WishesScreen.tsx` e `WishCard.tsx` |
 | Tela inicial | `src/components/HomeScreen.tsx` |
-| Gôndola (toldo, prateleira, produto, carrinho) | `src/components/Gondola.tsx` |
+| Linha do mercado e carrinho | `src/components/Market.tsx` |
 | Emoji de cada produto | `src/lib/products.ts` |
 | Bilhete da conta e cupom do mês | `src/components/Ticket.tsx`, `Receipt.tsx`, `Barcode.tsx` |
 | Névoa, faíscas e corações dos desejos | `src/components/Ether.tsx` |
