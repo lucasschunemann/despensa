@@ -4,11 +4,13 @@ import type { ItemsStore } from '../hooks/useItems'
 import type { Presence } from '../hooks/usePresence'
 import { useViewportFit } from '../hooks/useViewportFit'
 import { haptic } from '../lib/haptics'
-import { prefs, useSoundOn } from '../lib/prefs'
+import { formatBRL } from '../lib/money'
 import { sound } from '../lib/sound'
 import type { Item } from '../lib/types'
+import { AppHeader } from './AppHeader'
 import { Avatar } from './Avatar'
 import { Composer } from './Composer'
+import { MarketBill } from './MarketBill'
 import { CompleteOverlay } from './CompleteOverlay'
 import { HoldButton } from './HoldButton'
 import { ItemRow } from './ItemRow'
@@ -19,10 +21,12 @@ interface Props {
   store: ItemsStore
   me: string
   presence: Presence
-  onSwitchPerson: () => void
+  onOpenMenu: () => void
+  /** lança o valor da compra nas contas do mês; ausente no modo demonstração */
+  onRegisterMarket?: (amountCents: number) => void
 }
 
-export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
+export function ListScreen({ store, me, presence, onOpenMenu, onRegisterMarket }: Props) {
   const {
     items,
     arrivals,
@@ -38,12 +42,12 @@ export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
   } = store
   const [openId, setOpenId] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
-  const [pulse, setPulse] = useState(0)
   const [tomatoes, setTomatoes] = useState(0)
+  const [askAmount, setAskAmount] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const [deleted, setDeleted] = useState<Item | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const soundOn = useSoundOn()
   const nearBottom = useRef(true)
   // só a primeira leva entra em cascata; depois disso cada item entra sozinho
   const firstPaint = useRef(true)
@@ -104,7 +108,6 @@ export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
     if (item.status === 'pendente') {
       sound.pick()
       haptic('medium')
-      setPulse((n) => n + 1)
     } else {
       sound.undo()
       haptic('light')
@@ -132,53 +135,7 @@ export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1 className="wordmark">despensa</h1>
-        <div className="header-actions">
-          <AnimatePresence>
-            {presence.online.map((person) => (
-              <motion.span
-                key={person}
-                className="presence"
-                title={`${person} está com o app aberto`}
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.6 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-              >
-                <Avatar person={person} size={24} />
-              </motion.span>
-            ))}
-          </AnimatePresence>
-          <button
-            className="icon-button"
-            aria-pressed={soundOn}
-            aria-label={soundOn ? 'Desligar som' : 'Ligar som'}
-            onClick={() => {
-              const next = !soundOn
-              prefs.setSoundOn(next)
-              if (next) {
-                sound.unlock()
-                sound.pick()
-              }
-              haptic('light')
-            }}
-          >
-            {soundOn ? <SpeakerOn /> : <SpeakerOff />}
-          </button>
-          <button className="chip" onClick={onSwitchPerson}>
-            <motion.span
-              key={pulse}
-              className="chip-avatar"
-              animate={{ scale: pulse === 0 ? 1 : [1, 1.22, 0.96, 1] }}
-              transition={{ duration: 0.42, ease: 'easeOut' }}
-            >
-              <Avatar person={me} size={22} />
-            </motion.span>
-            {me}
-          </button>
-        </div>
-      </header>
+      <AppHeader title="despensa" presence={presence} onOpenMenu={onOpenMenu} />
 
       {items.length > 0 && (
         <div className="progress" aria-hidden>
@@ -319,6 +276,7 @@ export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
                   haptic('success')
                   sound.complete()
                   finishShopping()
+                  if (onRegisterMarket) setAskAmount(true)
                 }}
               />
               <span className="finish-note">
@@ -331,6 +289,17 @@ export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
 
       <div className="dock">
         <AnimatePresence>
+          {notice && (
+            <motion.div
+              className="toast"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ type: 'spring', stiffness: 520, damping: 38 }}
+            >
+              <span>{notice}</span>
+            </motion.div>
+          )}
           {deleted && (
             <motion.div
               className="toast"
@@ -367,6 +336,19 @@ export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
             </motion.p>
           )}
         </AnimatePresence>
+        <AnimatePresence>
+          {askAmount && onRegisterMarket && (
+            <MarketBill
+              onClose={() => setAskAmount(false)}
+              onConfirm={(cents) => {
+                onRegisterMarket(cents)
+                setAskAmount(false)
+                setNotice(`${formatBRL(cents)} lançado nas contas do mês`)
+                setTimeout(() => setNotice(null), 4000)
+              }}
+            />
+          )}
+        </AnimatePresence>
         <Composer onAdd={handleAdd} onFocus={() => scrollToEnd()} onTyping={presence.notifyTyping} />
       </div>
       <AnimatePresence>
@@ -376,23 +358,5 @@ export function ListScreen({ store, me, presence, onSwitchPerson }: Props) {
       </AnimatePresence>
       <CompleteOverlay show={celebrating} />
     </div>
-  )
-}
-
-function SpeakerOn() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path d="M11 5 6.5 9H3v6h3.5L11 19V5Z" />
-      <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" />
-    </svg>
-  )
-}
-
-function SpeakerOff() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path d="M11 5 6.5 9H3v6h3.5L11 19V5Z" />
-      <path d="M16 10l4 4M20 10l-4 4" />
-    </svg>
   )
 }

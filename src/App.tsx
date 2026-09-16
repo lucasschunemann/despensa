@@ -1,10 +1,14 @@
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Avatar, Mark } from './components/Avatar'
+import { FinanceScreen } from './components/FinanceScreen'
 import { ListScreen } from './components/ListScreen'
+import { MenuSheet, type View } from './components/MenuSheet'
+import { useExpenses } from './hooks/useExpenses'
 import { useItems } from './hooks/useItems'
 import { usePresence } from './hooks/usePresence'
 import { haptic } from './lib/haptics'
+import { monthKey } from './lib/month'
 import { joinRoom } from './lib/room'
 import { sound } from './lib/sound'
 import { load, save } from './lib/storage'
@@ -150,15 +154,69 @@ function Room({
   person: string
   onSwitchPerson: () => void
 }) {
-  const store = useItems(roomId, person)
+  const [view, setView] = useState<View>(() => (location.hash === '#contas' ? 'contas' : 'lista'))
+  const [month, setMonth] = useState(monthKey)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const items = useItems(roomId, person)
+  const expenses = useExpenses(roomId, person, month)
   const presence = usePresence(roomId, person)
+
+  // o módulo fica na URL, então recarregar (ou abrir o atalho) volta onde estava
+  useEffect(() => {
+    history.replaceState(null, '', `${location.pathname}${location.search}#${view}`)
+  }, [view])
+
   return (
-    <ListScreen
-      store={store}
-      me={person}
-      presence={presence}
-      onSwitchPerson={onSwitchPerson}
-    />
+    <>
+      <AnimatePresence mode="wait" initial={false}>
+        {view === 'lista' ? (
+          <motion.div
+            key="lista"
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 16 }}
+            transition={{ type: 'spring', stiffness: 460, damping: 38 }}
+          >
+            <ListScreen
+              store={items}
+              me={person}
+              presence={presence}
+              onOpenMenu={() => setMenuOpen(true)}
+              onRegisterMarket={(amountCents) =>
+                expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
+              }
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="contas"
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ type: 'spring', stiffness: 460, damping: 38 }}
+          >
+            <FinanceScreen
+              store={expenses}
+              me={person}
+              month={month}
+              presence={presence}
+              onMonthChange={setMonth}
+              onOpenMenu={() => setMenuOpen(true)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <MenuSheet
+        open={menuOpen}
+        view={view}
+        me={person}
+        onClose={() => setMenuOpen(false)}
+        onChangeView={setView}
+        onSwitchPerson={onSwitchPerson}
+      />
+    </>
   )
 }
 

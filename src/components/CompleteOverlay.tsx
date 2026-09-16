@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 
-export function CompleteOverlay({ show }: { show: boolean }) {
+export function CompleteOverlay({ show, label = 'Tudo pegado' }: { show: boolean; label?: string }) {
   const reduced = useReducedMotion()
 
   return (
@@ -39,7 +39,7 @@ export function CompleteOverlay({ show }: { show: boolean }) {
                 transition={{ duration: reduced ? 0 : 0.34, delay: reduced ? 0 : 0.22, ease: [0.3, 0.9, 0.3, 1] }}
               />
             </svg>
-            <p>Tudo pegado</p>
+            <p>{label}</p>
           </motion.div>
         </motion.div>
       )}

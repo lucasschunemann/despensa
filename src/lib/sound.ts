@@ -117,6 +117,20 @@ export const sound = {
     play((c, now) => {
       click(c, now, { freq: 520, decay: 0.045, gain: 0.3 })
     }),
+  // conta paga: dois tiques secos e uma nota curta subindo, como uma maquininha
+  cash: () =>
+    play((c, now) => {
+      click(c, now, { freq: 2200, decay: 0.03, gain: 0.32, q: 1.7 })
+      click(c, now + 0.055, { freq: 3100, decay: 0.025, gain: 0.26, q: 1.8 })
+      tone(c, now + 0.1, 1318.5, 0.16, 0.1)
+    }),
+  // acerto de contas: nota descendo, "zerou"
+  settle: () =>
+    play((c, now) => {
+      click(c, now, { freq: 1600, decay: 0.035, gain: 0.3 })
+      tone(c, now + 0.07, 880, 0.14, 0.09)
+      tone(c, now + 0.19, 587.3, 0.2, 0.08)
+    }),
   complete: () =>
     play((c, now) => {
       click(c, now, { freq: 2400, decay: 0.03, gain: 0.3, q: 1.6 })

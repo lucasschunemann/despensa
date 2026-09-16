@@ -189,6 +189,38 @@ Para usar no mercado, fora de casa, o app precisa ser publicado na internet. Iss
 
 ---
 
+---
+
+## Quando eu avisar que tem banco novo
+
+Às vezes uma funcionalidade nova precisa de tabelas novas. Aí você repete o Passo 3, só que com o
+arquivo novo. **É sempre o mesmo caminho:**
+
+1. Abra a pasta das migrations no GitHub:
+   **https://github.com/lucasschunemann/despensa/tree/main/supabase/migrations**
+2. Clique no arquivo que eu te indicar (é o de nome mais recente).
+3. Copie o conteúdo pelo botão de **dois quadradinhos**.
+4. No Supabase: **SQL Editor** → **New query** → cole → **Run**.
+5. Esperado: **Success. No rows returned**.
+
+Já rodou e não tem certeza? Rodar de novo só devolve `already exists`, que quer dizer "já estava
+feito". Não estraga nada.
+
+### Módulo financeiro (arquivo `20260916000000_financeiro.sql`)
+
+Esse é o das contas do mês. Sem ele, a aba **contas do mês** abre com erro vermelho na tela.
+Depois de rodar, ele cria:
+
+| Tabela | Para quê |
+|---|---|
+| `expenses` | as contas de cada mês |
+| `recurrences` | as contas marcadas como "todo mês" |
+| `recurrence_runs` | controle para a conta do mês não ser lançada duas vezes |
+
+Para ver as contas cruas depois: **Table Editor** → `expenses`.
+
+---
+
 ## Deu problema? Procure aqui
 
 | O que aparece | O que quer dizer | O que fazer |
@@ -200,6 +232,7 @@ Para usar no mercado, fora de casa, o app precisa ser publicado na internet. Iss
 | "Invalid API key" | A chave está errada | Confira se colou a `publishable` inteira (Passo 5) |
 | Bolinha **vermelha** ou item só aparece depois de recarregar | A sincronização ao vivo caiu | Recarregue a página. Se continuar, confira sua internet |
 | "Request rate limit reached" | Muitas entradas novas da mesma internet em 1 hora (limite de 30) | Espere uma hora. Acontece mais quando se testa muito com janela anônima |
+| "Could not find the function public.ensure_month" ou erro vermelho na aba contas | O banco do módulo financeiro não foi criado | Rode a migration `20260916000000_financeiro.sql` (seção acima) |
 | No painel, o projeto aparece como **Paused** (pausado) | No plano grátis, projeto sem uso por uma semana é pausado | Clique em **Restore project** (restaurar) e espere uns minutos. Nada é perdido |
 
 ---

@@ -9,7 +9,8 @@ Lista de compras compartilhada (Lucas + Bela). Vite + React + TypeScript, Supaba
 Resumo para quem já conhece:
 
 1. Crie um projeto no Supabase e ligue **Authentication → Sign In / Providers → Allow anonymous sign-ins**.
-2. No **SQL Editor**, rode `supabase/migrations/20260915000000_init.sql`.
+2. No **SQL Editor**, rode as migrations de `supabase/migrations/` em ordem de nome
+   (`20260915000000_init.sql`, depois `20260916000000_financeiro.sql`).
 3. Crie a sala e guarde o código: `insert into public.rooms default values returning code;`
 4. `cp .env.example .env` e preencha com a Project URL e a publishable key (botão **Connect**).
 5. `npm install && npm run dev`, depois abra `/?sala=<code>`.
@@ -17,7 +18,27 @@ Resumo para quem já conhece:
 No iOS, adicione à Tela de Início **a partir do link com `?sala=`**: o app da tela inicial não compartilha
 dados com o Safari, então o código precisa estar na URL salva.
 
-## Como funciona
+## Os dois módulos
+
+O menu (botão no topo direito) troca entre **lista de mercado** e **contas do mês**. O módulo aberto
+fica na URL (`#lista` / `#contas`), então recarregar volta onde estava.
+
+## Contas do mês
+
+- **Lançar**: um campo só, igual à lista. `luz 180`, `aluguel 1.850 dia 10`, `internet r$ 129,90`.
+  O valor é o último número; `dia N` vira o vencimento; o resto é o nome.
+- **Todo mês**: ligue o botão antes de lançar e a conta volta sozinha todo mês. Se você apagar a
+  conta de um mês, ela não ressuscita naquele mês.
+- **Pagar**: toque na conta, ou arraste para a direita. Chove dinheiro na tela.
+- **Quem pagou** fica registrado com o avatar de quem marcou.
+- **Divisão**: o chip `½` divide ao meio. Toque nele para alternar entre meio a meio, só sua, só dela.
+- **Quem deve a quem**: o resumo calcula, considerando só o que já foi pago e ainda não foi acertado.
+  O botão **acertamos** zera a conta entre vocês.
+- **Mercado vira conta**: ao finalizar uma compra na lista, o app pergunta quanto deu e lança a conta
+  "Mercado" do mês, já paga.
+- **Mês fechado**: quando não falta nada, a tela comemora.
+
+## Como funciona (lista de mercado)
 
 - **Entrada**: um campo só, fixo embaixo. O app tem exatamente a altura da área visível, então o
   teclado não empurra a tela: ele encolhe o app e a lista continua inteira acima do teclado.
@@ -55,8 +76,9 @@ dados com o Safari, então o código precisa estar na URL salva.
 
 `npm run dev` e abra **`http://localhost:5173/?demo=1`**: roda a interface com itens de mentira,
 sem Supabase e sem tocar na lista real. Serve para ajustar animação e layout à vontade.
-Variações: `&vazio=1` (lista vazia), `&quem=1` (tela de quem é você), `&digitando=1` (aviso de
-"está escrevendo"). Esse modo só existe em desenvolvimento.
+Variações: `&contas=1` (módulo financeiro), `&menu=1` (menu aberto), `&vazio=1` (sem dados),
+`&quem=1` (tela de quem é você), `&digitando=1` (aviso de "está escrevendo"). Esse modo só existe
+em desenvolvimento.
 
 Onde fica cada coisa:
 
@@ -73,6 +95,13 @@ Onde fica cada coisa:
 | Tela da lista, desfazer, finalizar | `src/components/ListScreen.tsx` |
 | Comemoração da lista zerada | `src/components/CompleteOverlay.tsx` |
 | Botão de segurar para finalizar | `src/components/HoldButton.tsx` |
+| Menu dos módulos | `src/components/MenuSheet.tsx` |
+| Tela das contas | `src/components/FinanceScreen.tsx` |
+| Linha da conta | `src/components/ExpenseRow.tsx` |
+| Dinheiro voando e valor animado | `src/components/Money.tsx` |
+| Contas do mês (dados) | `src/hooks/useExpenses.ts` |
+| Leitura de "luz 180" e formatação | `src/lib/money.ts` |
+| Quem deve a quem | `src/lib/balance.ts` |
 | Ícones do app | `scripts/icons.mjs` (rode `node scripts/icons.mjs` depois de mudar) |
 
 ## Scripts

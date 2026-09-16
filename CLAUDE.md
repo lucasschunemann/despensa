@@ -37,6 +37,22 @@ Isso reforça a decisão já tomada sobre o fluxo de entrada: interface enxuta e
 
 Os três momentos de feedback (adicionar, marcar como pegado, lista completa) são onde essa direção de design se materializa de fato. O restante da interface deve ficar deliberadamente quieto para que esses três momentos se destaquem por contraste.
 
+## Módulo financeiro (16/09/2026)
+Segundo módulo do app: contas da casa, para os mesmos dois. Mesma régua de design da lista
+(campo único embaixo, arrastar para os dois lados, molas macias, tudo em caixa baixa).
+
+- **Menu** (`MenuSheet`): folha que sobe de baixo, arrastável, com os dois módulos, "você é X" e o som.
+  O módulo aberto fica no hash da URL
+- **Dados**: `expenses` (conta de um mês), `recurrences` (o que se repete) e `recurrence_runs`
+  (garante um lançamento por mês, e conta apagada não volta). Valores sempre em centavos
+- **Divisão**: `split` é `'meio'` ou o nome de uma pessoa. O acerto entre os dois considera só o que
+  já foi pago e ainda não foi acertado (`settled`), e `settle_month` zera o mês
+- **Entrada**: um campo só, `luz 180`, `aluguel 1.850 dia 10`. O valor é o último número do texto
+- **Mercado vira conta**: ao finalizar a compra, a lista pergunta o valor e lança "Mercado" já paga
+- **Animações**: dinheiro voando ao pagar (`MoneyRain`), valor que conta sozinho (`Money`), régua de
+  progresso do mês, mês deslizando na troca, "mês fechado" ao zerar
+- Fora de escopo por enquanto: categorias, gráficos, orçamento por categoria, exportação
+
 ## Dados por item
 - Nome (texto livre)
 - Quantidade
