@@ -9,12 +9,17 @@ export function parseEntry(raw: string): { name: string; quantity: string | null
   if (!text) return null
 
   const lead = text.match(LEADING)
-  if (lead) return { name: lead[2], quantity: normalize(lead[1]) }
+  if (lead) return { name: capitalize(lead[2]), quantity: normalize(lead[1]) }
 
   const trail = text.match(TRAILING)
-  if (trail) return { name: trail[1], quantity: normalize(trail[2]) }
+  if (trail) return { name: capitalize(trail[1]), quantity: normalize(trail[2]) }
 
-  return { name: text, quantity: null }
+  return { name: capitalize(text), quantity: null }
+}
+
+// No computador ninguém digita maiúscula na pressa; no celular o teclado já faz isso.
+function capitalize(name: string): string {
+  return name.charAt(0).toUpperCase() + name.slice(1)
 }
 
 function normalize(q: string): string {

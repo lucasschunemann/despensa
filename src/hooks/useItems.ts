@@ -3,11 +3,25 @@ import { supabase } from '../lib/supabase'
 import type { Item } from '../lib/types'
 import { uuid } from '../lib/uuid'
 
-type Status = 'loading' | 'live' | 'offline'
+export type Connection = 'connecting' | 'live' | 'offline'
 
-export function useItems(roomId: string, me: string) {
+export interface ItemsStore {
+  items: Item[]
+  ready: boolean
+  connection: Connection
+  error: string | null
+  clearError: () => void
+  add: (name: string, quantity: string | null) => void
+  toggle: (item: Item) => void
+  remove: (item: Item) => void
+  restore: (item: Item) => void
+  finishShopping: () => void
+}
+
+export function useItems(roomId: string, me: string): ItemsStore {
   const [items, setItems] = useState<Item[]>([])
-  const [status, setStatus] = useState<Status>('loading')
+  const [ready, setReady] = useState(false)
+  const [connection, setConnection] = useState<Connection>('connecting')
   const [error, setError] = useState<string | null>(null)
   // Inserts otimistas ainda não confirmados: um refetch no meio não pode apagá-los.
   const pending = useRef(new Map<string, Item>())
@@ -18,10 +32,14 @@ export function useItems(roomId: string, me: string) {
       .select('*')
       .eq('room_id', roomId)
       .order('created_at')
-    if (error) return setError(error.message)
+    if (error) {
+      setError(error.message)
+      return
+    }
     const server = data as Item[]
     const ids = new Set(server.map((i) => i.id))
     setItems([...server, ...[...pending.current.values()].filter((i) => !ids.has(i.id))])
+    setReady(true)
   }, [roomId])
 
   useEffect(() => {
@@ -53,10 +71,10 @@ export function useItems(roomId: string, me: string) {
       })
       .subscribe((s) => {
         if (s === 'SUBSCRIBED') {
-          setStatus('live')
+          setConnection('live')
           void refetch() // cobre qualquer evento perdido enquanto estava desconectado
         } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT' || s === 'CLOSED') {
-          setStatus('offline')
+          setConnection('offline')
         }
       })
 
@@ -72,7 +90,7 @@ export function useItems(roomId: string, me: string) {
   }, [roomId, refetch])
 
   const add = useCallback(
-    async (name: string, quantity: string | null) => {
+    (name: string, quantity: string | null) => {
       const item: Item = {
         id: uuid(),
         room_id: roomId,
@@ -86,23 +104,21 @@ export function useItems(roomId: string, me: string) {
       pending.current.set(item.id, item)
       setItems((prev) => [...prev, item])
 
-      const { error } = await supabase.from('items').insert({
-        id: item.id,
-        room_id: roomId,
-        name,
-        quantity,
-        added_by: me,
-      })
-      pending.current.delete(item.id)
-      if (error) {
-        setItems((prev) => prev.filter((i) => i.id !== item.id))
-        setError(error.message)
-      }
+      void supabase
+        .from('items')
+        .insert({ id: item.id, room_id: roomId, name, quantity, added_by: me })
+        .then(({ error }) => {
+          pending.current.delete(item.id)
+          if (error) {
+            setItems((prev) => prev.filter((i) => i.id !== item.id))
+            setError(error.message)
+          }
+        })
     },
     [roomId, me],
   )
 
-  const toggle = useCallback(async (item: Item) => {
+  const toggle = useCallback((item: Item) => {
     const picked = item.status === 'pendente'
     const patch = {
       status: picked ? 'pegado' : 'pendente',
@@ -110,27 +126,75 @@ export function useItems(roomId: string, me: string) {
     } as const
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...patch } : i)))
 
-    const { error } = await supabase.from('items').update(patch).eq('id', item.id)
-    if (error) {
-      setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)))
-      setError(error.message)
-    }
+    void supabase
+      .from('items')
+      .update(patch)
+      .eq('id', item.id)
+      .then(({ error }) => {
+        if (error) {
+          setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)))
+          setError(error.message)
+        }
+      })
   }, [])
 
-  const remove = useCallback(async (item: Item) => {
+  const remove = useCallback((item: Item) => {
     setItems((prev) => prev.filter((i) => i.id !== item.id))
-    const { error } = await supabase.from('items').delete().eq('id', item.id)
-    if (error) {
-      setItems((prev) => [...prev, item])
-      setError(error.message)
-    }
+    void supabase
+      .from('items')
+      .delete()
+      .eq('id', item.id)
+      .then(({ error }) => {
+        if (error) {
+          setItems((prev) => [...prev, item])
+          setError(error.message)
+        }
+      })
   }, [])
 
-  const finishShopping = useCallback(async () => {
-    const { error } = await supabase.rpc('finish_shopping', { p_room: roomId })
-    if (error) setError(error.message)
-    await refetch()
+  // volta um item apagado exatamente como estava (inclusive o id)
+  const restore = useCallback((item: Item) => {
+    pending.current.set(item.id, item)
+    setItems((prev) => [...prev, item])
+
+    void supabase
+      .from('items')
+      .insert({
+        id: item.id,
+        room_id: item.room_id,
+        name: item.name,
+        quantity: item.quantity,
+        added_by: item.added_by,
+        status: item.status,
+        created_at: item.created_at,
+        picked_at: item.picked_at,
+      })
+      .then(({ error }) => {
+        pending.current.delete(item.id)
+        if (error) {
+          setItems((prev) => prev.filter((i) => i.id !== item.id))
+          setError(error.message)
+        }
+      })
+  }, [])
+
+  const finishShopping = useCallback(() => {
+    void supabase.rpc('finish_shopping', { p_room: roomId }).then(({ error }) => {
+      if (error) setError(error.message)
+      void refetch()
+    })
   }, [roomId, refetch])
 
-  return { items, status, error, clearError: () => setError(null), add, toggle, remove, finishShopping }
+  return {
+    items,
+    ready,
+    connection,
+    error,
+    clearError: () => setError(null),
+    add,
+    toggle,
+    remove,
+    restore,
+    finishShopping,
+  }
 }

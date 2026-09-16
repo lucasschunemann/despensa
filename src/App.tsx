@@ -1,6 +1,10 @@
+import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { ListScreen } from './components/ListScreen'
+import { useItems } from './hooks/useItems'
+import { haptic } from './lib/haptics'
 import { joinRoom } from './lib/room'
+import { sound } from './lib/sound'
 import { load, save } from './lib/storage'
 import { isConfigured } from './lib/supabase'
 import { PEOPLE } from './lib/types'
@@ -40,20 +44,22 @@ export default function App() {
 
   if (!isConfigured) {
     return (
-      <main className="screen gate">
-        <h1>Despensa</h1>
-        <p>Supabase não configurado. Copie <code>.env.example</code> para <code>.env</code> e preencha.</p>
-      </main>
+      <Gate title="Despensa">
+        <p className="gate-text">
+          Supabase não configurado. Copie <code>.env.example</code> para <code>.env</code> e preencha.
+        </p>
+      </Gate>
     )
   }
 
   if (!code || joinError) {
     return (
-      <main className="screen gate">
-        <h1>Despensa</h1>
-        {joinError && <p className="error">Não deu para entrar: {joinError}</p>}
+      <Gate title="Despensa">
+        <p className="gate-text">
+          {joinError ? `Não deu para entrar: ${joinError}` : 'Cole o código da sala para entrar.'}
+        </p>
         <form
-          className="add"
+          className="gate-form"
           onSubmit={(e) => {
             e.preventDefault()
             const value = new FormData(e.currentTarget).get('code')?.toString().trim()
@@ -67,45 +73,86 @@ export default function App() {
           }}
         >
           <input name="code" placeholder="Código da sala" autoFocus autoComplete="off" />
-          <button type="submit">Entrar</button>
+          <button type="submit" className="button-primary">
+            Entrar
+          </button>
         </form>
-      </main>
+      </Gate>
     )
   }
 
   if (!roomId) {
-    return <main className="screen gate"><p className="empty">Entrando…</p></main>
+    return (
+      <Gate title="Despensa">
+        <motion.p
+          className="gate-text"
+          animate={{ opacity: [0.35, 1, 0.35] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          Entrando…
+        </motion.p>
+      </Gate>
+    )
   }
 
   if (!person) {
     return (
-      <main className="screen gate">
-        <h1>Quem é você?</h1>
+      <Gate title="Quem é você?">
         <div className="people">
-          {PEOPLE.map((p) => (
-            <button
+          {PEOPLE.map((p, i) => (
+            <motion.button
               key={p}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 * i, type: 'spring', stiffness: 420, damping: 30 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => {
+                // primeiro toque da sessão: libera o áudio do navegador
+                sound.unlock()
+                haptic('light')
                 save(PERSON_KEY, p)
                 setPerson(p)
               }}
             >
               {p}
-            </button>
+            </motion.button>
           ))}
         </div>
-      </main>
+      </Gate>
     )
   }
 
+  return <Room roomId={roomId} person={person} onSwitchPerson={() => {
+    save(PERSON_KEY, null)
+    setPerson(null)
+  }} />
+}
+
+function Room({
+  roomId,
+  person,
+  onSwitchPerson,
+}: {
+  roomId: string
+  person: string
+  onSwitchPerson: () => void
+}) {
+  const store = useItems(roomId, person)
+  return <ListScreen store={store} me={person} onSwitchPerson={onSwitchPerson} />
+}
+
+function Gate({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <ListScreen
-      roomId={roomId}
-      me={person}
-      onSwitchPerson={() => {
-        save(PERSON_KEY, null)
-        setPerson(null)
-      }}
-    />
+    <div className="app gate">
+      <motion.div
+        className="gate-inner"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+      >
+        <h1>{title}</h1>
+        {children}
+      </motion.div>
+    </div>
   )
 }

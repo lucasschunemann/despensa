@@ -40,7 +40,12 @@ Os três momentos de feedback (adicionar, marcar como pegado, lista completa) s�
 2. Marcar item como "pegado" (não "comprado") durante a compra
 3. Lista completa/zerada
 
-Formato exato de cada microinteração (animação, som, transição) ainda **não está definido** — é o próximo ponto de design a destrinchar. Não inventar esses detalhes sozinho; hoje existem placeholders simples (`fx-add`, `is-picked`, `fx-complete` em `src/index.css`) para serem substituídos.
+Definidos com o Lucas em 16/09/2026 e implementados:
+1. **Adicionar**: item entra com mola (fade + subida de 8px), lista rola até ele, clique seco grave (850 Hz) e vibração leve
+2. **Pegado**: círculo preenche com mola, check desenha sozinho, risco cresce da esquerda para a direita, tique agudo (2600 Hz) e vibração média. Desmarcar tem som mais grave
+3. **Lista zerada**: overlay com fundo desfocado, círculo e check desenhando-se, dois tiques + nota dó (1046 Hz), vibração de sucesso, some sozinho em 1,9s
+
+Sons são sintetizados em `src/lib/sound.ts` (Web Audio, sem arquivo de áudio), caráter **seco e mecânico**, desligáveis pelo ícone no topo. Vibração (`src/lib/haptics.ts`) é bônus: Android responde, iPhone ignora. Tudo respeita `prefers-reduced-motion`.
 
 ## Referência de experiência (com ressalva)
 Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em tablet de autoatendimento na loja física — não o app mobile, que tem reclamações de confiabilidade em avaliações de usuários. O que vale copiar é a sensação de interação num ambiente controlado (hardware dedicado, sem concorrência de atenção), não o app em si.
@@ -51,6 +56,15 @@ Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em
 - Qualquer autenticação além de acesso por link/código de sala privada
 - Publicação como produto público
 
+## Decisões de interface (16/09/2026)
+- **Campo de adicionar fixo embaixo**, subindo junto com o teclado (`useKeyboardInset` via visualViewport). Mobile first: alcance do polegar
+- **Lista em ordem de chat**: mais antigo em cima, recém-adicionado embaixo, perto do campo. Pegados descem para a seção "No carrinho"
+- **Apagar é arrastar para o lado** (estilo Mail do iPhone), com desfazer de 5 segundos. Sem botão de apagar permanente em cada linha
+- **A inicial de quem adicionou só aparece nos itens do outro**, para tirar ruído repetido
+- Cor de destaque (azul) só em dois lugares: check marcado e botão de enviar
+- Modo claro e escuro automáticos, pelo sistema do aparelho
+
 ## Etapas
 1. ~~Base funcional: projeto + Supabase/Realtime + schema + tela simples (adicionar, lista compartilhada, marcar pegado)~~
-2. Estilo visual e microinterações, seguindo a direção de design acima
+2. ~~Estilo visual e microinterações (animação, som, tátil), PWA instalável~~
+3. Próximos passos possíveis: categorização visual por seção do mercado (depois do item entrar na lista), tela para ver as 3 últimas listas, sugestão de recompra por frequência (segue fora do MVP)
