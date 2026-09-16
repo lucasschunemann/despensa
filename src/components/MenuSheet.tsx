@@ -6,7 +6,7 @@ import { disablePush, enablePush, pushConfigured, pushState, type PushState } fr
 import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
 
-export type View = 'lista' | 'contas' | 'desejos'
+export type View = 'inicio' | 'lista' | 'contas' | 'desejos'
 
 interface Props {
   open: boolean
@@ -21,8 +21,18 @@ interface Props {
 
 const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }> = [
   {
+    id: 'inicio',
+    label: 'início',
+    hint: 'tudo de uma vez',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden>
+        <path d="M4 11.2 12 4.5l8 6.7V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19Z" />
+      </svg>
+    ),
+  },
+  {
     id: 'lista',
-    label: 'lista de mercado',
+    label: 'mercado',
     hint: 'o que falta comprar',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden>
@@ -33,7 +43,7 @@ const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }>
   },
   {
     id: 'desejos',
-    label: 'lista de desejos',
+    label: 'desejos',
     hint: 'o que a gente quer comprar',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden>

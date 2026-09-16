@@ -4,6 +4,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { PersonPicker } from '../App'
 import { FinanceScreen } from '../components/FinanceScreen'
+import { HomeScreen } from '../components/HomeScreen'
 import { ListScreen } from '../components/ListScreen'
 import { MenuSheet, type View } from '../components/MenuSheet'
 import { ReactionBurst } from '../components/ReactionBurst'
@@ -67,7 +68,7 @@ export default function DemoApp() {
   const params = new URLSearchParams(location.search)
   const vazio = params.has('vazio')
   const [view, setView] = useState<View>(
-    params.has('contas') ? 'contas' : params.has('desejos') ? 'desejos' : 'lista',
+    params.has('contas') ? 'contas' : params.has('desejos') ? 'desejos' : params.has('lista') ? 'lista' : 'inicio',
   )
   const [menuOpen, setMenuOpen] = useState(params.has('menu'))
   const [month, setMonth] = useState(MONTH)
@@ -308,12 +309,23 @@ export default function DemoApp() {
 
   return (
     <>
-      {view === 'desejos' ? (
+      {view === 'inicio' ? (
+        <HomeScreen
+          me="Lucas"
+          presence={presence}
+          items={itemsStore}
+          expenses={expensesStore}
+          wishes={wishesStore}
+          onOpen={setView}
+          onOpenMenu={() => setMenuOpen(true)}
+        />
+      ) : view === 'desejos' ? (
         <WishesScreen
           store={wishesStore}
           me="Lucas"
           presence={presence}
           onOpenMenu={() => setMenuOpen(true)}
+          onHome={() => setView('inicio')}
           onRegisterExpense={(title, amountCents) =>
             expensesStore.add({ title, amountCents, dueDay: null }, { paid: true })
           }
@@ -324,6 +336,7 @@ export default function DemoApp() {
           me="Lucas"
           presence={presence}
           onOpenMenu={() => setMenuOpen(true)}
+          onHome={() => setView('inicio')}
           onRegisterMarket={(amountCents) =>
             expensesStore.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
           }
@@ -336,6 +349,7 @@ export default function DemoApp() {
           presence={presence}
           onMonthChange={setMonth}
           onOpenMenu={() => setMenuOpen(true)}
+          onHome={() => setView('inicio')}
         />
       )}
 

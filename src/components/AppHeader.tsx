@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
+import type { ReactNode } from 'react'
 import type { Presence } from '../hooks/usePresence'
 import { Avatar } from './Avatar'
 
@@ -6,13 +7,27 @@ interface Props {
   title: string
   presence: Presence
   onOpenMenu: () => void
+  /** volta para o início; ausente na própria tela inicial */
+  onHome?: () => void
+  /** algo do módulo ao lado do menu (o carrinho, na lista) */
+  accessory?: ReactNode
 }
 
-export function AppHeader({ title, presence, onOpenMenu }: Props) {
+export function AppHeader({ title, presence, onOpenMenu, onHome, accessory }: Props) {
   return (
     <header className="header">
-      <h1 className="wordmark">{title}</h1>
+      {onHome ? (
+        <button className="wordmark-button" onClick={onHome} aria-label="Voltar para o início">
+          <svg viewBox="0 0 24 24" aria-hidden>
+            <path d="M14.5 5.5 8 12l6.5 6.5" />
+          </svg>
+          <h1 className="wordmark">{title}</h1>
+        </button>
+      ) : (
+        <h1 className="wordmark">{title}</h1>
+      )}
       <div className="header-actions">
+        {accessory}
         <AnimatePresence>
           {presence.online.map((person) => (
             <motion.span

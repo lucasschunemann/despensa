@@ -12,6 +12,7 @@ import { PEOPLE } from '../lib/types'
 import { forecast, sortWishes, totalDream, whenLabel } from '../lib/wishes'
 import { AmountPrompt } from './AmountPrompt'
 import { AppHeader } from './AppHeader'
+import { Ether } from './Ether'
 import { InlineAmount } from './InlineAmount'
 import { Money, MoneyRain } from './Money'
 import { Skeleton } from './Skeleton'
@@ -22,11 +23,12 @@ interface Props {
   me: string
   presence: Presence
   onOpenMenu: () => void
+  onHome?: () => void
   /** lança a compra nas contas do mês; ausente no modo demonstração */
   onRegisterExpense?: (title: string, amountCents: number) => void
 }
 
-export function WishesScreen({ store, me, presence, onOpenMenu, onRegisterExpense }: Props) {
+export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegisterExpense }: Props) {
   const {
     wishes,
     savingsCents,
@@ -90,10 +92,8 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onRegisterExpens
   const handleBought = (wish: Wish) => {
     setOpenId(null)
     if (wish.status === 'querendo') {
-      sound.cash()
-      haptic('success')
-      setRain((n) => n + 1)
-      if (onRegisterExpense) setBought(wish)
+      // nos desejos não chove dinheiro: o cartão vira luz (ver WishCard)
+      if (onRegisterExpense) setTimeout(() => setBought(wish), 200)
     } else {
       sound.undo()
       haptic('light')
@@ -112,8 +112,9 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onRegisterExpens
   }
 
   return (
-    <div className="app">
-      <AppHeader title="desejos" presence={presence} onOpenMenu={onOpenMenu} />
+    <div className="app wishes-app">
+      <Ether />
+      <AppHeader title="desejos" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} />
 
       {error && (
         <button className="banner banner-error" onClick={clearError}>
@@ -131,13 +132,23 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onRegisterExpens
         }}
       >
         <motion.section
-          className="summary"
+          className="summary dream"
           layout
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         >
-          <p className="summary-label">sonhar custa</p>
+          <p className="summary-label">
+            <motion.span
+              className="twinkle"
+              animate={{ opacity: [0.35, 1, 0.35], scale: [0.85, 1.1, 0.85], rotate: [0, 45, 90] }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+              aria-hidden
+            >
+              ✦
+            </motion.span>
+            sonhar custa
+          </p>
           <Money className="summary-value" cents={total} />
 
           <p className="summary-line savings">

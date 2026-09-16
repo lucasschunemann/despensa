@@ -4,7 +4,9 @@ import { haptic } from '../lib/haptics'
 import { formatBRL } from '../lib/money'
 import type { Wish } from '../lib/types'
 import { WANT_LABEL } from '../lib/types'
+import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
+import { Hearts, Sparks } from './Ether'
 import { InlineAmount } from './InlineAmount'
 
 const ACTION_WIDTH = 92
@@ -48,6 +50,25 @@ export function WishCard({
   const crossed = useRef(false)
   const file = useRef<HTMLInputElement>(null)
   const [burst, setBurst] = useState(0)
+  // "realizando": o cartão vira luz antes de ir para "já compramos"
+  const [granting, setGranting] = useState(false)
+  const grantTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (grantTimer.current) clearTimeout(grantTimer.current)
+  }, [])
+  useEffect(() => setGranting(false), [wish.status])
+
+  const toggleBought = () => {
+    if (wish.status === 'comprado' || reduced) {
+      onToggleBought(wish)
+      return
+    }
+    setGranting(true)
+    sound.shimmer()
+    haptic('medium')
+    grantTimer.current = setTimeout(() => onToggleBought(wish), 820)
+  }
 
   const loved = people.every((person) => wish.wanted_by.includes(person))
   const mine = wish.wanted_by.includes(me)
@@ -58,6 +79,8 @@ export function WishCard({
     : { type: 'spring' as const, stiffness: 420, damping: 34, mass: 0.8 }
   const buyOpacity = useTransform(x, [0, BUY_THRESHOLD * 0.5, BUY_THRESHOLD], [0, 0.5, 1])
   const buyScale = useTransform(x, [0, BUY_THRESHOLD], [0.6, 1])
+  // o cartão é de vidro: o que fica atrás só aparece enquanto se arrasta
+  const deleteOpacity = useTransform(x, [-ACTION_WIDTH, -14, 0], [1, 0, 0])
 
   useEffect(() => {
     animate(x, open ? -ACTION_WIDTH : 0, spring)
@@ -69,20 +92,34 @@ export function WishCard({
       layout={reduced ? false : 'position'}
       className={`wish${loved ? ' is-loved' : ''}${bought ? ' is-bought' : ''}`}
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={
+        granting
+          ? { opacity: 0, y: -24, scale: 1.04, filter: 'blur(10px)' }
+          : { opacity: bought ? 0.72 : 1, y: 0, scale: 1, filter: 'blur(0px)' }
+      }
       exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.24 } }}
-      transition={{ ...spring, delay: enterDelay }}
+      transition={granting ? { duration: 0.8, ease: [0.3, 0, 0.6, 1] } : { ...spring, delay: enterDelay }}
     >
-      <motion.span className="row-pick" style={{ opacity: buyOpacity, scale: buyScale }} aria-hidden>
-        <svg viewBox="0 0 24 24">
-          <path d="M5 12.5 10 17.5 19 7.5" />
-        </svg>
+      {granting && <Sparks />}
+      <motion.span className="wish-behind" style={{ opacity: buyOpacity, scale: buyScale }} aria-hidden>
+        ✦ realizar
       </motion.span>
 
-      <button className="row-delete" tabIndex={open ? 0 : -1} aria-hidden={!open} onClick={() => onRemove(wish)}>
+      <motion.button
+        className="row-delete"
+        style={{ opacity: deleteOpacity }}
+        tabIndex={open ? 0 : -1}
+        aria-hidden={!open}
+        onClick={() => onRemove(wish)}
+      >
         Apagar
-      </button>
+      </motion.button>
 
+      <motion.div
+        className="wish-float"
+        animate={reduced || bought ? undefined : { y: [0, -3, 0] }}
+        transition={{ duration: 5 + (enterDelay * 100) % 3, repeat: Infinity, ease: 'easeInOut', delay: enterDelay * 8 }}
+      >
       <motion.div
         className="wish-face"
         style={{ x }}
@@ -103,7 +140,7 @@ export function WishCard({
           if (info.offset.x > BUY_THRESHOLD) {
             animate(x, 0, spring)
             onOpenChange(false)
-            onToggleBought(wish)
+            toggleBought()
             return
           }
           const shouldOpen = info.offset.x < -OPEN_THRESHOLD || info.velocity.x < -450
@@ -174,10 +211,11 @@ export function WishCard({
           aria-pressed={mine}
           aria-label={mine ? 'Tirar meu coração' : 'Também quero'}
         >
+          {burst > 0 && <Hearts key={burst} />}
           <motion.svg
             viewBox="0 0 24 24"
             key={burst}
-            animate={burst > 0 && mine === false ? { scale: [1, 1.35, 0.94, 1] } : undefined}
+            animate={burst > 0 ? { scale: [1, 1.35, 0.94, 1] } : undefined}
             transition={{ duration: 0.45 }}
           >
             <path d="M12 20.4 4.6 13a4.7 4.7 0 0 1 6.6-6.7l.8.8.8-.8A4.7 4.7 0 0 1 19.4 13Z" />
@@ -188,6 +226,7 @@ export function WishCard({
             ))}
           </span>
         </button>
+      </motion.div>
       </motion.div>
     </motion.li>
   )

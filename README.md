@@ -18,11 +18,16 @@ Resumo para quem já conhece:
 No iOS, adicione à Tela de Início **a partir do link com `?sala=`**: o app da tela inicial não compartilha
 dados com o Safari, então o código precisa estar na URL salva.
 
-## Os três módulos
+## Início e módulos
 
-O menu (botão no topo direito) troca entre **lista de mercado**, **lista de desejos** e
-**contas do mês**. O módulo aberto fica na URL (`#lista` / `#desejos` / `#contas`), então recarregar
-volta onde estava.
+O app abre no **início**: um cartão por módulo, cada um já com a cara do seu. Tocar abre o módulo;
+tocar no nome do módulo (com a setinha) volta. O menu (topo direito) também troca entre eles.
+O módulo aberto fica na URL (`#inicio` / `#lista` / `#desejos` / `#contas`).
+
+- **Mercado** é uma gôndola: o produto cai na prateleira, voa para o carrinho quando é pego,
+  e o carrinho vai embora rodando quando a compra fecha. Toque longo: reagir ou tirar da gôndola.
+- **Contas** são cartões de embarque: pagar lê o código de barras, carimba e rasga o canhoto.
+- **Desejos** são vidro sobre névoa: o desejo realizado vira luz.
 
 ## Lista de desejos
 
@@ -96,7 +101,7 @@ desejo. Os avisos são juntados numa janela de 12 segundos, para cinco itens vir
 
 `npm run dev` e abra **`http://localhost:5173/?demo=1`**: roda a interface com itens de mentira,
 sem Supabase e sem tocar na lista real. Serve para ajustar animação e layout à vontade.
-Variações: `&contas=1` (financeiro), `&desejos=1` (desejos), `&menu=1` (menu aberto), `&vazio=1` (sem dados),
+Abre no início. Variações: `&lista=1` (mercado), `&contas=1` (financeiro), `&desejos=1` (desejos), `&menu=1` (menu aberto), `&vazio=1` (sem dados),
 `&quem=1` (tela de quem é você), `&digitando=1` (aviso de "está escrevendo"). Esse modo só existe
 em desenvolvimento.
 
@@ -111,6 +116,11 @@ Onde fica cada coisa:
 | Palavras com easter egg | `src/lib/eggs.ts` e `src/components/Toss.tsx` |
 | Reações entre vocês | `src/components/ReactionBurst.tsx` |
 | Tela dos desejos | `src/components/WishesScreen.tsx` e `WishCard.tsx` |
+| Tela inicial | `src/components/HomeScreen.tsx` |
+| Gôndola (toldo, prateleira, produto, carrinho) | `src/components/Gondola.tsx` |
+| Emoji de cada produto | `src/lib/products.ts` |
+| Bilhete da conta e cupom do mês | `src/components/Ticket.tsx`, `Receipt.tsx`, `Barcode.tsx` |
+| Névoa, faíscas e corações dos desejos | `src/components/Ether.tsx` |
 | Fila do cofre | `src/lib/wishes.ts` |
 | Foto do desejo | `src/lib/image.ts` |
 | Avisos no celular | `src/lib/push.ts`, `public/push-sw.js`, `supabase/functions/notificar/` |

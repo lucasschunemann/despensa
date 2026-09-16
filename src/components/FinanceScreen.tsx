@@ -6,16 +6,15 @@ import { useViewportFit } from '../hooks/useViewportFit'
 import { summarize } from '../lib/balance'
 import { haptic } from '../lib/haptics'
 import { isCurrentMonth, monthKey, monthLabel, shiftMonth } from '../lib/month'
-import { formatBRL } from '../lib/money'
 import { sound } from '../lib/sound'
 import type { Expense } from '../lib/types'
 import { PEOPLE } from '../lib/types'
 import { AppHeader } from './AppHeader'
-import { Avatar } from './Avatar'
 import { CompleteOverlay } from './CompleteOverlay'
 import { ExpenseComposer } from './ExpenseComposer'
-import { ExpenseRow } from './ExpenseRow'
-import { Money, MoneyRain } from './Money'
+import { MoneyRain } from './Money'
+import { Receipt } from './Receipt'
+import { PaidTicket, Ticket } from './Ticket'
 import { Skeleton } from './Skeleton'
 
 interface Props {
@@ -25,9 +24,10 @@ interface Props {
   presence: Presence
   onMonthChange: (month: string) => void
   onOpenMenu: () => void
+  onHome?: () => void
 }
 
-export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpenMenu }: Props) {
+export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpenMenu, onHome }: Props) {
   const {
     expenses,
     ready,
@@ -72,7 +72,17 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
     .filter((e) => e.status === 'pago')
     .sort((a, b) => (a.paid_at ?? '').localeCompare(b.paid_at ?? ''))
   const done = expenses.length > 0 && pending.length === 0
-  const progress = summary.totalCents > 0 ? summary.paidCents / summary.totalCents : 0
+
+  // o que já estava no mês ao abrir entra em cascata; o que é lançado depois "sai da impressora"
+  const known = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    if (!ready) return
+    if (!known.current) known.current = new Set(expenses.map((e) => e.id))
+    else expenses.forEach((e) => known.current?.add(e.id))
+  }, [ready, expenses])
+  useEffect(() => {
+    known.current = null
+  }, [month])
 
   // "mês fechado" só dispara na virada, nunca ao abrir um mês que já estava fechado
   const wasDone = useRef<boolean | null>(null)
@@ -97,15 +107,9 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
     onMonthChange(shiftMonth(month, delta))
   }
 
-  const handleTogglePaid = (expense: Expense) => {
-    if (expense.status === 'pendente') {
-      sound.cash()
-      haptic('medium')
-      setRain((n) => n + 1)
-    } else {
-      sound.undo()
-      haptic('light')
-    }
+  const handleUnpay = (expense: Expense) => {
+    sound.undo()
+    haptic('light')
     togglePaid(expense)
   }
 
@@ -139,15 +143,22 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
   }
 
   const handleSettle = () => {
-    sound.settle()
+    sound.tear()
     haptic('success')
+    setTimeout(() => sound.settle(), 260)
     setRain((n) => n + 1)
     settleMonth()
   }
 
+  const handleAdd: typeof add = (entry, options) => {
+    sound.print()
+    haptic('light')
+    add(entry, options)
+  }
+
   return (
     <div className="app">
-      <AppHeader title="contas" presence={presence} onOpenMenu={onOpenMenu} />
+      <AppHeader title="contas" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} />
 
       <div className="month-bar">
         <button className="month-arrow" onClick={() => goMonth(-1)} aria-label="Mês anterior">
@@ -209,74 +220,14 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
           nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
         }}
       >
-        <motion.section
-          className="summary"
-          layout
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-        >
-          <p className="summary-label">{summary.pendingCents > 0 ? 'falta pagar' : 'pago no mês'}</p>
-          <Money
-            className="summary-value"
-            cents={summary.pendingCents > 0 ? summary.pendingCents : summary.paidCents}
-          />
-
-          <div className="summary-bar" aria-hidden>
-            <motion.span
-              initial={false}
-              animate={{ scaleX: progress }}
-              transition={{ type: 'spring', stiffness: 220, damping: 32 }}
-            />
-          </div>
-
-          <p className="summary-line">
-            {formatBRL(summary.paidCents)} de {formatBRL(summary.totalCents)} · {paid.length} de{' '}
-            {expenses.length} contas
-          </p>
-
-          <AnimatePresence mode="popLayout">
-            {summary.debt ? (
-              <motion.div
-                key="debt"
-                className="debt"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-              >
-                <Avatar person={summary.debt.from} size={26} />
-                <span className="debt-text">
-                  {summary.debt.from === me ? (
-                    <>
-                      você deve <strong>{formatBRL(summary.debt.cents)}</strong> para{' '}
-                      {summary.debt.to}
-                    </>
-                  ) : (
-                    <>
-                      {summary.debt.from} te deve <strong>{formatBRL(summary.debt.cents)}</strong>
-                    </>
-                  )}
-                </span>
-                <button className="debt-settle" onClick={handleSettle}>
-                  acertamos
-                </button>
-              </motion.div>
-            ) : (
-              expenses.length > 0 && (
-                <motion.p
-                  key="quits"
-                  className="debt-clear"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  vocês estão quites
-                </motion.p>
-              )
-            )}
-          </AnimatePresence>
-        </motion.section>
+        <Receipt
+          monthName={monthLabel(month)}
+          summary={summary}
+          count={expenses.length}
+          paidCount={paid.length}
+          me={me}
+          onSettle={handleSettle}
+        />
 
         {!ready && <Skeleton />}
 
@@ -289,50 +240,44 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
           </motion.div>
         )}
 
-        <ul className="list">
+        <ul className="tickets">
           <AnimatePresence initial={false} mode="popLayout">
             {pending.map((expense, index) => (
-              <ExpenseRow
+              <Ticket
                 key={expense.id}
                 expense={expense}
                 me={me}
                 open={openId === expense.id}
-                enterDelay={index * 0.03}
+                printing={Boolean(known.current && !known.current.has(expense.id))}
+                enterDelay={index * 0.05}
                 onOpenChange={(open) => setOpenId(open ? expense.id : null)}
-                onTogglePaid={handleTogglePaid}
-                onCycleSplit={cycleSplit}
-                onRemove={handleRemove}
-              />
-            ))}
-
-            {paid.length > 0 && (
-              <motion.li
-                key="divider"
-                layout="position"
-                className="divider"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                Pagas · {paid.length}
-              </motion.li>
-            )}
-
-            {paid.map((expense) => (
-              <ExpenseRow
-                key={expense.id}
-                expense={expense}
-                me={me}
-                open={openId === expense.id}
-                enterDelay={0}
-                onOpenChange={(open) => setOpenId(open ? expense.id : null)}
-                onTogglePaid={handleTogglePaid}
+                onStamp={() => setRain((n) => n + 1)}
+                onPaid={togglePaid}
                 onCycleSplit={cycleSplit}
                 onRemove={handleRemove}
               />
             ))}
           </AnimatePresence>
         </ul>
+
+        {paid.length > 0 && (
+          <>
+            <p className="divider">Pagas · {paid.length}</p>
+            <ul className="paid-list">
+              <AnimatePresence initial={false} mode="popLayout">
+                {paid.map((expense, index) => (
+                  <PaidTicket
+                    key={expense.id}
+                    expense={expense}
+                    me={me}
+                    enterDelay={index * 0.02}
+                    onUnpay={handleUnpay}
+                  />
+                ))}
+              </AnimatePresence>
+            </ul>
+          </>
+        )}
       </div>
 
       <div className="dock">
@@ -403,11 +348,11 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
             </motion.div>
           )}
         </AnimatePresence>
-        <ExpenseComposer onAdd={add} onFocus={() => scrollToEnd()} />
+        <ExpenseComposer onAdd={handleAdd} onFocus={() => scrollToEnd()} />
       </div>
 
       <AnimatePresence>{rain > 0 && <MoneyRain key={rain} onDone={() => setRain(0)} />}</AnimatePresence>
-      <CompleteOverlay show={closing} label="Mês fechado" />
+      <CompleteOverlay show={closing} label="mês fechado" variant="stamp" />
     </div>
   )
 }

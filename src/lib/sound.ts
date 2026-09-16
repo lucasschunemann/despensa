@@ -63,6 +63,29 @@ function tone(c: AudioContext, at: number, freq: number, duration: number, gain:
   osc.stop(at + duration + 0.02)
 }
 
+// ruído que varre de uma frequência para outra: papel rasgando
+function sweep(c: AudioContext, at: number, from: number, to: number, duration: number, gain: number) {
+  const frames = Math.ceil(c.sampleRate * duration)
+  const buffer = c.createBuffer(1, frames, c.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let i = 0; i < frames; i++) {
+    // papel não rasga liso: o ruído vem em pequenas rajadas
+    const grain = Math.random() < 0.35 ? 1 : 0.25
+    data[i] = (Math.random() * 2 - 1) * grain * (1 - i / frames) ** 1.5
+  }
+  const source = c.createBufferSource()
+  source.buffer = buffer
+  const band = c.createBiquadFilter()
+  band.type = 'bandpass'
+  band.Q.value = 0.9
+  band.frequency.setValueAtTime(from, at)
+  band.frequency.exponentialRampToValueAtTime(to, at + duration)
+  const volume = c.createGain()
+  volume.gain.value = gain
+  source.connect(band).connect(volume).connect(c.destination)
+  source.start(at)
+}
+
 function play(fn: (c: AudioContext, now: number) => void) {
   if (!prefs.soundOn()) return
   try {
@@ -130,6 +153,36 @@ export const sound = {
       click(c, now, { freq: 1600, decay: 0.035, gain: 0.3 })
       tone(c, now + 0.07, 880, 0.14, 0.09)
       tone(c, now + 0.19, 587.3, 0.2, 0.08)
+    }),
+  // leitor de código de barras
+  scan: () =>
+    play((c, now) => {
+      tone(c, now, 2093, 0.09, 0.07)
+    }),
+  // carimbo batendo no papel
+  stamp: () =>
+    play((c, now) => {
+      click(c, now, { freq: 220, decay: 0.09, gain: 0.9, q: 0.7 })
+      click(c, now + 0.004, { freq: 1200, decay: 0.03, gain: 0.25 })
+    }),
+  tear: () =>
+    play((c, now) => {
+      sweep(c, now, 900, 4200, 0.28, 0.5)
+    }),
+  // impressora soltando o boleto
+  print: () =>
+    play((c, now) => {
+      for (let i = 0; i < 5; i++) click(c, now + i * 0.035, { freq: 3200, decay: 0.012, gain: 0.14, q: 2 })
+    }),
+  // produto pousando na prateleira
+  drop: () =>
+    play((c, now) => {
+      click(c, now, { freq: 420, decay: 0.06, gain: 0.55, q: 0.8 })
+    }),
+  // brilho do desejo realizado
+  shimmer: () =>
+    play((c, now) => {
+      ;[1568, 2093, 2637].forEach((f, i) => tone(c, now + i * 0.06, f, 0.22, 0.05))
     }),
   complete: () =>
     play((c, now) => {

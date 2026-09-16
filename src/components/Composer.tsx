@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRef, useState } from 'react'
 import { parseEntry } from '../lib/parse'
+import { productEmoji } from '../lib/products'
 
 interface Props {
   onAdd: (name: string, quantity: string | null) => void
@@ -39,7 +40,7 @@ export function Composer({ onAdd, onFocus, onTyping }: Props) {
             if (e.target.value.trim()) onTyping()
           }}
           onFocus={onFocus}
-          placeholder="Adicionar item"
+          placeholder="Pôr na gôndola: 2 leite"
           aria-label="Novo item"
           autoComplete="off"
           autoCorrect="on"
@@ -47,6 +48,20 @@ export function Composer({ onAdd, onFocus, onTyping }: Props) {
           enterKeyHint="enter"
         />
         <AnimatePresence initial={false}>
+          {/* o produto aparece na mão enquanto você digita */}
+          {preview && productEmoji(preview.name) && (
+            <motion.span
+              key={`emoji-${productEmoji(preview.name)}`}
+              className="composer-emoji"
+              initial={{ opacity: 0, scale: 0.4, rotate: -20 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.4 }}
+              transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 600, damping: 22 }}
+              aria-hidden
+            >
+              {productEmoji(preview.name)}
+            </motion.span>
+          )}
           {/* mostra na hora o que ele entendeu como quantidade */}
           {preview?.quantity && (
             <motion.span

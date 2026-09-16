@@ -35,6 +35,34 @@ Resolver bem UMA coisa: adicionar item rápido, ver a lista organizada, marcar c
   contraste com o resto, que é tipografia e branco
 - Na tela "quem é você?", **Bela vem primeiro** (ordem de `PEOPLE` em `src/lib/types.ts`)
 
+## Linguagem visual por módulo (17/09/2026)
+Base minimalista comum (branco, tinta, Plus Jakarta Sans), mas cada módulo fala a língua da própria
+ação. Referências do Lucas: app de mercado "Fresh" (cartão de produto com canto recortado) e
+cartões de embarque (picote, recortes redondos, código de barras).
+
+- **Início** (`HomeScreen`, tela padrão): saudação pela hora, quem está com o app aberto, e um
+  cartão por módulo já na linguagem dele (prateleira com os emojis do que falta, bilhete preto das
+  contas com a próxima a vencer, vidro sobre névoa dos desejos). Tocar no nome do módulo volta
+  para cá
+- **Mercado = gôndola de feira** (`Gondola.tsx`): toldo listrado com borda em ondinha que desenrola,
+  produtos em duas colunas sobre tábuas de prateleira, canto recortado com o "+". O emoji do
+  produto sai de um dicionário local (`src/lib/products.ts`), nunca de IA. Adicionar = o produto
+  cai do alto e quica; pegar = voa em arco até o carrinho do topo; o carrinho embaixo guarda os
+  pegos em cinza (tocar devolve à prateleira); finalizar = o carrinho vai embora rodando. Toque
+  longo abre reações e "tirar da gôndola"
+- **Contas = cartão de embarque** (`Ticket.tsx`, `Receipt.tsx`): cada conta pendente é um bilhete
+  preto com canhoto picotado (vencimento) e código de barras estável pelo id. Pagar (tocar no
+  canhoto ou arrastar) = laser lê o código, carimbo PAGO bate, canhoto rasga e cai. Paga vira
+  bilhete tracejado com carimbo pequeno (tocar desmarca). Lançar = o bilhete "sai da impressora".
+  Resumo é cupom de caixa com borda serrilhada; o acerto é um cupom destacável; mês fechado é
+  carimbo grande
+- **Desejos = etéreo** (`Ether.tsx`): névoa clara (lilás, menta, pêssego, bem pálidos) derivando
+  devagar, cartões de vidro flutuando, halo que respira quando os dois querem, corações lilás
+  subindo. Realizar = o cartão vira luz (desfoca e sobe com faíscas). É o único lugar com cor
+  fora dos avatares, e sempre pálida
+- Sons novos combinando: leitor (`scan`), carimbo, papel rasgando, impressora, produto pousando,
+  brilho
+
 ## Direção de design e experiência
 Referência visual: cruzamento entre a linguagem Apple (iOS/macOS) e o minimalismo do Notion. Isso significa fundo limpo, hierarquia tipográfica clara, pouco ruído visual, componentes simples, não uma tela cheia de cor ou ícone decorativo. Minimalismo aqui é ponto de partida, não é sinônimo de estático: a personalidade do produto vive nas animações e microinterações, não em elementos visuais parados na tela. Ou seja, tela parada deve parecer quase simples demais; é a resposta a cada ação do usuário que carrega a sofisticação.
 
@@ -150,8 +178,8 @@ Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em
 
 ## Decisões de interface (16/09/2026)
 - **Campo de adicionar fixo embaixo**. O app tem a altura da área visível (`useViewportFit` via visualViewport), então o teclado encolhe o app em vez de empurrar a tela. Mobile first: alcance do polegar
-- **Lista em ordem de chat**: mais antigo em cima, recém-adicionado embaixo, perto do campo. Pegados descem para a seção "No carrinho"
-- **Apagar é arrastar para o lado** (estilo Mail do iPhone), com desfazer de 5 segundos. Sem botão de apagar permanente em cada linha
+- **Mercado**: gôndola em ordem de chegada, pegos vão para o carrinho (ver "Linguagem visual por módulo")
+- **Contas e desejos: apagar é arrastar para a esquerda**, pagar/realizar é arrastar para a direita. No mercado, apagar fica no toque longo. Sempre com desfazer
 - **O avatar de quem adicionou só aparece nos itens do outro**, para tirar ruído repetido
 - **Interruptores** são trilho + bolinha com caixa própria (`.switch`): a bolinha anda dentro do trilho, nunca por cima do texto
 - Cor e tema: ver Branding (monocromático, só claro)

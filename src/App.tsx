@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Avatar, Mark } from './components/Avatar'
 import { FinanceScreen } from './components/FinanceScreen'
+import { HomeScreen } from './components/HomeScreen'
 import { ListScreen } from './components/ListScreen'
 import { MenuSheet, type View } from './components/MenuSheet'
 import { ReactionBurst } from './components/ReactionBurst'
@@ -159,8 +160,12 @@ function Room({
 }) {
   const [view, setView] = useState<View>(() => {
     const hash = location.hash.slice(1)
-    return hash === 'contas' || hash === 'desejos' ? hash : 'lista'
+    return hash === 'contas' || hash === 'desejos' || hash === 'lista' ? hash : 'inicio'
   })
+  const goHome = () => {
+    setMonth(monthKey())
+    setView('inicio')
+  }
   const [month, setMonth] = useState(monthKey)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -177,50 +182,38 @@ function Room({
   return (
     <>
       <AnimatePresence mode="wait" initial={false}>
-        {view === 'desejos' ? (
-          <motion.div
-            key="desejos"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ type: 'spring', stiffness: 460, damping: 38 }}
-          >
-            <WishesScreen
-              store={wishes}
+        <motion.div
+          key={view}
+          // a tela inicial afasta um pouco ao abrir um módulo; o módulo chega de perto
+          initial={view === 'inicio' ? { opacity: 0, scale: 1.03 } : { opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={view === 'inicio' ? { opacity: 0, scale: 0.97 } : { opacity: 0, scale: 0.98, y: 8 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+        >
+          {view === 'inicio' && (
+            <HomeScreen
               me={person}
               presence={presence}
+              items={items}
+              expenses={expenses}
+              wishes={wishes}
+              onOpen={setView}
               onOpenMenu={() => setMenuOpen(true)}
-              onRegisterExpense={(title, amountCents) =>
-                expenses.add({ title, amountCents, dueDay: null }, { paid: true })
-              }
             />
-          </motion.div>
-        ) : view === 'lista' ? (
-          <motion.div
-            key="lista"
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 16 }}
-            transition={{ type: 'spring', stiffness: 460, damping: 38 }}
-          >
+          )}
+          {view === 'lista' && (
             <ListScreen
               store={items}
               me={person}
               presence={presence}
               onOpenMenu={() => setMenuOpen(true)}
+              onHome={goHome}
               onRegisterMarket={(amountCents) =>
                 expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
               }
             />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="contas"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ type: 'spring', stiffness: 460, damping: 38 }}
-          >
+          )}
+          {view === 'contas' && (
             <FinanceScreen
               store={expenses}
               me={person}
@@ -228,9 +221,22 @@ function Room({
               presence={presence}
               onMonthChange={setMonth}
               onOpenMenu={() => setMenuOpen(true)}
+              onHome={goHome}
             />
-          </motion.div>
-        )}
+          )}
+          {view === 'desejos' && (
+            <WishesScreen
+              store={wishes}
+              me={person}
+              presence={presence}
+              onOpenMenu={() => setMenuOpen(true)}
+              onHome={goHome}
+              onRegisterExpense={(title, amountCents) =>
+                expenses.add({ title, amountCents, dueDay: null }, { paid: true })
+              }
+            />
+          )}
+        </motion.div>
       </AnimatePresence>
 
       <ReactionBurst reaction={presence.reaction} me={person} />
@@ -241,7 +247,7 @@ function Room({
         me={person}
         roomId={roomId}
         onClose={() => setMenuOpen(false)}
-        onChangeView={setView}
+        onChangeView={(next) => (next === 'inicio' ? goHome() : setView(next))}
         onSwitchPerson={onSwitchPerson}
       />
     </>
