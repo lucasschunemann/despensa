@@ -215,6 +215,7 @@ feito". Não estraga nada.
 | `20260917000000_desejos.sql` | lista de desejos e fotos | a aba desejos dá erro |
 | `20260918000000_avisos.sql` | avisos no celular | o menu não liga os avisos ([guia](AVISOS.md)) |
 | `20260919000000_fotos.sql` | conserta o envio de foto dos desejos | a foto dá "row-level security policy" |
+| `20260920000000_apagar_recorrente.sql` | apagar conta "todo mês" deste mês em diante | a opção "em diante" dá erro |
 
 ### Módulo financeiro (arquivo `20260916000000_financeiro.sql`)
 

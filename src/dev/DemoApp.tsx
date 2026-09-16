@@ -200,6 +200,17 @@ export default function DemoApp() {
           ),
         ),
       remove: (expense) => setExpenses((prev) => prev.filter((e) => e.id !== expense.id)),
+      stopRecurring: (expense) =>
+        setExpenses((prev) =>
+          prev.filter(
+            (e) =>
+              !(
+                e.recurrence_id === expense.recurrence_id &&
+                e.month >= expense.month &&
+                (e.status === 'pendente' || e.id === expense.id)
+              ),
+          ),
+        ),
       restore: (expense) => setExpenses((prev) => [...prev, expense]),
       settleMonth: () =>
         setExpenses((prev) => prev.map((e) => (e.status === 'pago' ? { ...e, settled: true } : e))),

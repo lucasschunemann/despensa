@@ -28,11 +28,24 @@ interface Props {
 }
 
 export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpenMenu }: Props) {
-  const { expenses, ready, error, clearError, add, togglePaid, cycleSplit, remove, restore, settleMonth } =
-    store
+  const {
+    expenses,
+    ready,
+    error,
+    clearError,
+    add,
+    togglePaid,
+    cycleSplit,
+    remove,
+    stopRecurring,
+    restore,
+    settleMonth,
+  } = store
   const [openId, setOpenId] = useState<string | null>(null)
   const [rain, setRain] = useState(0)
   const [deleted, setDeleted] = useState<Expense | null>(null)
+  const [asking, setAsking] = useState<Expense | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [closing, setClosing] = useState(false)
   const [direction, setDirection] = useState(1)
   const scroller = useRef<HTMLDivElement>(null)
@@ -96,14 +109,33 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
     togglePaid(expense)
   }
 
-  const handleRemove = (expense: Expense) => {
-    setOpenId(null)
+  const removeThisMonth = (expense: Expense) => {
     sound.undo()
     haptic('medium')
     remove(expense)
     setDeleted(expense)
     if (undoTimer.current) clearTimeout(undoTimer.current)
     undoTimer.current = setTimeout(() => setDeleted(null), 5000)
+  }
+
+  // conta que se repete pergunta antes: só deste mês, ou deste mês em diante
+  const handleRemove = (expense: Expense) => {
+    setOpenId(null)
+    if (expense.recurrence_id) {
+      haptic('light')
+      setAsking(expense)
+      return
+    }
+    removeThisMonth(expense)
+  }
+
+  const handleStop = (expense: Expense) => {
+    sound.undo()
+    haptic('medium')
+    stopRecurring(expense)
+    setAsking(null)
+    setNotice(`${expense.title} parou de se repetir`)
+    setTimeout(() => setNotice(null), 4000)
   }
 
   const handleSettle = () => {
@@ -305,6 +337,50 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
       <div className="dock">
         <AnimatePresence>
+          {asking && (
+            <motion.div
+              key="asking"
+              className="choice"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ type: 'spring', stiffness: 440, damping: 34 }}
+            >
+              <p className="choice-title">Apagar {asking.title}?</p>
+              <p className="choice-hint">Essa conta se repete todo mês.</p>
+              <div className="choice-actions">
+                <button
+                  className="choice-option"
+                  onClick={() => {
+                    removeThisMonth(asking)
+                    setAsking(null)
+                  }}
+                >
+                  <strong>só de {monthLabel(asking.month)}</strong>
+                  <small>nos próximos meses ela continua</small>
+                </button>
+                <button className="choice-option is-danger" onClick={() => handleStop(asking)}>
+                  <strong>de {monthLabel(asking.month)} em diante</strong>
+                  <small>para de se repetir; as já pagas ficam</small>
+                </button>
+              </div>
+              <button className="choice-cancel" onClick={() => setAsking(null)}>
+                cancelar
+              </button>
+            </motion.div>
+          )}
+          {notice && (
+            <motion.div
+              key="notice"
+              className="toast"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ type: 'spring', stiffness: 520, damping: 38 }}
+            >
+              <span>{notice}</span>
+            </motion.div>
+          )}
           {deleted && (
             <motion.div
               className="toast"

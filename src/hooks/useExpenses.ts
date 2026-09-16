@@ -21,6 +21,8 @@ export interface ExpensesStore {
   togglePaid: (expense: Expense) => void
   cycleSplit: (expense: Expense) => void
   remove: (expense: Expense) => void
+  /** apaga esta e as próximas contas pendentes dessa recorrência, e ela para de se repetir */
+  stopRecurring: (expense: Expense) => void
   restore: (expense: Expense) => void
   settleMonth: () => void
 }
@@ -229,6 +231,17 @@ export function useExpenses(roomId: string, me: string, month: string): Expenses
       })
   }, [])
 
+  const stopRecurring = useCallback(
+    (expense: Expense) => {
+      setExpenses((prev) => prev.filter((e) => e.id !== expense.id))
+      void supabase.rpc('stop_recurring', { p_expense: expense.id }).then(({ error }) => {
+        if (error) setError(error.message)
+        void refetch()
+      })
+    },
+    [refetch],
+  )
+
   const restore = useCallback((expense: Expense) => {
     pending.current.set(expense.id, expense)
     setExpenses((prev) => [...prev, expense])
@@ -264,6 +277,7 @@ export function useExpenses(roomId: string, me: string, month: string): Expenses
     togglePaid,
     cycleSplit,
     remove,
+    stopRecurring,
     restore,
     settleMonth,
   }

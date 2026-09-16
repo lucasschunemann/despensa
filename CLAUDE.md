@@ -46,10 +46,15 @@ Os três momentos de feedback (adicionar, marcar como pegado, lista completa) s�
 Segundo módulo do app: contas da casa, para os mesmos dois. Mesma régua de design da lista
 (campo único embaixo, arrastar para os dois lados, molas macias, tudo em caixa baixa).
 
-- **Menu** (`MenuSheet`): folha que sobe de baixo, arrastável, com os dois módulos, "você é X" e o som.
+- **Menu** (`MenuSheet`): folha que sobe de baixo, arrastável, com os módulos, "você é X", avisos e som.
   O módulo aberto fica no hash da URL
 - **Dados**: `expenses` (conta de um mês), `recurrences` (o que se repete) e `recurrence_runs`
   (garante um lançamento por mês, e conta apagada não volta). Valores sempre em centavos
+- **Apagar conta que se repete** pergunta antes (bug achado no primeiro uso real, 17/09/2026):
+  "só deste mês" apaga a linha do mês; "deste mês em diante" chama `stop_recurring`, que desliga a
+  recorrência e apaga as pendentes dela a partir daquele mês, inclusive as que já tinham sido
+  lançadas em meses futuros. Contas já pagas nunca são apagadas. Conta avulsa apaga direto, com
+  desfazer
 - **Divisão**: `split` é `'meio'` ou o nome de uma pessoa. O acerto entre os dois considera só o que
   já foi pago e ainda não foi acertado (`settled`), e `settle_month` zera o mês
 - **Entrada**: um campo só, `luz 180`, `aluguel 1.850 dia 10`. O valor é o último número do texto
@@ -115,7 +120,7 @@ Definidos com o Lucas em 16/09/2026 e implementados:
 2. **Pegado**: círculo preenche com mola, check desenha sozinho, risco cresce da esquerda para a direita, tique agudo (2600 Hz) e vibração média. Desmarcar tem som mais grave
 3. **Lista zerada**: overlay com fundo desfocado, círculo e check desenhando-se, dois tiques + nota dó (1046 Hz), vibração de sucesso, some sozinho em 1,9s
 
-Sons são sintetizados em `src/lib/sound.ts` (Web Audio, sem arquivo de áudio), caráter **seco e mecânico**, desligáveis pelo ícone no topo. Vibração (`src/lib/haptics.ts`) é bônus: Android responde, iPhone ignora. Tudo respeita `prefers-reduced-motion`.
+Sons são sintetizados em `src/lib/sound.ts` (Web Audio, sem arquivo de áudio), caráter **seco e mecânico**, desligáveis no menu. Vibração (`src/lib/haptics.ts`) é bônus: Android responde, iPhone ignora. Tudo respeita `prefers-reduced-motion`.
 
 No iPhone o áudio exige duas coisas, ambas resolvidas em `sound.ts`: destravar o contexto dentro de
 um gesto (buffer mudo no primeiro toque) e declarar `navigator.audioSession.type = 'playback'`, sem o
@@ -132,7 +137,7 @@ Conviver a dois é o que o app tem de diferente, então isso aparece na tela:
 - **Item que chega do outro** entra com um realce que se apaga em ~2s
 - **Arrastar para a direita marca como pegado** (esquerda continua apagando), com vibração no momento
   em que passa do ponto
-- **Easter egg**: escreveu "tomate", os gatos jogam tomate na tela (`TomatoToss`)
+- **Easter eggs**: palavras como "tomate" fazem chover o emoji correspondente (`Toss`, `src/lib/eggs.ts`)
 
 ## Referência de experiência (com ressalva)
 Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em tablet de autoatendimento na loja física — não o app mobile, que tem reclamações de confiabilidade em avaliações de usuários. O que vale copiar é a sensação de interação num ambiente controlado (hardware dedicado, sem concorrência de atenção), não o app em si.
@@ -144,12 +149,12 @@ Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em
 - Publicação como produto público
 
 ## Decisões de interface (16/09/2026)
-- **Campo de adicionar fixo embaixo**, subindo junto com o teclado (`useKeyboardInset` via visualViewport). Mobile first: alcance do polegar
+- **Campo de adicionar fixo embaixo**. O app tem a altura da área visível (`useViewportFit` via visualViewport), então o teclado encolhe o app em vez de empurrar a tela. Mobile first: alcance do polegar
 - **Lista em ordem de chat**: mais antigo em cima, recém-adicionado embaixo, perto do campo. Pegados descem para a seção "No carrinho"
 - **Apagar é arrastar para o lado** (estilo Mail do iPhone), com desfazer de 5 segundos. Sem botão de apagar permanente em cada linha
-- **A inicial de quem adicionou só aparece nos itens do outro**, para tirar ruído repetido
-- Cor de destaque (azul) só em dois lugares: check marcado e botão de enviar
-- Modo claro e escuro automáticos, pelo sistema do aparelho
+- **O avatar de quem adicionou só aparece nos itens do outro**, para tirar ruído repetido
+- **Interruptores** são trilho + bolinha com caixa própria (`.switch`): a bolinha anda dentro do trilho, nunca por cima do texto
+- Cor e tema: ver Branding (monocromático, só claro)
 
 ## Etapas
 1. ~~Base funcional: projeto + Supabase/Realtime + schema + tela simples (adicionar, lista compartilhada, marcar pegado)~~

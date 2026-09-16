@@ -31,16 +31,22 @@ export function ExpenseComposer({ onAdd, onFocus }: Props) {
       <div className="composer-row">
         <button
           type="button"
+          role="switch"
+          aria-checked={recurring}
           className={`repeat${recurring ? ' is-on' : ''}`}
-          aria-pressed={recurring}
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => setRecurring((v) => !v)}
         >
-          <motion.span
-            className="repeat-dot"
-            animate={{ x: recurring ? 16 : 0 }}
-            transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 600, damping: 32 }}
-          />
+          {/* trilho e bolinha têm caixa própria: a bolinha anda dentro do trilho,
+              nunca por cima do texto */}
+          <span className="switch" aria-hidden>
+            <motion.span
+              className="switch-knob"
+              initial={false}
+              animate={{ x: recurring ? 14 : 0 }}
+              transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 700, damping: 36 }}
+            />
+          </span>
           <span className="repeat-label">todo mês</span>
         </button>
 
