@@ -13,6 +13,20 @@ Resolver bem UMA coisa: adicionar item rápido, ver a lista organizada, marcar c
 - Back-end/dados: Supabase (Postgres + Realtime para sincronização entre os dois dispositivos)
 - Sem sistema de login tradicional (sem email/senha/recuperação de senha). Acesso via link/código de "sala" privada fixo, só para os dois. Implementação: sign-in anônimo invisível + RPC `join_room(code)`; RLS por membro da sala
 
+## Branding (definido em 16/09/2026)
+- Nome sempre em **caixa baixa**: "despensa". Vale para a marca na tela, o título da aba, o nome do
+  app instalado e o manifesto
+- Marca: **"d" geométrico** (anel + haste na mesma grade), desenhado em `src/components/Avatar.tsx`
+  (`Mark`) e em `scripts/icons.mjs`. Ícone do app: "d" branco sobre preto
+- Referência: design suíço, minimalismo caro. Tipografia apertada (`letter-spacing` negativo), muito
+  branco, régua fina, nada decorativo
+- **Só tema claro.** O modo escuro foi removido a pedido do Lucas
+- Paleta monocromática: tinta `#0a0a0a` sobre branco. A única cor fora disso é o vermelho do apagar
+  e as cores dos avatares
+- **Avatares**: Lucas é uma caneca de chope de óculos escuros, Bela é um ovo cozido de cabelo rosa.
+  Traço chapado, poucas cores, espírito japonês fofo. É o único lugar lúdico do app, por contraste
+  com o resto, que é tipografia e branco
+
 ## Direção de design e experiência
 Referência visual: cruzamento entre a linguagem Apple (iOS/macOS) e o minimalismo do Notion. Isso significa fundo limpo, hierarquia tipográfica clara, pouco ruído visual, componentes simples, não uma tela cheia de cor ou ícone decorativo. Minimalismo aqui é ponto de partida, não é sinônimo de estático: a personalidade do produto vive nas animações e microinterações, não em elementos visuais parados na tela. Ou seja, tela parada deve parecer quase simples demais; é a resposta a cada ação do usuário que carrega a sofisticação.
 
@@ -46,6 +60,14 @@ Definidos com o Lucas em 16/09/2026 e implementados:
 3. **Lista zerada**: overlay com fundo desfocado, círculo e check desenhando-se, dois tiques + nota dó (1046 Hz), vibração de sucesso, some sozinho em 1,9s
 
 Sons são sintetizados em `src/lib/sound.ts` (Web Audio, sem arquivo de áudio), caráter **seco e mecânico**, desligáveis pelo ícone no topo. Vibração (`src/lib/haptics.ts`) é bônus: Android responde, iPhone ignora. Tudo respeita `prefers-reduced-motion`.
+
+No iPhone o áudio exige duas coisas, ambas resolvidas em `sound.ts`: destravar o contexto dentro de
+um gesto (buffer mudo no primeiro toque) e declarar `navigator.audioSession.type = 'playback'`, sem o
+que a chavinha de silencioso do aparelho cala o app.
+
+Outras microinterações: régua de progresso no topo, etiqueta da quantidade reconhecida enquanto
+digita, entrada em cascata na primeira carga, avatar do topo pulsando a cada item marcado, e
+**segurar para finalizar** (`HoldButton`) com o texto invertendo conforme a barra passa.
 
 ## Referência de experiência (com ressalva)
 Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em tablet de autoatendimento na loja física — não o app mobile, que tem reclamações de confiabilidade em avaliações de usuários. O que vale copiar é a sensação de interação num ambiente controlado (hardware dedicado, sem concorrência de atenção), não o app em si.

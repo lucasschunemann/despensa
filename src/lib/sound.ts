@@ -3,6 +3,14 @@ import { prefs } from './prefs'
 // Sons sintetizados na hora (nenhum arquivo de áudio para baixar): ruído curtíssimo
 // passado por um filtro estreito vira um clique seco, mecânico.
 let ctx: AudioContext | null = null
+let unlocked = false
+
+// Safari 16.4+: declarar a sessão como "playback" faz o áudio tocar mesmo com a
+// chavinha de silencioso do iPhone ligada — que é onde o som sumia.
+interface AudioSession {
+  type: string
+}
+type NavigatorWithSession = Navigator & { audioSession?: AudioSession }
 
 function context(): AudioContext | null {
   type WithWebkit = typeof window & { webkitAudioContext?: typeof AudioContext }
@@ -67,13 +75,35 @@ function play(fn: (c: AudioContext, now: number) => void) {
 }
 
 export const sound = {
-  // O navegador só libera áudio depois de um toque do usuário.
+  // O navegador só libera áudio dentro de um toque do usuário: aqui tocamos um buffer
+  // mudo de 1 frame, que é o que "destrava" o áudio no iOS pelo resto da sessão.
   unlock() {
     try {
-      context()
+      const session = (navigator as NavigatorWithSession).audioSession
+      if (session) session.type = 'playback'
+
+      const c = context()
+      if (!c || unlocked) return
+
+      const source = c.createBufferSource()
+      source.buffer = c.createBuffer(1, 1, c.sampleRate)
+      source.connect(c.destination)
+      source.start(0)
+      unlocked = true
     } catch {
       /* ignora */
     }
+  },
+
+  // iOS suspende o contexto quando o app vai para segundo plano.
+  installUnlockListeners() {
+    const unlock = () => sound.unlock()
+    window.addEventListener('pointerdown', unlock, { passive: true })
+    window.addEventListener('touchend', unlock, { passive: true })
+    window.addEventListener('keydown', unlock)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && ctx?.state === 'suspended') void ctx.resume()
+    })
   },
   add: () =>
     play((c, now) => {

@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
+import { Avatar, Mark } from './components/Avatar'
 import { ListScreen } from './components/ListScreen'
 import { useItems } from './hooks/useItems'
 import { haptic } from './lib/haptics'
@@ -44,7 +45,7 @@ export default function App() {
 
   if (!isConfigured) {
     return (
-      <Gate title="Despensa">
+      <Gate title="despensa">
         <p className="gate-text">
           Supabase não configurado. Copie <code>.env.example</code> para <code>.env</code> e preencha.
         </p>
@@ -54,7 +55,7 @@ export default function App() {
 
   if (!code || joinError) {
     return (
-      <Gate title="Despensa">
+      <Gate title="despensa">
         <p className="gate-text">
           {joinError ? `Não deu para entrar: ${joinError}` : 'Cole o código da sala para entrar.'}
         </p>
@@ -83,7 +84,7 @@ export default function App() {
 
   if (!roomId) {
     return (
-      <Gate title="Despensa">
+      <Gate title="despensa">
         <motion.p
           className="gate-text"
           animate={{ opacity: [0.35, 1, 0.35] }}
@@ -97,7 +98,7 @@ export default function App() {
 
   if (!person) {
     return (
-      <Gate title="Quem é você?">
+      <Gate title="quem é você?">
         <div className="people">
           {PEOPLE.map((p, i) => (
             <motion.button
@@ -114,6 +115,7 @@ export default function App() {
                 setPerson(p)
               }}
             >
+              <Avatar person={p} size={64} />
               {p}
             </motion.button>
           ))}
@@ -150,6 +152,9 @@ function Gate({ title, children }: { title: string; children: React.ReactNode })
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
       >
+        <p className="gate-mark" aria-hidden>
+          <Mark size={30} />
+        </p>
         <h1>{title}</h1>
         {children}
       </motion.div>

@@ -11,6 +11,7 @@ export function Composer({ onAdd, onFocus }: Props) {
   const [text, setText] = useState('')
   const input = useRef<HTMLInputElement>(null)
   const reduced = useReducedMotion()
+  const preview = parseEntry(text)
 
   const submit = () => {
     const entry = parseEntry(text)
@@ -42,8 +43,22 @@ export function Composer({ onAdd, onFocus }: Props) {
           enterKeyHint="enter"
         />
         <AnimatePresence initial={false}>
+          {/* mostra na hora o que ele entendeu como quantidade */}
+          {preview?.quantity && (
+            <motion.span
+              key="qty"
+              className="composer-qty"
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.7 }}
+              transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 700, damping: 34 }}
+            >
+              {preview.quantity}
+            </motion.span>
+          )}
           {text.trim() && (
             <motion.button
+              key="send"
               type="submit"
               className="composer-send"
               aria-label="Adicionar"

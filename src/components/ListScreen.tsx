@@ -1,13 +1,15 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import type { ItemsStore } from '../hooks/useItems'
+import { useViewportFit } from '../hooks/useViewportFit'
 import { haptic } from '../lib/haptics'
 import { prefs, useSoundOn } from '../lib/prefs'
 import { sound } from '../lib/sound'
 import type { Item } from '../lib/types'
+import { Avatar } from './Avatar'
 import { Composer } from './Composer'
 import { CompleteOverlay } from './CompleteOverlay'
+import { HoldButton } from './HoldButton'
 import { ItemRow } from './ItemRow'
 import { Skeleton } from './Skeleton'
 
@@ -22,11 +24,14 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
     store
   const [openId, setOpenId] = useState<string | null>(null)
   const [celebrating, setCelebrating] = useState(false)
+  const [pulse, setPulse] = useState(0)
   const [deleted, setDeleted] = useState<Item | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const soundOn = useSoundOn()
-  const keyboard = useKeyboardInset()
+  const nearBottom = useRef(true)
+  // só a primeira leva entra em cascata; depois disso cada item entra sozinho
+  const firstPaint = useRef(true)
 
   const pending = items
     .filter((i) => i.status === 'pendente')
@@ -43,6 +48,13 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
     })
   }, [])
 
+  // quando o teclado abre, a área visível encolhe: se você já estava no fim da lista,
+  // continua vendo o fim da lista (os últimos itens adicionados)
+  const keepAnchored = useCallback(() => {
+    if (nearBottom.current) scrollToEnd('auto')
+  }, [scrollToEnd])
+  useViewportFit(keepAnchored)
+
   // Momento 3: só dispara na virada, nunca ao abrir o app com a lista já toda pegada.
   const wasAllPicked = useRef<boolean | null>(null)
   useEffect(() => {
@@ -57,6 +69,14 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
     return () => clearTimeout(timer)
   }, [allPicked, ready])
 
+  useEffect(() => {
+    if (!ready) return
+    const timer = setTimeout(() => {
+      firstPaint.current = false
+    }, 700)
+    return () => clearTimeout(timer)
+  }, [ready])
+
   const handleAdd = (name: string, quantity: string | null) => {
     add(name, quantity)
     sound.add()
@@ -68,6 +88,7 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
     if (item.status === 'pendente') {
       sound.pick()
       haptic('medium')
+      setPulse((n) => n + 1)
     } else {
       sound.undo()
       haptic('light')
@@ -96,7 +117,7 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
   return (
     <div className="app">
       <header className="header">
-        <h1>Despensa</h1>
+        <h1 className="wordmark">despensa</h1>
         <div className="header-actions">
           <button
             className="icon-button"
@@ -115,10 +136,28 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
             {soundOn ? <SpeakerOn /> : <SpeakerOff />}
           </button>
           <button className="chip" onClick={onSwitchPerson}>
+            <motion.span
+              key={pulse}
+              className="chip-avatar"
+              animate={{ scale: pulse === 0 ? 1 : [1, 1.22, 0.96, 1] }}
+              transition={{ duration: 0.42, ease: 'easeOut' }}
+            >
+              <Avatar person={me} size={22} />
+            </motion.span>
             {me}
           </button>
         </div>
       </header>
+
+      {items.length > 0 && (
+        <div className="progress" aria-hidden>
+          <motion.span
+            initial={false}
+            animate={{ scaleX: picked.length / items.length }}
+            transition={{ type: 'spring', stiffness: 260, damping: 34 }}
+          />
+        </div>
+      )}
 
       <AnimatePresence>
         {ready && connection !== 'live' && (
@@ -148,7 +187,10 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
         className="scroll"
         ref={scroller}
         onPointerDown={() => setOpenId(null)}
-        style={keyboard ? { paddingBottom: keyboard + 16 } : undefined}
+        onScroll={(e) => {
+          const el = e.currentTarget
+          nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+        }}
       >
         {!ready && <Skeleton />}
 
@@ -161,12 +203,13 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
 
         <ul className="list">
           <AnimatePresence initial={false} mode="popLayout">
-            {pending.map((item) => (
+            {pending.map((item, index) => (
               <ItemRow
                 key={item.id}
                 item={item}
                 me={me}
                 open={openId === item.id}
+                enterDelay={firstPaint.current ? index * 0.035 : 0}
                 exitDelay={0}
                 onOpenChange={(open) => setOpenId(open ? item.id : null)}
                 onToggle={handleToggle}
@@ -193,6 +236,7 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
                 item={item}
                 me={me}
                 open={openId === item.id}
+                enterDelay={firstPaint.current ? (pending.length + index) * 0.035 : 0}
                 exitDelay={index * 0.035}
                 onOpenChange={(open) => setOpenId(open ? item.id : null)}
                 onToggle={handleToggle}
@@ -210,26 +254,23 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}
             >
-              <button
-                className={allPicked ? 'button-primary' : 'button-quiet'}
-                onClick={() => {
-                  haptic('light')
+              <HoldButton
+                label="Segure para finalizar"
+                onComplete={() => {
+                  haptic('success')
+                  sound.complete()
                   finishShopping()
                 }}
-              >
-                Finalizar compra
-              </button>
-              {!allPicked && <span className="finish-note">os pendentes ficam para a próxima</span>}
+              />
+              <span className="finish-note">
+                {allPicked ? 'a lista vai para o histórico' : 'os pendentes ficam para a próxima'}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <motion.div
-        className="dock"
-        animate={{ y: -keyboard }}
-        transition={{ type: 'spring', stiffness: 700, damping: 46 }}
-      >
+      <div className="dock">
         <AnimatePresence>
           {deleted && (
             <motion.div
@@ -245,7 +286,7 @@ export function ListScreen({ store, me, onSwitchPerson }: Props) {
           )}
         </AnimatePresence>
         <Composer onAdd={handleAdd} onFocus={() => scrollToEnd()} />
-      </motion.div>
+      </div>
       <CompleteOverlay show={celebrating} />
     </div>
   )

@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
-        name: 'Despensa',
-        short_name: 'Despensa',
+        name: 'despensa',
+        short_name: 'despensa',
         description: 'Lista de compras compartilhada',
         lang: 'pt-BR',
         display: 'standalone',

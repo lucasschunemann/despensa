@@ -1,6 +1,7 @@
 import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import type { Item } from '../lib/types'
+import { Avatar } from './Avatar'
 
 const ACTION_WIDTH = 92
 const OPEN_THRESHOLD = 44
@@ -9,13 +10,23 @@ interface Props {
   item: Item
   me: string
   open: boolean
+  enterDelay: number
   exitDelay: number
   onOpenChange: (open: boolean) => void
   onToggle: (item: Item) => void
   onRemove: (item: Item) => void
 }
 
-export function ItemRow({ item, me, open, exitDelay, onOpenChange, onToggle, onRemove }: Props) {
+export function ItemRow({
+  item,
+  me,
+  open,
+  enterDelay,
+  exitDelay,
+  onOpenChange,
+  onToggle,
+  onRemove,
+}: Props) {
   const picked = item.status === 'pegado'
   const reduced = useReducedMotion()
   const x = useMotionValue(0)
@@ -38,7 +49,7 @@ export function ItemRow({ item, me, open, exitDelay, onOpenChange, onToggle, onR
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0, transition: { duration: 0.22, delay: exitDelay } }}
-      transition={spring}
+      transition={{ ...spring, delay: enterDelay }}
     >
       <button
         className="row-delete"
@@ -90,10 +101,10 @@ export function ItemRow({ item, me, open, exitDelay, onOpenChange, onToggle, onR
             </span>
           </span>
           {item.quantity && <span className="row-qty">{item.quantity}</span>}
-          {/* a inicial só aparece no que o outro adicionou: o seu você já sabe */}
+          {/* o avatar só aparece no que o outro adicionou: o seu você já sabe */}
           {item.added_by !== me && (
             <span className="row-who" title={`Adicionado por ${item.added_by}`}>
-              {item.added_by.charAt(0)}
+              <Avatar person={item.added_by} size={20} />
             </span>
           )}
         </button>

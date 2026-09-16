@@ -1,6 +1,16 @@
 // Quantidade sai do próprio texto digitado, para a entrada continuar sendo um campo só:
 // "2 leite", "500g queijo", "1,5kg carne", "pão x6", "ovos 12".
-const QTY = String.raw`\d+(?:[.,]\d+)?\s*(?:x|un|und|kg|g|l|ml|cx|pct|dz)?`
+// Unidades reconhecidas (maiúsculas ou minúsculas, coladas ou separadas do número).
+// Está documentado no README: se acrescentar aqui, acrescente lá também.
+const UNITS = [
+  'x', 'un', 'und', 'unid', 'u',
+  'kg', 'g', 'mg',
+  'l', 'lt', 'ml',
+  'cx', 'pct', 'pc', 'dz', 'sc', 'fd',
+]
+// maiores primeiro, para "und" não ser lido como "un"
+const ALT = [...UNITS].sort((a, b) => b.length - a.length).join('|')
+const QTY = String.raw`\d+(?:[.,]\d+)?\s*(?:${ALT})?`
 const LEADING = new RegExp(String.raw`^(?:x\s*)?(${QTY})\s+(.+)$`, 'i')
 const TRAILING = new RegExp(String.raw`^(.+?)\s+(?:x\s*)?(${QTY})$`, 'i')
 
@@ -23,5 +33,11 @@ function capitalize(name: string): string {
 }
 
 function normalize(q: string): string {
-  return q.replace(/\s+/g, '').replace(/x$/i, '').toLowerCase()
+  const compact = q.replace(/\s+/g, '').toLowerCase()
+  // "2x" é multiplicador e vira só "2"; o x de "cx" tem que ficar
+  if (/^\d+(?:[.,]\d+)?x$/.test(compact)) return compact.slice(0, -1)
+
+  // número e unidade separados por um espaço: "500 g", "1,5 kg", "2 und"
+  const parts = compact.match(/^(\d+(?:[.,]\d+)?)(.*)$/)
+  return parts && parts[2] ? `${parts[1]} ${parts[2]}` : compact
 }
