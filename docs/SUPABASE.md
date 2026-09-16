@@ -214,6 +214,7 @@ feito". Não estraga nada.
 | `20260916000000_financeiro.sql` | contas do mês | a aba contas dá erro |
 | `20260917000000_desejos.sql` | lista de desejos e fotos | a aba desejos dá erro |
 | `20260918000000_avisos.sql` | avisos no celular | o menu não liga os avisos ([guia](AVISOS.md)) |
+| `20260919000000_fotos.sql` | conserta o envio de foto dos desejos | a foto dá "row-level security policy" |
 
 ### Módulo financeiro (arquivo `20260916000000_financeiro.sql`)
 
@@ -242,7 +243,8 @@ Para ver as contas cruas depois: **Table Editor** → `expenses`.
 | Bolinha **vermelha** ou item só aparece depois de recarregar | A sincronização ao vivo caiu | Recarregue a página. Se continuar, confira sua internet |
 | "Request rate limit reached" | Muitas entradas novas da mesma internet em 1 hora (limite de 30) | Espere uma hora. Acontece mais quando se testa muito com janela anônima |
 | "Could not find the function public.ensure_month" ou erro vermelho na aba contas | O banco do módulo financeiro não foi criado | Rode a migration `20260916000000_financeiro.sql` (seção acima) |
-| Erro vermelho na aba desejos, ou a foto não sobe | Falta a migration dos desejos | Rode `20260917000000_desejos.sql` |
+| Erro vermelho na aba desejos | Falta a migration dos desejos | Rode `20260917000000_desejos.sql` |
+| Ao pôr foto: "new row violates row-level security policy" | As regras do balde de fotos não pegaram | Rode `20260919000000_fotos.sql`. Pode rodar mais de uma vez sem problema |
 | No painel, o projeto aparece como **Paused** (pausado) | No plano grátis, projeto sem uso por uma semana é pausado | Clique em **Restore project** (restaurar) e espere uns minutos. Nada é perdido |
 
 ---

@@ -18,8 +18,13 @@ Resolver bem UMA coisa: adicionar item rápido, ver a lista organizada, marcar c
   app instalado e o manifesto
 - Marca: **"d" geométrico** (anel + haste na mesma grade), desenhado em `src/components/Avatar.tsx`
   (`Mark`) e em `scripts/icons.mjs`. Ícone do app: "d" branco sobre preto
-- Referência: design suíço, minimalismo caro. Tipografia apertada (`letter-spacing` negativo), muito
-  branco, régua fina, nada decorativo
+- Referência: design suíço, minimalismo caro. Muito branco, régua fina, nada decorativo
+- **Tipografia (16/09/2026)**: **Plus Jakarta Sans** em tudo; **Inter só onde tem número**
+  (valores, quantidades, resumo), porque tem algarismo de largura fixa e o número não dança quando
+  muda. Tokens `--font-sans` e `--font-numeric` em `src/index.css`. As duas são hospedadas no
+  projeto (`public/fonts/`, `src/fonts.css`), para não depender do Google e funcionar offline.
+  Títulos seguem com `letter-spacing` bem negativo; texto corrido fica quase neutro, porque a
+  Jakarta já é estreita
 - **Só tema claro.** O modo escuro foi removido a pedido do Lucas
 - Paleta monocromática: tinta `#0a0a0a` sobre branco. A única cor fora disso é o vermelho do apagar
   e as cores dos avatares

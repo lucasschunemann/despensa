@@ -19,8 +19,13 @@
   --row-height: 58px;
 
   color-scheme: light;
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'Inter', Arial,
+  /* Plus Jakarta Sans em tudo. Inter fica só onde tem número: ela tem algarismos de
+     largura fixa, então os valores não dançam quando mudam. */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial,
     sans-serif;
+  --font-numeric: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+
+  font-family: var(--font-sans);
   font-synthesis-weight: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -329,7 +334,7 @@ input {
   flex: 1;
   min-width: 0;
   font-size: 17px;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.003em;
   transition: color 240ms ease;
 }
 
@@ -594,7 +599,7 @@ input {
   background: none;
   padding: 9px 0;
   font-size: 17px; /* 17px evita o zoom automático do iOS ao focar */
-  letter-spacing: -0.012em;
+  letter-spacing: -0.003em;
 }
 
 .composer-field input::placeholder {
@@ -962,7 +967,7 @@ input {
 
 .exp-title {
   font-size: 17px;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.003em;
   transition: color 240ms ease;
 }
 
@@ -1195,8 +1200,8 @@ input {
 
 .module-text strong {
   font-size: 16px;
-  font-weight: 590;
-  letter-spacing: -0.014em;
+  font-weight: 620;
+  letter-spacing: -0.006em;
 }
 
 .module-text small {
@@ -1339,8 +1344,8 @@ input {
 
 .wish-title {
   font-size: 16px;
-  font-weight: 560;
-  letter-spacing: -0.014em;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1509,4 +1514,21 @@ input {
 
 .market-bill-top p {
   min-width: 0;
+}
+
+/* ─── Números: Inter, com algarismos de largura fixa ────────────────────── */
+.summary-value,
+.summary-line,
+.exp-amount,
+.row-qty,
+.inline-amount,
+.inline-amount-input,
+.composer-qty,
+.composer-preview,
+.market-currency,
+.market-bill input,
+.debt-text strong {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }

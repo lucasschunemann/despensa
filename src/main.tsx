@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { sound } from './lib/sound'
+import './fonts.css'
 import './index.css'
 
 sound.installUnlockListeners()

@@ -32,7 +32,16 @@ export async function uploadWishImage(roomId: string, wishId: string, file: File
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(path, blob, { upsert: true, contentType: 'image/webp', cacheControl: '3600' })
-  if (error) throw error
+
+  if (error) {
+    if (/row-level security|not authorized|Unauthorized/i.test(error.message)) {
+      throw new Error('A foto não subiu: falta rodar a migration das fotos no Supabase (docs/SUPABASE.md)')
+    }
+    if (/Bucket not found/i.test(error.message)) {
+      throw new Error('A foto não subiu: o balde “desejos” não existe ainda no Supabase')
+    }
+    throw error
+  }
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
   // a versão na URL força o navegador a buscar de novo quando a foto é trocada

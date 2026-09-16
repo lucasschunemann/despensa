@@ -105,6 +105,7 @@ Onde fica cada coisa:
 | O quê | Arquivo |
 |---|---|
 | Cores, tipografia, espaçamentos | `src/index.css` (topo, seção Tokens) |
+| Fontes (Plus Jakarta Sans e Inter) | `src/fonts.css` e `public/fonts/` |
 | Avatares, marca "d" e tomate | `src/components/Avatar.tsx` |
 | Presença e "está escrevendo" | `src/hooks/usePresence.ts` |
 | Palavras com easter egg | `src/lib/eggs.ts` e `src/components/Toss.tsx` |
