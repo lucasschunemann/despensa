@@ -3,6 +3,7 @@ import type { MonthSummary } from '../lib/balance'
 import { formatAmount, formatBRL } from '../lib/money'
 import { Avatar } from './Avatar'
 import { Money } from './Money'
+import { Rolling } from './Rolling'
 
 interface Props {
   monthName: string
@@ -30,7 +31,7 @@ export function Receipt({ monthName, summary, count, paidCount, me, onSettle }: 
         <p className="receipt-head">
           <span>{monthName}</span>
           <span>
-            {paidCount}/{count} contas
+            <Rolling value={paidCount} />/{count} contas
           </span>
         </p>
 

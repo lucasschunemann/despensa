@@ -7,3 +7,5 @@ supabase/.temp
 supabase/.branches
 *.tsbuildinfo
 .vapid.local.json
+test-results
+playwright-report

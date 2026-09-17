@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase'
 import { uploadWishImage } from '../lib/image'
-import { notifyOthers } from '../lib/notify'
+import { applyPending } from '../lib/outbox'
+import { supabase } from '../lib/supabase'
+import { onRejected, onSynced, outbox } from '../lib/sync'
 import type { Wish } from '../lib/types'
 import { uuid } from '../lib/uuid'
 import type { Connection } from './useItems'
@@ -17,6 +18,7 @@ export interface WishesStore {
   toggleWant: (wish: Wish) => void
   cycleLevel: (wish: Wish) => void
   setPrice: (wish: Wish, priceCents: number) => void
+  rename: (wish: Wish, title: string) => void
   setImage: (wish: Wish, file: File) => void
   markBought: (wish: Wish) => void
   remove: (wish: Wish) => void
@@ -24,13 +26,16 @@ export interface WishesStore {
   setSavings: (cents: number) => void
 }
 
+const isOffline = (message: string) => !navigator.onLine || /fetch|network|load failed/i.test(message)
+
 export function useWishes(roomId: string, me: string): WishesStore {
   const [wishes, setWishes] = useState<Wish[]>([])
   const [savingsCents, setSavingsCents] = useState(0)
   const [ready, setReady] = useState(false)
   const [connection, setConnection] = useState<Connection>('connecting')
   const [error, setError] = useState<string | null>(null)
-  const pending = useRef(new Map<string, Wish>())
+  const wishesRef = useRef<Wish[]>([])
+  wishesRef.current = wishes
 
   const refetch = useCallback(async () => {
     const [list, settings] = await Promise.all([
@@ -39,13 +44,14 @@ export function useWishes(roomId: string, me: string): WishesStore {
     ])
 
     if (list.error) {
-      setError(list.error.message)
+      if (!isOffline(list.error.message)) setError(list.error.message)
       return
     }
-    const server = list.data as Wish[]
-    const ids = new Set(server.map((w) => w.id))
-    setWishes([...server, ...[...pending.current.values()].filter((w) => !ids.has(w.id))])
-    if (settings.data) setSavingsCents(settings.data.monthly_savings_cents)
+    setWishes(applyPending(list.data as Wish[], 'wishes', outbox.pending()))
+    // a meta guardada sem sinal vale até chegar
+    const queuedSavings = [...outbox.pending()].reverse().find((op) => op.table === 'room_settings')
+    if (queuedSavings?.values) setSavingsCents(queuedSavings.values.monthly_savings_cents as number)
+    else if (settings.data) setSavingsCents(settings.data.monthly_savings_cents)
     setReady(true)
   }, [roomId])
 
@@ -87,6 +93,7 @@ export function useWishes(roomId: string, me: string): WishesStore {
         if (status === 'SUBSCRIBED') {
           setConnection('live')
           void refetch()
+          void outbox.flush()
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           setConnection('offline')
         }
@@ -96,25 +103,23 @@ export function useWishes(roomId: string, me: string): WishesStore {
       if (document.visibilityState === 'visible') void refetch()
     }
     document.addEventListener('visibilitychange', onVisible)
+    const offSynced = onSynced(() => void refetch())
+    const offRejected = onRejected((message) => {
+      setError(message)
+      void refetch()
+    })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
+      offSynced()
+      offRejected()
       void supabase.removeChannel(channel)
     }
   }, [roomId, refetch])
 
-  const patch = useCallback((wish: Wish, changes: Partial<Wish>) => {
-    setWishes((prev) => prev.map((w) => (w.id === wish.id ? { ...w, ...changes } : w)))
-    void supabase
-      .from('wishes')
-      .update(changes)
-      .eq('id', wish.id)
-      .then(({ error }) => {
-        if (error) {
-          setWishes((prev) => prev.map((w) => (w.id === wish.id ? wish : w)))
-          setError(error.message)
-        }
-      })
+  const update = useCallback((wish: Wish, values: Partial<Wish>) => {
+    setWishes((prev) => prev.map((w) => (w.id === wish.id ? { ...w, ...values } : w)))
+    outbox.enqueue({ id: uuid(), kind: 'update', table: 'wishes', rowId: wish.id, values })
   }, [])
 
   const add = useCallback(
@@ -134,123 +139,84 @@ export function useWishes(roomId: string, me: string): WishesStore {
         created_by: me,
         created_at: new Date().toISOString(),
       }
-      pending.current.set(wish.id, wish)
       setWishes((prev) => [...prev, wish])
-
-      void supabase
-        .from('wishes')
-        .insert({
-          id: wish.id,
-          room_id: roomId,
-          title,
-          price_cents: priceCents,
-          wanted_by: [me],
-          created_by: me,
-        })
-        .then(({ error }) => {
-          pending.current.delete(wish.id)
-          if (error) {
-            setWishes((prev) => prev.filter((w) => w.id !== wish.id))
-            setError(error.message)
-            return
-          }
-          notifyOthers(roomId, me, 'desejo', title)
-        })
+      outbox.enqueue({
+        id: uuid(),
+        kind: 'upsert',
+        table: 'wishes',
+        values: { ...wish },
+        notify: { roomId, person: me, kind: 'desejo', subject: title },
+      })
     },
     [roomId, me],
   )
 
+  // o coração vai com o valor final ("quero" / "não quero"): reenviar sem sinal não desfaz o toque
   const toggleWant = useCallback(
     (wish: Wish) => {
-      const mine = wish.wanted_by.includes(me)
-      setWishes((prev) =>
-        prev.map((w) =>
-          w.id === wish.id
-            ? { ...w, wanted_by: mine ? w.wanted_by.filter((p) => p !== me) : [...w.wanted_by, me] }
-            : w,
-        ),
-      )
-      void supabase.rpc('toggle_want', { p_wish: wish.id, p_person: me }).then(({ data, error }) => {
-        if (error) {
-          setWishes((prev) => prev.map((w) => (w.id === wish.id ? wish : w)))
-          setError(error.message)
-          return
-        }
-        if (Array.isArray(data)) {
-          setWishes((prev) => prev.map((w) => (w.id === wish.id ? { ...w, wanted_by: data } : w)))
-        }
+      const current = wishesRef.current.find((w) => w.id === wish.id) ?? wish
+      const want = !current.wanted_by.includes(me)
+      const wantedBy = want ? [...current.wanted_by, me] : current.wanted_by.filter((p) => p !== me)
+      setWishes((prev) => prev.map((w) => (w.id === wish.id ? { ...w, wanted_by: wantedBy } : w)))
+      outbox.enqueue({
+        id: uuid(),
+        kind: 'rpc',
+        rpc: 'set_want',
+        args: { p_wish: wish.id, p_person: me, p_want: want },
+        rebase: { table: 'wishes', patch: { ids: [wish.id], set: { wanted_by: wantedBy } } },
       })
     },
     [me],
   )
 
-  const cycleLevel = useCallback(
-    (wish: Wish) => patch(wish, { want_level: (wish.want_level % 3) + 1 }),
-    [patch],
-  )
+  const cycleLevel = useCallback((wish: Wish) => update(wish, { want_level: (wish.want_level % 3) + 1 }), [update])
+  const setPrice = useCallback((wish: Wish, priceCents: number) => update(wish, { price_cents: priceCents }), [update])
+  const rename = useCallback((wish: Wish, title: string) => update(wish, { title }), [update])
 
-  const setPrice = useCallback(
-    (wish: Wish, priceCents: number) => patch(wish, { price_cents: priceCents }),
-    [patch],
-  )
-
+  // foto precisa de sinal: é arquivo, não cabe na fila
   const setImage = useCallback(
     (wish: Wish, file: File) => {
+      if (!navigator.onLine) {
+        setError('Sem sinal agora: a foto precisa de internet para subir')
+        return
+      }
       void uploadWishImage(roomId, wish.id, file)
-        .then((url) => patch(wish, { image_url: url }))
-        .catch((e: Error) => setError(e.message))
+        .then((url) => update(wish, { image_url: url }))
+        .catch((e: Error) => setError(isOffline(e.message) ? 'Sem sinal agora: a foto precisa de internet para subir' : e.message))
     },
-    [roomId, patch],
+    [roomId, update],
   )
 
   const markBought = useCallback(
     (wish: Wish) =>
-      patch(wish, {
+      update(wish, {
         status: wish.status === 'querendo' ? 'comprado' : 'querendo',
         bought_at: wish.status === 'querendo' ? new Date().toISOString() : null,
         bought_by: wish.status === 'querendo' ? me : null,
       }),
-    [patch, me],
+    [update, me],
   )
 
   const remove = useCallback((wish: Wish) => {
     setWishes((prev) => prev.filter((w) => w.id !== wish.id))
-    void supabase
-      .from('wishes')
-      .delete()
-      .eq('id', wish.id)
-      .then(({ error }) => {
-        if (error) {
-          setWishes((prev) => [...prev, wish])
-          setError(error.message)
-        }
-      })
+    outbox.enqueue({ id: uuid(), kind: 'delete', table: 'wishes', rowId: wish.id })
   }, [])
 
   const restore = useCallback((wish: Wish) => {
-    pending.current.set(wish.id, wish)
-    setWishes((prev) => [...prev, wish])
-    void supabase
-      .from('wishes')
-      .insert(wish)
-      .then(({ error }) => {
-        pending.current.delete(wish.id)
-        if (error) {
-          setWishes((prev) => prev.filter((w) => w.id !== wish.id))
-          setError(error.message)
-        }
-      })
+    setWishes((prev) => (prev.some((w) => w.id === wish.id) ? prev : [...prev, wish]))
+    outbox.enqueue({ id: uuid(), kind: 'upsert', table: 'wishes', values: { ...wish } })
   }, [])
 
   const setSavings = useCallback(
     (cents: number) => {
       setSavingsCents(cents)
-      void supabase
-        .from('room_settings')
-        .upsert({ room_id: roomId, monthly_savings_cents: cents, updated_at: new Date().toISOString() })
-        .then(({ error }) => {
-          if (error) setError(error.message)
-        })
+      outbox.enqueue({
+        id: uuid(),
+        kind: 'upsert',
+        table: 'room_settings',
+        onConflict: 'room_id',
+        values: { room_id: roomId, monthly_savings_cents: cents, updated_at: new Date().toISOString() },
+      })
     },
     [roomId],
   )
@@ -266,6 +232,7 @@ export function useWishes(roomId: string, me: string): WishesStore {
     toggleWant,
     cycleLevel,
     setPrice,
+    rename,
     setImage,
     markBought,
     remove,

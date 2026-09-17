@@ -8,6 +8,7 @@ import { HomeScreen } from '../components/HomeScreen'
 import { ListScreen } from '../components/ListScreen'
 import { MenuSheet, type View } from '../components/MenuSheet'
 import { ReactionBurst } from '../components/ReactionBurst'
+import { Stage } from '../components/Stage'
 import { WishesScreen } from '../components/WishesScreen'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
@@ -144,6 +145,8 @@ export default function DemoApp() {
               : i,
           ),
         ),
+      edit: (item, name, quantity) =>
+        setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, name, quantity } : i))),
       remove: (item) => setItems((prev) => prev.filter((i) => i.id !== item.id)),
       restore: (item) => setItems((prev) => [...prev, item]),
       finishShopping: () => setItems((prev) => prev.filter((i) => i.status === 'pendente')),
@@ -197,6 +200,14 @@ export default function DemoApp() {
           prev.map((e) =>
             e.id === expense.id
               ? { ...e, split: e.split === 'meio' ? 'Lucas' : e.split === 'Lucas' ? 'Bela' : 'meio' }
+              : e,
+          ),
+        ),
+      edit: (expense, changes) =>
+        setExpenses((prev) =>
+          prev.map((e) =>
+            e.id === expense.id
+              ? { ...e, title: changes.title, amount_cents: changes.amountCents, due_day: changes.dueDay }
               : e,
           ),
         ),
@@ -275,6 +286,7 @@ export default function DemoApp() {
       }),
     cycleLevel: (wish: Wish) => patchWish(wish.id, { want_level: (wish.want_level % 3) + 1 }),
     setPrice: (wish: Wish, price_cents: number) => patchWish(wish.id, { price_cents }),
+    rename: (wish: Wish, title: string) => patchWish(wish.id, { title }),
     setImage: () => {},
     markBought: (wish: Wish) =>
       patchWish(wish.id, {
@@ -309,49 +321,57 @@ export default function DemoApp() {
 
   return (
     <>
-      {view === 'inicio' ? (
-        <HomeScreen
-          me="Lucas"
-          presence={presence}
-          items={itemsStore}
-          expenses={expensesStore}
-          wishes={wishesStore}
-          onOpen={setView}
-          onOpenMenu={() => setMenuOpen(true)}
-        />
-      ) : view === 'desejos' ? (
-        <WishesScreen
-          store={wishesStore}
-          me="Lucas"
-          presence={presence}
-          onOpenMenu={() => setMenuOpen(true)}
-          onHome={() => setView('inicio')}
-          onRegisterExpense={(title, amountCents) =>
-            expensesStore.add({ title, amountCents, dueDay: null }, { paid: true })
-          }
-        />
-      ) : view === 'lista' ? (
-        <ListScreen
-          store={itemsStore}
-          me="Lucas"
-          presence={presence}
-          onOpenMenu={() => setMenuOpen(true)}
-          onHome={() => setView('inicio')}
-          onRegisterMarket={(amountCents) =>
-            expensesStore.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
-          }
-        />
-      ) : (
-        <FinanceScreen
-          store={expensesStore}
-          me="Lucas"
-          month={month}
-          presence={presence}
-          onMonthChange={setMonth}
-          onOpenMenu={() => setMenuOpen(true)}
-          onHome={() => setView('inicio')}
-        />
-      )}
+      <Stage
+        view={view}
+        home="inicio"
+        onBack={() => setView('inicio')}
+        renderHome={() => (
+          <HomeScreen
+            me="Lucas"
+            presence={presence}
+            items={itemsStore}
+            expenses={expensesStore}
+            wishes={wishesStore}
+            onOpen={setView}
+            onOpenMenu={() => setMenuOpen(true)}
+          />
+        )}
+        renderModule={(current) =>
+          current === 'desejos' ? (
+            <WishesScreen
+              store={wishesStore}
+              me="Lucas"
+              presence={presence}
+              onOpenMenu={() => setMenuOpen(true)}
+              onHome={() => setView('inicio')}
+              onRegisterExpense={(title, amountCents) =>
+                expensesStore.add({ title, amountCents, dueDay: null }, { paid: true })
+              }
+            />
+          ) : current === 'lista' ? (
+            <ListScreen
+              store={itemsStore}
+              me="Lucas"
+              presence={presence}
+              onOpenMenu={() => setMenuOpen(true)}
+              onHome={() => setView('inicio')}
+              onRegisterMarket={(amountCents) =>
+                expensesStore.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
+              }
+            />
+          ) : (
+            <FinanceScreen
+              store={expensesStore}
+              me="Lucas"
+              month={month}
+              presence={presence}
+              onMonthChange={setMonth}
+              onOpenMenu={() => setMenuOpen(true)}
+              onHome={() => setView('inicio')}
+            />
+          )
+        }
+      />
 
       <ReactionBurst reaction={reaction} me="Lucas" />
 

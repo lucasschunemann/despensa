@@ -216,6 +216,7 @@ feito". Não estraga nada.
 | `20260918000000_avisos.sql` | avisos no celular | o menu não liga os avisos ([guia](AVISOS.md)) |
 | `20260919000000_fotos.sql` | conserta o envio de foto dos desejos | a foto dá "row-level security policy" |
 | `20260920000000_apagar_recorrente.sql` | apagar conta "todo mês" deste mês em diante | a opção "em diante" dá erro |
+| `20260921000000_sincronia.sql` | funcionar sem sinal e editar | coração, conta "todo mês" nova e editar "em diante" mostram erro vermelho |
 
 ### Módulo financeiro (arquivo `20260916000000_financeiro.sql`)
 

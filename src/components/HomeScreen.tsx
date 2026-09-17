@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'motion/react'
+import { useState } from 'react'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Presence } from '../hooks/usePresence'
@@ -14,6 +15,7 @@ import { Avatar } from './Avatar'
 import { Barcode } from './Barcode'
 import type { View } from './MenuSheet'
 import { Money } from './Money'
+import { Rolling } from './Rolling'
 
 interface Props {
   me: string
@@ -37,6 +39,7 @@ const TODAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric'
 
 export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOpenMenu }: Props) {
   const reduced = useReducedMotion()
+  const [scrolled, setScrolled] = useState(false)
 
   const onShelf = items.items.filter((i) => i.status === 'pendente')
   const inCart = items.items.filter((i) => i.status === 'pegado')
@@ -65,9 +68,9 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
 
   return (
     <div className="app home">
-      <AppHeader title="despensa" presence={presence} onOpenMenu={onOpenMenu} />
+      <AppHeader title="despensa" presence={presence} onOpenMenu={onOpenMenu} scrolled={scrolled} />
 
-      <div className="scroll">
+      <div className="scroll" onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 6)}>
         <motion.div
           className="hello"
           initial={{ opacity: 0, y: 10 }}
@@ -106,7 +109,13 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
             </span>
           </span>
           <span className="home-big">
-            {onShelf.length === 0 ? (items.items.length > 0 ? 'tudo no carrinho' : 'gôndola vazia') : `faltam ${onShelf.length}`}
+            {onShelf.length === 0 ? (
+              items.items.length > 0 ? 'tudo no carrinho' : 'lista vazia'
+            ) : (
+              <>
+                faltam <Rolling value={onShelf.length} />
+              </>
+            )}
           </span>
           <span className="home-shelf">
             {onShelf.slice(0, 7).map((item, i) => (

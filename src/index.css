@@ -414,35 +414,6 @@ input {
   line-height: 1.45;
 }
 
-.skeleton {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.skeleton .row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: var(--row-height);
-}
-
-.skeleton-check,
-.skeleton-line {
-  height: 12px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--field) 25%, var(--line) 37%, var(--field) 63%);
-  background-size: 400% 100%;
-  animation: shimmer 1.4s ease-in-out infinite;
-}
-
-.skeleton-check {
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  flex: none;
-}
-
 @keyframes shimmer {
   from {
     background-position: 100% 0;
@@ -2182,7 +2153,7 @@ input {
 }
 
 /* a régua só existe na coluna do texto, alinhada ao nome, não embaixo do emoji */
-.mrow + .mrow .mrow-text::before {
+.mrow.has-divider .mrow-text::before {
   content: '';
   position: absolute;
   top: 0;
@@ -2850,4 +2821,272 @@ input {
   .pulse-dot {
     animation: none;
   }
+}
+
+/* ─── Sincronia ─────────────────────────────────────────────────────────── */
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 560;
+  white-space: nowrap;
+}
+
+.sync svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sync-offline {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.sync-sending,
+.sync-sent {
+  background: var(--field);
+  color: var(--text-2);
+}
+
+.edit-card .composer-field {
+  margin-top: 8px;
+}
+
+.edit-preview {
+  min-height: 18px;
+  margin: 8px 4px 12px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.choice-option:disabled {
+  opacity: 0.4;
+}
+
+.inline-text-input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+}
+
+.action-edit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ticket-main {
+  cursor: pointer;
+}
+
+button.paid-text {
+  text-align: left;
+}
+
+.wish-title {
+  text-align: left;
+}
+
+/* ─── Navegação entre telas ─────────────────────────────────────────────── */
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #ecece9;
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.view.is-top {
+  z-index: 2;
+  box-shadow: -14px 0 34px rgb(0 0 0 / 0.1);
+}
+
+.edge-back {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 18px;
+  z-index: 50;
+  touch-action: none;
+}
+
+/* ─── Polimento ─────────────────────────────────────────────────────────── */
+.toast {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.toast-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgb(255 255 255 / 0.45);
+  transform-origin: left center;
+}
+
+.rolling {
+  display: inline-grid;
+  overflow: hidden;
+  vertical-align: bottom;
+  font-variant-numeric: tabular-nums;
+}
+
+.rolling > span {
+  grid-area: 1 / 1;
+}
+
+/* cabeçalho: ganha régua quando a lista rola por baixo */
+.header {
+  position: relative;
+  z-index: 5;
+  transition: box-shadow 240ms ease;
+}
+
+.header.is-scrolled {
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.wordmark {
+  transform-origin: left center;
+}
+
+/* esqueletos no formato de cada módulo */
+.skeleton {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.skeleton-block,
+.skeleton-line {
+  display: block;
+  background: linear-gradient(90deg, #f0f0ed 25%, #e7e7e3 37%, #f0f0ed 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+}
+
+.skeleton-line.is-short {
+  width: 26%;
+  height: 10px;
+}
+
+.skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-market li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 66px;
+}
+
+.skeleton-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.skeleton-dot {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+}
+
+.skeleton-tickets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-tickets .skeleton-block {
+  height: 118px;
+  border-radius: 20px;
+}
+
+.skeleton-wishes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-wishes li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 26px;
+  background: rgb(255 255 255 / 0.5);
+}
+
+.skeleton-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+}
+
+/* resposta ao toque, igual em todo lugar: afunda um pouco */
+.mrow-main:active .mrow-mark,
+.ticket-stub:active,
+.paid:active,
+.cart-head:active,
+.cart-item:active,
+.chip:active,
+.month-arrow:active,
+.wordmark-button:active {
+  transform: scale(0.96);
+}
+
+.mrow-mark,
+.ticket-stub,
+.paid,
+.cart-item,
+.month-arrow,
+.wordmark-button {
+  transition: transform 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block,
+  .skeleton-line {
+    animation: none;
+  }
+}
+
+.choice-option.is-primary {
+  align-items: center;
+  background: var(--ink);
+  color: var(--bg);
 }

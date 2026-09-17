@@ -47,6 +47,26 @@ Opcional, e precisa de uma configuração à parte: veja [docs/AVISOS.md](docs/A
 Quando ligado, o celular avisa que a outra pessoa colocou item na lista, pagou conta ou pôs um
 desejo. Os avisos são juntados numa janela de 12 segundos, para cinco itens virarem um aviso só.
 
+## Sem sinal
+
+Tudo que você faz aparece na tela na hora e entra numa **fila guardada no aparelho**. Sem sinal (o
+mercado), as alterações esperam; quando o sinal volta, saem na ordem em que foram feitas. O selo no
+topo mostra "sem sinal · 3 guardadas", "enviando" e "tudo enviado". Só a foto de desejo precisa de
+internet na hora, porque é arquivo.
+
+## Editar
+
+Editar usa o mesmo jeito de escrever que lançar:
+- **Item**: segure o dedo → editar → `2 pão integral`.
+- **Conta**: toque no bilhete → `luz 213,50 dia 22`. Se a conta se repete, escolha "só deste mês"
+  ou "deste mês em diante".
+- **Desejo**: toque no nome para renomear; toque no preço para mudar o valor.
+
+## Navegação
+
+O início fica embaixo, o módulo desliza por cima, como no iPhone. Para voltar: a setinha ao lado do
+nome, ou arrastar a partir da borda esquerda da tela.
+
 ## Contas do mês
 
 - **Lançar**: um campo só, igual à lista. `luz 180`, `aluguel 1.850 dia 10`, `internet r$ 129,90`.
@@ -118,6 +138,12 @@ Onde fica cada coisa:
 | Tela dos desejos | `src/components/WishesScreen.tsx` e `WishCard.tsx` |
 | Tela inicial | `src/components/HomeScreen.tsx` |
 | Linha do mercado e carrinho | `src/components/Market.tsx` |
+| Fila sem sinal | `src/lib/outbox.ts` (lógica), `src/lib/sync.ts` (Supabase) |
+| Selo de sincronia | `src/components/SyncBadge.tsx` |
+| Cartão de edição | `src/components/EditCard.tsx` |
+| Navegação entre telas | `src/components/Stage.tsx` |
+| Aviso de desfazer | `src/components/Toast.tsx` |
+| Percursos de ponta a ponta | `e2e/` |
 | Emoji de cada produto | `src/lib/products.ts` |
 | Bilhete da conta e cupom do mês | `src/components/Ticket.tsx`, `Receipt.tsx`, `Barcode.tsx` |
 | Névoa, faíscas e corações dos desejos | `src/components/Ether.tsx` |
@@ -144,4 +170,9 @@ Onde fica cada coisa:
 
 - `npm run dev`: servidor local (exposto na rede, para testar no celular)
 - `npm run build`: typecheck + build
-- `npm test`: testes do leitor de quantidade
+- `npm test`: testes de lógica (contas, fila sem sinal, leitura de texto, módulos contra um Supabase de mentira)
+- `npm run test:e2e`: percursos de ponta a ponta num navegador de verdade, no modo demonstração
+- `npm run check`: tipos + os dois acima
+
+`npm run build` roda os testes de lógica antes de montar o app: se algum falhar, a Vercel não
+publica. Os percursos rodam no GitHub a cada envio (`.github/workflows/testes.yml`).

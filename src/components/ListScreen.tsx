@@ -6,6 +6,7 @@ import { useViewportFit } from '../hooks/useViewportFit'
 import { eggFor } from '../lib/eggs'
 import { haptic } from '../lib/haptics'
 import { formatBRL } from '../lib/money'
+import { parseEntry } from '../lib/parse'
 import { productEmoji } from '../lib/products'
 import { sound } from '../lib/sound'
 import type { Item } from '../lib/types'
@@ -14,8 +15,11 @@ import { AppHeader } from './AppHeader'
 import { Avatar } from './Avatar'
 import { CompleteOverlay } from './CompleteOverlay'
 import { Composer } from './Composer'
+import { EditCard } from './EditCard'
 import { CartIcon, CartSection, MarketRow, ProductMark } from './Market'
+import { Rolling } from './Rolling'
 import { Skeleton } from './Skeleton'
+import { Toast } from './Toast'
 import { Toss } from './Toss'
 
 interface Props {
@@ -38,13 +42,14 @@ interface Flight {
 const REACTIONS = ['❤️', '😂', '👍', '🔥', '😮', '🙏']
 
 export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegisterMarket }: Props) {
-  const { items, arrivals, ready, connection, error, clearError, add, toggle, remove, restore, finishShopping } =
+  const { items, arrivals, ready, error, clearError, add, toggle, edit, remove, restore, finishShopping } =
     store
   const reduced = useReducedMotion()
 
   const [celebrating, setCelebrating] = useState(false)
   const [egg, setEgg] = useState<{ id: number; emoji: string } | null>(null)
   const [actionsFor, setActionsFor] = useState<Item | null>(null)
+  const [editing, setEditing] = useState<Item | null>(null)
   const [askAmount, setAskAmount] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [deleted, setDeleted] = useState<Item | null>(null)
@@ -54,6 +59,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
   const [openId, setOpenId] = useState<string | null>(null)
 
   const scroller = useRef<HTMLDivElement>(null)
+  const [scrolled, setScrolled] = useState(false)
   const cart = useRef<HTMLSpanElement>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const nearBottom = useRef(true)
@@ -174,6 +180,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
     <div className="app">
       <AppHeader
         title="mercado"
+        scrolled={scrolled}
         presence={presence}
         onOpenMenu={onOpenMenu}
         onHome={onHome}
@@ -188,23 +195,13 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
           >
             <CartIcon size={20} />
             <b>
-              {inCart.length}/{items.length}
+              <Rolling value={inCart.length} />/{items.length}
             </b>
           </motion.span>
         }
       />
 
       <AnimatePresence>
-        {ready && connection !== 'live' && (
-          <motion.p
-            className="banner"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-          >
-            {connection === 'connecting' ? 'Conectando…' : 'Sem conexão · reconectando'}
-          </motion.p>
-        )}
         {error && (
           <motion.button
             className="banner banner-error"
@@ -224,10 +221,11 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
         ref={scroller}
         onScroll={(e) => {
           const el = e.currentTarget
+          setScrolled(el.scrollTop > 6)
           nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
         }}
       >
-        {!ready && <Skeleton />}
+        {!ready && <Skeleton variant="market" />}
 
         {ready && items.length === 0 && (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -272,6 +270,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
                 open={openId === item.id}
                 fresh={arrivals.includes(item.id)}
                 arriving={Boolean(known.current && !known.current.has(item.id))}
+                divider={index > 0}
                 enterDelay={index * 0.035}
                 onOpenChange={(open) => setOpenId(open ? item.id : null)}
                 onPick={handlePick}
@@ -299,6 +298,36 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
 
       <div className="dock">
         <AnimatePresence>
+          {editing && (
+            <EditCard
+              key={`edit-${editing.id}`}
+              title="Editar item"
+              initial={`${editing.quantity ? `${editing.quantity} ` : ''}${editing.name}`}
+              preview={(text) => {
+                const entry = parseEntry(text)
+                if (!entry) return null
+                return (
+                  <>
+                    <ProductMark name={entry.name} size={14} /> {entry.name}
+                    {entry.quantity ? ` · ${entry.quantity}` : ''}
+                  </>
+                )
+              }}
+              actions={[
+                {
+                  label: 'salvar',
+                  onSave: (text) => {
+                    const entry = parseEntry(text)
+                    if (!entry) return
+                    edit(editing, entry.name, entry.quantity)
+                    sound.pick()
+                    setEditing(null)
+                  },
+                },
+              ]}
+              onClose={() => setEditing(null)}
+            />
+          )}
           {actionsFor && (
             <motion.div
               key="actions"
@@ -333,6 +362,15 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
                 <button className="reaction-close" onClick={() => setActionsFor(null)}>
                   fechar
                 </button>
+                <button
+                  className="action-edit"
+                  onClick={() => {
+                    setEditing(actionsFor)
+                    setActionsFor(null)
+                  }}
+                >
+                  editar
+                </button>
                 <button className="action-delete" onClick={() => handleRemove(actionsFor)}>
                   apagar item
                 </button>
@@ -340,27 +378,19 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
             </motion.div>
           )}
           {notice && (
-            <motion.div
-              key="notice"
-              className="toast"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-            >
-              <span>{notice}</span>
-            </motion.div>
+            <Toast key="notice" onDismiss={() => setNotice(null)}>
+              {notice}
+            </Toast>
           )}
           {deleted && (
-            <motion.div
+            <Toast
               key="deleted"
-              className="toast"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
+              duration={5000}
+              action={{ label: 'Desfazer', onClick: handleUndo }}
+              onDismiss={() => setDeleted(null)}
             >
-              <span>{deleted.name} apagado</span>
-              <button onClick={handleUndo}>Desfazer</button>
-            </motion.div>
+              {deleted.name} apagado
+            </Toast>
           )}
         </AnimatePresence>
 
@@ -404,7 +434,8 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
           )}
         </AnimatePresence>
 
-        <Composer onAdd={handleAdd} onFocus={() => scrollToEnd()} onTyping={presence.notifyTyping} />
+        {/* com o cartão de edição aberto, um campo só na tela */}
+        {!editing && <Composer onAdd={handleAdd} onFocus={() => scrollToEnd()} onTyping={presence.notifyTyping} />}
       </div>
 
       {/* produtos a caminho do carrinho: sobem num arco e encolhem ao cair dentro */}

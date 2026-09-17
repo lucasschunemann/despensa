@@ -8,6 +8,7 @@ import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
 import { Hearts, Sparks } from './Ether'
 import { InlineAmount } from './InlineAmount'
+import { InlineText } from './InlineText'
 
 const ACTION_WIDTH = 92
 const OPEN_THRESHOLD = 44
@@ -25,6 +26,7 @@ interface Props {
   onToggleWant: (wish: Wish) => void
   onCycleLevel: (wish: Wish) => void
   onSetPrice: (wish: Wish, cents: number) => void
+  onRename: (wish: Wish, title: string) => void
   onPickImage: (wish: Wish, file: File) => void
   onToggleBought: (wish: Wish) => void
   onRemove: (wish: Wish) => void
@@ -41,6 +43,7 @@ export function WishCard({
   onToggleWant,
   onCycleLevel,
   onSetPrice,
+  onRename,
   onPickImage,
   onToggleBought,
   onRemove,
@@ -188,7 +191,13 @@ export function WishCard({
 
         <div className="wish-body">
           <div className="wish-top">
-            <span className="wish-title">{wish.title}</span>
+            <InlineText
+              className="wish-title"
+              value={wish.title}
+              label={`Renomear ${wish.title}`}
+              guard={() => !wasDrag()}
+              onChange={(title) => onRename(wish, title)}
+            />
             <InlineAmount
               cents={wish.price_cents}
               label={`Preço de ${wish.title}`}

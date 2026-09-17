@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Avatar, Mark } from './components/Avatar'
 import { FinanceScreen } from './components/FinanceScreen'
@@ -6,6 +6,7 @@ import { HomeScreen } from './components/HomeScreen'
 import { ListScreen } from './components/ListScreen'
 import { MenuSheet, type View } from './components/MenuSheet'
 import { ReactionBurst } from './components/ReactionBurst'
+import { Stage } from './components/Stage'
 import { WishesScreen } from './components/WishesScreen'
 import { useExpenses } from './hooks/useExpenses'
 import { useItems } from './hooks/useItems'
@@ -188,50 +189,50 @@ function Room({
 
   return (
     <>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={view}
-          // a tela inicial afasta um pouco ao abrir um módulo; o módulo chega de perto
-          initial={view === 'inicio' ? { opacity: 0, scale: 1.03 } : { opacity: 0, scale: 0.96, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={view === 'inicio' ? { opacity: 0, scale: 0.97 } : { opacity: 0, scale: 0.98, y: 8 }}
-          transition={{ type: 'spring', stiffness: 420, damping: 36 }}
-        >
-          {view === 'inicio' && (
-            <HomeScreen
-              me={person}
-              presence={presence}
-              items={items}
-              expenses={expenses}
-              wishes={wishes}
-              onOpen={setView}
-              onOpenMenu={() => setMenuOpen(true)}
-            />
-          )}
-          {view === 'lista' && (
-            <ListScreen
-              store={items}
-              me={person}
-              presence={presence}
-              onOpenMenu={() => setMenuOpen(true)}
-              onHome={goHome}
-              onRegisterMarket={(amountCents) =>
-                expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
-              }
-            />
-          )}
-          {view === 'contas' && (
-            <FinanceScreen
-              store={expenses}
-              me={person}
-              month={month}
-              presence={presence}
-              onMonthChange={setMonth}
-              onOpenMenu={() => setMenuOpen(true)}
-              onHome={goHome}
-            />
-          )}
-          {view === 'desejos' && (
+      <Stage
+        view={view}
+        home="inicio"
+        onBack={goHome}
+        renderHome={() => (
+          <HomeScreen
+            me={person}
+            presence={presence}
+            items={items}
+            expenses={expenses}
+            wishes={wishes}
+            onOpen={setView}
+            onOpenMenu={() => setMenuOpen(true)}
+          />
+        )}
+        renderModule={(current) => {
+          if (current === 'lista') {
+            return (
+              <ListScreen
+                store={items}
+                me={person}
+                presence={presence}
+                onOpenMenu={() => setMenuOpen(true)}
+                onHome={goHome}
+                onRegisterMarket={(amountCents) =>
+                  expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
+                }
+              />
+            )
+          }
+          if (current === 'contas') {
+            return (
+              <FinanceScreen
+                store={expenses}
+                me={person}
+                month={month}
+                presence={presence}
+                onMonthChange={setMonth}
+                onOpenMenu={() => setMenuOpen(true)}
+                onHome={goHome}
+              />
+            )
+          }
+          return (
             <WishesScreen
               store={wishes}
               me={person}
@@ -242,9 +243,9 @@ function Room({
                 expenses.add({ title, amountCents, dueDay: null }, { paid: true })
               }
             />
-          )}
-        </motion.div>
-      </AnimatePresence>
+          )
+        }}
+      />
 
       <ReactionBurst reaction={presence.reaction} me={person} />
 

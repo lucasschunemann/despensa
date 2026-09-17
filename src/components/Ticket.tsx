@@ -28,6 +28,7 @@ interface TicketProps {
   onPaid: (expense: Expense) => void
   onCycleSplit: (expense: Expense) => void
   onRemove: (expense: Expense) => void
+  onEdit: (expense: Expense) => void
 }
 
 export function Ticket({
@@ -41,6 +42,7 @@ export function Ticket({
   onPaid,
   onCycleSplit,
   onRemove,
+  onEdit,
 }: TicketProps) {
   const reduced = useReducedMotion()
   const [phase, setPhase] = useState<Phase>('idle')
@@ -164,7 +166,15 @@ export function Ticket({
           onOpenChange(shouldOpen)
         }}
       >
-        <div className="ticket-main">
+        <div
+          className="ticket-main"
+          onClick={(e) => {
+            // o chip da divisão tem ação própria
+            if ((e.target as HTMLElement).closest('.ticket-split')) return
+            if (wasDrag() || phase !== 'idle') return
+            onEdit(expense)
+          }}
+        >
           <div className="ticket-head">
             <span className="ticket-title">{expense.title}</span>
             {expense.recurrence_id && <span className="ticket-tag">todo mês</span>}
@@ -256,10 +266,11 @@ interface PaidProps {
   me: string
   enterDelay: number
   onUnpay: (expense: Expense) => void
+  onEdit: (expense: Expense) => void
 }
 
 /** O que sobra da conta depois de paga: o bilhete sem canhoto, com o carimbo. */
-export function PaidTicket({ expense, me, enterDelay, onUnpay }: PaidProps) {
+export function PaidTicket({ expense, me, enterDelay, onUnpay, onEdit }: PaidProps) {
   const reduced = useReducedMotion()
 
   return (
@@ -271,7 +282,7 @@ export function PaidTicket({ expense, me, enterDelay, onUnpay }: PaidProps) {
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.2 } }}
       transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 32, delay: enterDelay }}
     >
-      <div className="paid-text">
+      <button className="paid-text" onClick={() => onEdit(expense)} aria-label={`Editar ${expense.title}`}>
         <span className="paid-title">{expense.title}</span>
         <span className="paid-meta">
           {expense.paid_by && (
@@ -283,7 +294,7 @@ export function PaidTicket({ expense, me, enterDelay, onUnpay }: PaidProps) {
           {expense.recurrence_id && <span>· todo mês</span>}
           {expense.settled && <span>· acertado</span>}
         </span>
-      </div>
+      </button>
       <span className="paid-amount">{formatAmount(expense.amount_cents)}</span>
       <button className="paid-stamp" onClick={() => onUnpay(expense)} aria-label={`Desmarcar ${expense.title}`}>
         pago

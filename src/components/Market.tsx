@@ -5,6 +5,7 @@ import { productEmoji } from '../lib/products'
 import type { Item } from '../lib/types'
 import { Avatar } from './Avatar'
 import { HoldButton } from './HoldButton'
+import { Rolling } from './Rolling'
 
 // cada roda gira em torno do próprio centro (sem isso ela gira em volta do desenho todo e se solta)
 const AXLE = { transformBox: 'fill-box', transformOrigin: 'center' } as const
@@ -55,6 +56,8 @@ interface RowProps {
   me: string
   open: boolean
   fresh: boolean
+  /** régua em cima (todas menos a primeira; decidido pela lista, não pelo CSS, para não sobrar na animação) */
+  divider: boolean
   /** item que acabou de entrar: o emoji pula para dentro da caixinha */
   arriving: boolean
   enterDelay: number
@@ -69,6 +72,7 @@ export function MarketRow({
   me,
   open,
   fresh,
+  divider,
   arriving,
   enterDelay,
   onOpenChange,
@@ -112,7 +116,7 @@ export function MarketRow({
   return (
     <motion.li
       layout={reduced ? false : 'position'}
-      className={`mrow${fresh ? ' is-fresh' : ''}`}
+      className={`mrow${fresh ? ' is-fresh' : ''}${divider ? ' has-divider' : ''}`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0, x: 24, transition: { duration: 0.26, ease: [0.4, 0, 0.2, 1] } }}
@@ -280,7 +284,7 @@ export function CartSection({ items, total, rolling, allPicked, onReturn, onFini
         <span className="cart-head-text">
           no carrinho
           <small>
-            {items.length} de {total}
+            <Rolling value={items.length} /> de {total}
           </small>
         </span>
         <motion.span

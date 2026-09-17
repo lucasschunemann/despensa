@@ -126,6 +126,34 @@ Terceiro módulo. O que dá sentido a ele é o **cofre**: não é vitrine, é fi
 - Palavras com brincadeira em `src/lib/eggs.ts` (tomate, cerveja, ovo, chocolate, pizza, bolo,
   sorvete, café, vinho, flores, viagem, gato)
 
+## Confiança (17/09/2026)
+- **Toda alteração passa pela fila** (`src/lib/outbox.ts` + `src/lib/sync.ts`): aplica na tela na
+  hora, guarda no localStorage e envia em ordem. Falta de sinal = espera e tenta de novo (evento
+  `online`, voltar ao app, a cada 8s); recusa do servidor = sai da fila, mostra o erro e busca a
+  verdade do servidor. Ao buscar dados, `applyPending` reaplica o que ainda está na fila, para uma
+  atualização não desfazer na tela o que foi feito sem sinal. Nunca chamar `supabase.from().insert`
+  direto num hook de módulo: sempre `outbox.enqueue`
+- **Tudo que a fila envia precisa poder ser repetido** (o app pode reenviar algo que chegou mas cuja
+  resposta se perdeu): inserts viram upsert com id gerado no app; o coração é `set_want` com o valor
+  final, não "alternar"; conta recorrente nova usa `create_recurring_with_ids`
+- **Aviso para a outra pessoa só sai depois que a operação chega** (campo `notify` da operação)
+- Foto de desejo é a exceção: precisa de sinal na hora
+- **Editar usa a gramática de lançar** (`EditCard`): "2 pão integral", "luz 213,50 dia 22". Conta
+  que se repete escolhe "só deste mês" ou "em diante" (`update_recurring`), igual ao apagar
+- **Testes**: lógica no Vitest (inclusive os três módulos contra `src/test/fakeSupabase.ts`, que
+  corta o sinal no meio do teste) e percursos no Playwright (`e2e/`, modo demonstração, tamanho de
+  iPhone). `npm run build` roda o Vitest: teste quebrado não publica. GitHub Actions roda tudo
+- Todo bug de gesto achado vira percurso em `e2e/` (ex.: arrastar começando no canhoto pagava a conta)
+
+## Polimento (17/09/2026)
+- **Navegação do iPhone** (`Stage`): início sempre montado embaixo, módulo desliza por cima, os dois
+  dividem o mesmo deslocamento; voltar pela seta ou arrastando da borda esquerda
+- Cabeçalho ganha régua e o título encolhe quando a lista rola
+- Aviso de desfazer com régua do tempo que resta e fecha puxando para baixo (`Toast`)
+- Números de contagem rolam como contador (`Rolling`)
+- Esqueleto de carregamento no formato de cada módulo
+- Toque afunda um pouco em tudo que é tocável
+
 ## Dados por item
 - Nome (texto livre)
 - Quantidade

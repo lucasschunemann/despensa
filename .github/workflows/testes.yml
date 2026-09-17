@@ -1,0 +1,39 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tipos
+        run: npx tsc -b
+
+      - name: Testes de lógica (contas, fila sem sinal, leitura de texto)
+        run: npx vitest run
+
+      - name: Navegador para os percursos
+        run: npx playwright install --with-deps chromium
+
+      - name: Percursos de ponta a ponta (modo demonstração)
+        run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: rastros-dos-percursos
+          path: test-results
+          retention-days: 7

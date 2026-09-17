@@ -1,7 +1,8 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 import type { Presence } from '../hooks/usePresence'
 import { Avatar } from './Avatar'
+import { SyncBadge } from './SyncBadge'
 
 interface Props {
   title: string
@@ -11,22 +12,35 @@ interface Props {
   onHome?: () => void
   /** algo do módulo ao lado do menu (o carrinho, na lista) */
   accessory?: ReactNode
+  /** a lista rolou: o cabeçalho ganha régua e o título encolhe um pouco */
+  scrolled?: boolean
 }
 
-export function AppHeader({ title, presence, onOpenMenu, onHome, accessory }: Props) {
+export function AppHeader({ title, presence, onOpenMenu, onHome, accessory, scrolled = false }: Props) {
+  const reduced = useReducedMotion()
+  const titleEl = (
+    <motion.h1
+      className="wordmark"
+      animate={{ scale: scrolled && !reduced ? 0.86 : 1 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+    >
+      {title}
+    </motion.h1>
+  )
   return (
-    <header className="header">
+    <header className={`header${scrolled ? ' is-scrolled' : ''}`}>
       {onHome ? (
         <button className="wordmark-button" onClick={onHome} aria-label="Voltar para o início">
           <svg viewBox="0 0 24 24" aria-hidden>
             <path d="M14.5 5.5 8 12l6.5 6.5" />
           </svg>
-          <h1 className="wordmark">{title}</h1>
+          {titleEl}
         </button>
       ) : (
-        <h1 className="wordmark">{title}</h1>
+        titleEl
       )}
       <div className="header-actions">
+        <SyncBadge />
         {accessory}
         <AnimatePresence>
           {presence.online.map((person) => (

@@ -6,16 +6,19 @@ import { useViewportFit } from '../hooks/useViewportFit'
 import { summarize } from '../lib/balance'
 import { haptic } from '../lib/haptics'
 import { isCurrentMonth, monthKey, monthLabel, shiftMonth } from '../lib/month'
+import { formatBRL, parseExpenseEntry } from '../lib/money'
 import { sound } from '../lib/sound'
 import type { Expense } from '../lib/types'
 import { PEOPLE } from '../lib/types'
 import { AppHeader } from './AppHeader'
 import { CompleteOverlay } from './CompleteOverlay'
+import { EditCard } from './EditCard'
 import { ExpenseComposer } from './ExpenseComposer'
 import { MoneyRain } from './Money'
 import { Receipt } from './Receipt'
 import { PaidTicket, Ticket } from './Ticket'
 import { Skeleton } from './Skeleton'
+import { Toast } from './Toast'
 
 interface Props {
   store: ExpensesStore
@@ -36,6 +39,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
     add,
     togglePaid,
     cycleSplit,
+    edit,
     remove,
     stopRecurring,
     restore,
@@ -45,10 +49,12 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
   const [rain, setRain] = useState(0)
   const [deleted, setDeleted] = useState<Expense | null>(null)
   const [asking, setAsking] = useState<Expense | null>(null)
+  const [editing, setEditing] = useState<Expense | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [closing, setClosing] = useState(false)
   const [direction, setDirection] = useState(1)
   const scroller = useRef<HTMLDivElement>(null)
+  const [scrolled, setScrolled] = useState(false)
   // começa falso: ao abrir o mês a pessoa precisa ver o resumo, não o fim da lista
   const nearBottom = useRef(false)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -158,7 +164,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
   return (
     <div className="app">
-      <AppHeader title="contas" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} />
+      <AppHeader title="contas" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} scrolled={scrolled} />
 
       <div className="month-bar">
         <button className="month-arrow" onClick={() => goMonth(-1)} aria-label="Mês anterior">
@@ -217,6 +223,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
         onPointerDown={() => setOpenId(null)}
         onScroll={(e) => {
           const el = e.currentTarget
+          setScrolled(el.scrollTop > 6)
           nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
         }}
       >
@@ -229,7 +236,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
           onSettle={handleSettle}
         />
 
-        {!ready && <Skeleton />}
+        {!ready && <Skeleton variant="tickets" />}
 
         {ready && expenses.length === 0 && (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -255,6 +262,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
                 onPaid={togglePaid}
                 onCycleSplit={cycleSplit}
                 onRemove={handleRemove}
+                onEdit={setEditing}
               />
             ))}
           </AnimatePresence>
@@ -272,6 +280,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
                     me={me}
                     enterDelay={index * 0.02}
                     onUnpay={handleUnpay}
+                    onEdit={setEditing}
                   />
                 ))}
               </AnimatePresence>
@@ -282,6 +291,58 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
       <div className="dock">
         <AnimatePresence>
+          {editing && (
+            <EditCard
+              key={`edit-${editing.id}`}
+              title={`Editar ${editing.title}`}
+              initial={`${editing.title} ${(editing.amount_cents / 100).toFixed(2).replace('.', ',')}${editing.due_day ? ` dia ${editing.due_day}` : ''}`}
+              preview={(text) => {
+                const entry = parseExpenseEntry(text)
+                if (!entry) return null
+                return `${entry.title} · ${formatBRL(entry.amountCents)}${entry.dueDay ? ` · dia ${entry.dueDay}` : ''}`
+              }}
+              actions={
+                editing.recurrence_id
+                  ? [
+                      {
+                        label: `só de ${monthLabel(editing.month)}`,
+                        hint: 'nos próximos meses fica como estava',
+                        onSave: (text) => {
+                          const entry = parseExpenseEntry(text)
+                          if (!entry) return
+                          edit(editing, entry, 'mes')
+                          sound.print()
+                          setEditing(null)
+                        },
+                      },
+                      {
+                        label: `de ${monthLabel(editing.month)} em diante`,
+                        hint: 'a conta que se repete passa a ser assim',
+                        onSave: (text) => {
+                          const entry = parseExpenseEntry(text)
+                          if (!entry) return
+                          edit(editing, entry, 'futuro')
+                          sound.print()
+                          setEditing(null)
+                        },
+                      },
+                    ]
+                  : [
+                      {
+                        label: 'salvar',
+                        onSave: (text) => {
+                          const entry = parseExpenseEntry(text)
+                          if (!entry) return
+                          edit(editing, entry, 'mes')
+                          sound.print()
+                          setEditing(null)
+                        },
+                      },
+                    ]
+              }
+              onClose={() => setEditing(null)}
+            />
+          )}
           {asking && (
             <motion.div
               key="asking"
@@ -315,40 +376,30 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
             </motion.div>
           )}
           {notice && (
-            <motion.div
-              key="notice"
-              className="toast"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              transition={{ type: 'spring', stiffness: 520, damping: 38 }}
-            >
-              <span>{notice}</span>
-            </motion.div>
+            <Toast key="notice" onDismiss={() => setNotice(null)}>
+              {notice}
+            </Toast>
           )}
           {deleted && (
-            <motion.div
-              className="toast"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              transition={{ type: 'spring', stiffness: 520, damping: 38 }}
-            >
-              <span>{deleted.title} apagada</span>
-              <button
-                onClick={() => {
+            <Toast
+              key="deleted"
+              duration={5000}
+              action={{
+                label: 'Desfazer',
+                onClick: () => {
                   if (undoTimer.current) clearTimeout(undoTimer.current)
                   haptic('light')
                   restore(deleted)
                   setDeleted(null)
-                }}
-              >
-                Desfazer
-              </button>
-            </motion.div>
+                },
+              }}
+              onDismiss={() => setDeleted(null)}
+            >
+              {deleted.title} apagada
+            </Toast>
           )}
         </AnimatePresence>
-        <ExpenseComposer onAdd={handleAdd} onFocus={() => scrollToEnd()} />
+        {!editing && <ExpenseComposer onAdd={handleAdd} onFocus={() => scrollToEnd()} />}
       </div>
 
       <AnimatePresence>{rain > 0 && <MoneyRain key={rain} onDone={() => setRain(0)} />}</AnimatePresence>

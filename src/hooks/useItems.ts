@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { notifyOthers } from '../lib/notify'
+import { applyPending } from '../lib/outbox'
 import { supabase } from '../lib/supabase'
+import { onRejected, onSynced, outbox } from '../lib/sync'
 import type { Item } from '../lib/types'
 import { uuid } from '../lib/uuid'
 
@@ -16,6 +17,7 @@ export interface ItemsStore {
   clearError: () => void
   add: (name: string, quantity: string | null) => void
   toggle: (item: Item) => void
+  edit: (item: Item, name: string, quantity: string | null) => void
   remove: (item: Item) => void
   restore: (item: Item) => void
   finishShopping: () => void
@@ -27,10 +29,10 @@ export function useItems(roomId: string, me: string): ItemsStore {
   const [connection, setConnection] = useState<Connection>('connecting')
   const [error, setError] = useState<string | null>(null)
   const [arrivals, setArrivals] = useState<string[]>([])
-  // Inserts otimistas ainda não confirmados: um refetch no meio não pode apagá-los.
-  const pending = useRef(new Map<string, Item>())
-  // Tudo que este aparelho criou nesta sessão, para não destacar os próprios itens.
+  // tudo que este aparelho criou nesta sessão, para não destacar os próprios itens
   const mine = useRef(new Set<string>())
+  const itemsRef = useRef<Item[]>([])
+  itemsRef.current = items
 
   const refetch = useCallback(async () => {
     const { data, error } = await supabase
@@ -39,12 +41,12 @@ export function useItems(roomId: string, me: string): ItemsStore {
       .eq('room_id', roomId)
       .order('created_at')
     if (error) {
-      setError(error.message)
+      // sem sinal não é erro para mostrar: a tela segue com o que já tem
+      if (!/fetch|network|load failed/i.test(error.message)) setError(error.message)
       return
     }
-    const server = data as Item[]
-    const ids = new Set(server.map((i) => i.id))
-    setItems([...server, ...[...pending.current.values()].filter((i) => !ids.has(i.id))])
+    // o que ainda está na fila continua valendo por cima do que veio do servidor
+    setItems(applyPending(data as Item[], 'items', outbox.pending()))
     setReady(true)
   }, [roomId])
 
@@ -84,7 +86,8 @@ export function useItems(roomId: string, me: string): ItemsStore {
       .subscribe((s) => {
         if (s === 'SUBSCRIBED') {
           setConnection('live')
-          void refetch() // cobre qualquer evento perdido enquanto estava desconectado
+          void refetch()
+          void outbox.flush()
         } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT' || s === 'CLOSED') {
           setConnection('offline')
         }
@@ -94,9 +97,16 @@ export function useItems(roomId: string, me: string): ItemsStore {
       if (document.visibilityState === 'visible') void refetch()
     }
     document.addEventListener('visibilitychange', onVisible)
+    const offSynced = onSynced(() => void refetch())
+    const offRejected = onRejected((message) => {
+      setError(message)
+      void refetch()
+    })
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
+      offSynced()
+      offRejected()
       void supabase.removeChannel(channel)
     }
   }, [roomId, refetch])
@@ -113,93 +123,57 @@ export function useItems(roomId: string, me: string): ItemsStore {
         created_at: new Date().toISOString(),
         picked_at: null,
       }
-      pending.current.set(item.id, item)
       mine.current.add(item.id)
       setItems((prev) => [...prev, item])
-
-      void supabase
-        .from('items')
-        .insert({ id: item.id, room_id: roomId, name, quantity, added_by: me })
-        .then(({ error }) => {
-          pending.current.delete(item.id)
-          if (error) {
-            setItems((prev) => prev.filter((i) => i.id !== item.id))
-            setError(error.message)
-            return
-          }
-          notifyOthers(roomId, me, 'item', name)
-        })
+      outbox.enqueue({
+        id: uuid(),
+        kind: 'upsert',
+        table: 'items',
+        values: { ...item },
+        notify: { roomId, person: me, kind: 'item', subject: name },
+      })
     },
     [roomId, me],
   )
 
   const toggle = useCallback((item: Item) => {
     const picked = item.status === 'pendente'
-    const patch = {
+    const values = {
       status: picked ? 'pegado' : 'pendente',
       picked_at: picked ? new Date().toISOString() : null,
     } as const
-    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...patch } : i)))
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...values } : i)))
+    outbox.enqueue({ id: uuid(), kind: 'update', table: 'items', rowId: item.id, values })
+  }, [])
 
-    void supabase
-      .from('items')
-      .update(patch)
-      .eq('id', item.id)
-      .then(({ error }) => {
-        if (error) {
-          setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)))
-          setError(error.message)
-        }
-      })
+  const edit = useCallback((item: Item, name: string, quantity: string | null) => {
+    const values = { name, quantity }
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...values } : i)))
+    outbox.enqueue({ id: uuid(), kind: 'update', table: 'items', rowId: item.id, values })
   }, [])
 
   const remove = useCallback((item: Item) => {
     setItems((prev) => prev.filter((i) => i.id !== item.id))
-    void supabase
-      .from('items')
-      .delete()
-      .eq('id', item.id)
-      .then(({ error }) => {
-        if (error) {
-          setItems((prev) => [...prev, item])
-          setError(error.message)
-        }
-      })
+    outbox.enqueue({ id: uuid(), kind: 'delete', table: 'items', rowId: item.id })
   }, [])
 
-  // volta um item apagado exatamente como estava (inclusive o id)
   const restore = useCallback((item: Item) => {
-    pending.current.set(item.id, item)
     mine.current.add(item.id)
-    setItems((prev) => [...prev, item])
-
-    void supabase
-      .from('items')
-      .insert({
-        id: item.id,
-        room_id: item.room_id,
-        name: item.name,
-        quantity: item.quantity,
-        added_by: item.added_by,
-        status: item.status,
-        created_at: item.created_at,
-        picked_at: item.picked_at,
-      })
-      .then(({ error }) => {
-        pending.current.delete(item.id)
-        if (error) {
-          setItems((prev) => prev.filter((i) => i.id !== item.id))
-          setError(error.message)
-        }
-      })
+    setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, item]))
+    outbox.enqueue({ id: uuid(), kind: 'upsert', table: 'items', values: { ...item } })
   }, [])
 
   const finishShopping = useCallback(() => {
-    void supabase.rpc('finish_shopping', { p_room: roomId }).then(({ error }) => {
-      if (error) setError(error.message)
-      void refetch()
+    const picked = itemsRef.current.filter((i) => i.status === 'pegado').map((i) => i.id)
+    setItems((prev) => prev.filter((i) => i.status !== 'pegado'))
+    outbox.enqueue({
+      id: uuid(),
+      kind: 'rpc',
+      rpc: 'finish_shopping',
+      args: { p_room: roomId },
+      rebase: { table: 'items', removeIds: picked },
     })
-  }, [roomId, refetch])
+  }, [roomId])
 
   return {
     items,
@@ -210,6 +184,7 @@ export function useItems(roomId: string, me: string): ItemsStore {
     clearError: () => setError(null),
     add,
     toggle,
+    edit,
     remove,
     restore,
     finishShopping,

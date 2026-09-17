@@ -16,6 +16,7 @@ import { Ether } from './Ether'
 import { InlineAmount } from './InlineAmount'
 import { Money, MoneyRain } from './Money'
 import { Skeleton } from './Skeleton'
+import { Toast } from './Toast'
 import { WishCard } from './WishCard'
 
 interface Props {
@@ -39,6 +40,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
     toggleWant,
     cycleLevel,
     setPrice,
+    rename,
     setImage,
     markBought,
     remove,
@@ -53,6 +55,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
   const [bought, setBought] = useState<Wish | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
+  const [scrolled, setScrolled] = useState(false)
   const nearBottom = useRef(false)
   const input = useRef<HTMLInputElement>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -114,7 +117,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
   return (
     <div className="app wishes-app">
       <Ether />
-      <AppHeader title="desejos" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} />
+      <AppHeader title="desejos" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} scrolled={scrolled} />
 
       {error && (
         <button className="banner banner-error" onClick={clearError}>
@@ -128,6 +131,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
         onPointerDown={() => setOpenId(null)}
         onScroll={(e) => {
           const el = e.currentTarget
+          setScrolled(el.scrollTop > 6)
           nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
         }}
       >
@@ -178,7 +182,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
           </AnimatePresence>
         </motion.section>
 
-        {!ready && <Skeleton />}
+        {!ready && <Skeleton variant="wishes" />}
 
         {ready && wishes.length === 0 && (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -204,6 +208,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
                 onToggleWant={toggleWant}
                 onCycleLevel={cycleLevel}
                 onSetPrice={setPrice}
+                onRename={rename}
                 onPickImage={setImage}
                 onToggleBought={handleBought}
                 onRemove={handleRemove}
@@ -229,6 +234,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
                 onToggleWant={toggleWant}
                 onCycleLevel={cycleLevel}
                 onSetPrice={setPrice}
+                onRename={rename}
                 onPickImage={setImage}
                 onToggleBought={handleBought}
                 onRemove={handleRemove}
@@ -241,34 +247,27 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
       <div className="dock">
         <AnimatePresence>
           {notice && (
-            <motion.div
-              className="toast"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-            >
-              <span>{notice}</span>
-            </motion.div>
+            <Toast key="notice" onDismiss={() => setNotice(null)}>
+              {notice}
+            </Toast>
           )}
           {deleted && (
-            <motion.div
-              className="toast"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-            >
-              <span>{deleted.title} apagado</span>
-              <button
-                onClick={() => {
+            <Toast
+              key="deleted"
+              duration={5000}
+              action={{
+                label: 'Desfazer',
+                onClick: () => {
                   if (undoTimer.current) clearTimeout(undoTimer.current)
                   haptic('light')
                   restore(deleted)
                   setDeleted(null)
-                }}
-              >
-                Desfazer
-              </button>
-            </motion.div>
+                },
+              }}
+              onDismiss={() => setDeleted(null)}
+            >
+              {deleted.title} apagado
+            </Toast>
           )}
           {bought && onRegisterExpense && (
             <AmountPrompt
