@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react'
-import { notifyOthers } from './notify'
 import { createOutbox, isNetworkFailure, type ExecResult, type Op, type OutboxState } from './outbox'
 import { supabase } from './supabase'
 
@@ -48,9 +47,7 @@ export const outbox = createOutbox({
     },
   },
   execute,
-  onSent(op) {
-    if (op.notify) notifyOthers(op.notify.roomId, op.notify.person, op.notify.kind, op.notify.subject)
-  },
+  // O banco cria o push na mesma transação da mudança, inclusive após sincronizar offline.
   onDrained() {
     drainedListeners.forEach((l) => l())
   },

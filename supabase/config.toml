@@ -1,0 +1,3 @@
+[functions.notificar]
+# JWT de usuário validado via Auth.getUser; cron autenticado por segredo do Vault.
+verify_jwt = false

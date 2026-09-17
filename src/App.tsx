@@ -18,6 +18,7 @@ import { joinRoom } from './lib/room'
 import { sound } from './lib/sound'
 import { load, save } from './lib/storage'
 import { isConfigured } from './lib/supabase'
+import { reconcilePush } from './lib/push'
 import { PEOPLE } from './lib/types'
 
 const ROOM_KEY = 'despensa:sala'
@@ -181,6 +182,29 @@ function Room({
   const expenses = useExpenses(roomId, person, month)
   const wishes = useWishes(roomId, person)
   const presence = usePresence(roomId, person)
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return
+      void reconcilePush(roomId, person).catch(() => {})
+      if ('clearAppBadge' in navigator) void navigator.clearAppBadge().catch(() => {})
+    }
+    const navigate = (event: MessageEvent) => {
+      if (event.data?.type !== 'OPEN_MODULE') return
+      const next = event.data.view
+      if (next === 'inicio' || next === 'lista' || next === 'contas' || next === 'desejos') {
+        setMonth(monthKey()); setView(next); setMenuOpen(false)
+        event.ports[0]?.postMessage('opened')
+      }
+    }
+    refresh()
+    document.addEventListener('visibilitychange', refresh)
+    navigator.serviceWorker?.addEventListener('message', navigate)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      navigator.serviceWorker?.removeEventListener('message', navigate)
+    }
+  }, [roomId, person])
 
   // restos do tempo em que o módulo ficava no endereço (#contas etc.)
   useEffect(() => {

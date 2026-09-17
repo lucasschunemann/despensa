@@ -7,6 +7,9 @@ import type { WishesStore } from '../hooks/useWishes'
 import { summarize } from '../lib/balance'
 import { haptic } from '../lib/haptics'
 import { formatBRL } from '../lib/money'
+import { parseEntry } from '../lib/parse'
+import { sound } from '../lib/sound'
+import { useViewportFit } from '../hooks/useViewportFit'
 import { productEmoji } from '../lib/products'
 import { PEOPLE } from '../lib/types'
 import { forecast, sortWishes, totalDream, whenLabel } from '../lib/wishes'
@@ -40,6 +43,11 @@ const TODAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric'
 export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOpenMenu }: Props) {
   const reduced = useReducedMotion()
   const [scrolled, setScrolled] = useState(false)
+  const [entry, setEntry] = useState('')
+  const [added, setAdded] = useState('')
+  useViewportFit()
+  const parsed = parseEntry(entry)
+  const ready = items.ready && expenses.ready && wishes.ready
 
   const onShelf = items.items.filter((i) => i.status === 'pendente')
   const inCart = items.items.filter((i) => i.status === 'pegado')
@@ -55,9 +63,9 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
   const nextWhen = nextWish ? whenLabel(plan.get(nextWish.id)?.monthsAway ?? null) : null
 
   const card = (index: number) => ({
-    initial: reduced ? { opacity: 0 } : { opacity: 0, y: 26, scale: 0.97 },
+    initial: reduced ? false : { opacity: 0, y: 10, scale: 0.99 },
     animate: { opacity: 1, y: 0, scale: 1 },
-    transition: { type: 'spring' as const, stiffness: 320, damping: 28, delay: 0.12 + index * 0.08 },
+    transition: { type: 'spring' as const, stiffness: 320, damping: 28, delay: index * 0.025 },
     whileTap: reduced ? undefined : { scale: 0.975 },
   })
 
@@ -81,7 +89,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
           <h2 className="hello-title">
             {greeting()},
             <br />
-            {me}
+            {me}<span className="hello-period">.</span>
             <motion.span
               className="hello-avatar"
               initial={{ scale: 0, rotate: -30 }}
@@ -99,6 +107,20 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
           )}
         </motion.div>
 
+        <form className="quick-entry" onSubmit={(e) => {
+          e.preventDefault()
+          if (!parsed || !items.ready) return
+          items.add(parsed.name, parsed.quantity)
+          sound.unlock(); sound.add(); haptic('light')
+          setAdded(`${parsed.name} na lista`); setEntry('')
+        }}>
+          <span className="quick-entry-mark" aria-hidden>{parsed ? productEmoji(parsed.name) || '+' : '+'}</span>
+          <input aria-label="Adicionar ao mercado" placeholder="o que está faltando em casa?" value={entry} onChange={(e) => { setEntry(e.target.value); setAdded('') }} maxLength={160} enterKeyHint="send" />
+          <motion.button type="submit" aria-label="Adicionar à lista" disabled={!parsed || !items.ready} whileTap={reduced ? undefined : { scale: 0.9 }}><svg viewBox="0 0 24 24" aria-hidden><path d="m7 12 5-5 5 5M12 7v11" /></svg></motion.button>
+        </form>
+        <p className="quick-entry-feedback" role="status">{added || (parsed?.quantity ? `${parsed.quantity} · ${parsed.name}` : 'anote aqui. a lista é de vocês dois.')}</p>
+        <div className="home-section-title"><h3>sua casa, em dia</h3><span>{ready ? 'visão geral' : 'atualizando…'}</span></div>
+
         {/* ─── Mercado: uma prateleira com o que falta ─── */}
         <motion.button className="home-card home-market" onClick={() => open('lista')} {...card(0)}>
           <span className="home-awning" aria-hidden />
@@ -110,7 +132,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
           </span>
           <span className="home-big">
             {onShelf.length === 0 ? (
-              items.items.length > 0 ? 'tudo no carrinho' : 'lista vazia'
+              !items.ready ? 'carregando…' : items.items.length > 0 ? 'tudo no carrinho' : 'nada faltando'
             ) : (
               <>
                 faltam <Rolling value={onShelf.length} />
@@ -146,7 +168,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
           <span className="home-bills-stub">
             {nextBill ? (
               <>
-                <small>próxima</small>
+                <small>{nextBill.due_day && nextBill.due_day < new Date().getDate() ? 'em atraso' : nextBill.due_day === new Date().getDate() ? 'vence hoje' : 'próxima'}</small>
                 <strong>{nextBill.due_day ?? '—'}</strong>
                 <em>{nextBill.title}</em>
               </>
@@ -189,7 +211,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
               →
             </span>
           </span>
-          <small>sonhar custa</small>
+          <small>{queue.length ? `${queue.length} ${queue.length === 1 ? 'plano para realizar' : 'planos para realizar'}` : 'um espaço para os próximos planos'}</small>
           <Money className="home-money" cents={totalDream(queue)} />
           {nextWish && (
             <span className="home-foot">
@@ -198,6 +220,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
             </span>
           )}
         </motion.button>
+        <button className="home-notifications" onClick={onOpenMenu}><span aria-hidden>◉</span><span><strong>a casa avisa você</strong><small>conecte os avisos no celular</small></span><span aria-hidden>↗</span></button>
       </div>
     </div>
   )

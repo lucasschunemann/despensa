@@ -18,6 +18,10 @@ Resumo para quem já conhece:
 No iOS, adicione à Tela de Início **a partir do link com `?sala=`**: o app da tela inicial não compartilha
 dados com o Safari, então o código precisa estar na URL salva.
 
+## Melhorias de experiência
+
+O início permite adicionar ao mercado sem abrir o módulo. A lista tem progresso e busca sem acentos. O menu reúne navegação, preferências e avisos, com fechamento explícito, foco acessível e movimento reduzido. Consulte `DESIGN.md` para a direção visual.
+
 ## Início e módulos
 
 O app **sempre abre no início**: um cartão por módulo, cada um já com a cara do seu. Tocar abre o
@@ -45,7 +49,7 @@ Tocar num aviso do celular abre direto no módulo do aviso.
 
 Opcional, e precisa de uma configuração à parte: veja [docs/AVISOS.md](docs/AVISOS.md).
 Quando ligado, o celular avisa que a outra pessoa colocou item na lista, pagou conta ou pôs um
-desejo. Os avisos são juntados numa janela de 12 segundos, para cinco itens virarem um aviso só.
+desejo. Os avisos são agrupados no servidor em janelas de 12 segundos e despachados pelo Cron a cada minuto, mesmo se o remetente fechar o app. A área de avisos tem prévia, estado da conexão e teste por aparelho.
 
 ## Sem sinal
 

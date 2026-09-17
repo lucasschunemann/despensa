@@ -1,101 +1,75 @@
-# Avisos no celular (passo a passo)
+# Avisos no celular
 
-Serve para o celular avisar, mesmo com o app fechado, quando a outra pessoa coloca item na
-lista, paga uma conta ou põe um desejo novo.
+Os avisos são enviados quando a outra pessoa adiciona um item, paga uma conta ou adiciona um desejo. Funcionam com o app fechado, depois que a alteração chega ao servidor. Alterações offline aguardam a sincronização.
 
-**Isso é opcional.** Sem fazer nada aqui, o app continua funcionando igual: só não chega aviso.
+## No iPhone
 
-São 3 partes. A 1 e a 2 são fáceis. A 3 é a única vez que você vai digitar comando no terminal.
+1. Abra o link da sala (`?sala=...`) no Safari.
+2. Compartilhar → Adicionar à Tela de Início. Abra pelo ícone novo.
+3. Menu → avisos no celular → **ativar avisos**. Aceite a solicitação do iPhone.
+4. Quando mostrar **conectado**, toque em **enviar um teste**.
+5. Confira a notificação; o modo Foco pode silenciá-la. Toque no aviso para abrir o app.
 
----
+Requer iOS/iPadOS 16.4 ou posterior e HTTPS. A permissão só é solicitada após tocar no botão. Se estiver bloqueada, permita em Ajustes → Notificações → despensa, depois use **conferir novamente**.
 
-## Parte 1: criar a tabela
+Cada aparelho ativa os seus avisos. A área mostra exemplos de mercado, contas e desejos sem enviá-los. O botão de teste envia somente para o aparelho atual, depois de validar usuário e sala.
 
-Mesmo caminho das outras vezes (está no [guia do Supabase](SUPABASE.md)):
+## Como funciona
 
-1. Abra https://github.com/lucasschunemann/despensa/blob/main/supabase/migrations/20260918000000_avisos.sql
-2. Copie no botão dos **dois quadradinhos**.
-3. Supabase → **SQL Editor** → **New query** → cole → **Run**.
+- Triggers criam `push_deliveries` na mesma transação de `items`, `expenses` e `wishes`. Não dependem de o remetente manter o app aberto.
+- Destinatários são assinaturas da mesma sala, excluindo a pessoa e o usuário remetentes.
+- Mudanças em um intervalo de 12 segundos são agrupadas por aparelho, sala, remetente e módulo. Um upsert repetido não gera outro aviso de inclusão; pagamento já marcado também não.
+- Supabase Cron verifica a fila a cada minuto. Em operação normal, a entrega começa em aproximadamente **12 a 72 segundos**, mais a latência do serviço de push. Foco, rede e sistema podem atrasar a exibição.
+- O worker reserva cada entrega por dois minutos, usa backoff e tenta até seis vezes. Avisos com mais de 24h não são reenviados. Registros são limpos após sete dias.
+- Uma falha de um aparelho não reenvia para aparelhos que já tiveram sucesso. HTTP 404/410 remove assinaturas expiradas.
+- A entrega é *at least once*: uma interrupção entre o serviço aceitar o push e gravar sucesso pode repetir o envio; tags por módulo substituem o aviso na central quando o sistema suporta.
+- O worker sempre mostra uma notificação e usa a Badging API quando disponível. O app limpa o badge ao voltar.
+- Ao tocar, o módulo correto abre. O app aberto confirma a navegação sem recarregar; cold start usa fallback preservando o código da sala presente na URL.
 
----
+## Configuração do servidor
 
-## Parte 2: a chave pública na Vercel
+No projeto original, a migration `20260922000000_push_duravel.sql`, os segredos, o Vault, o Cron e a função foram configurados em 17/09/2026. Não reaplique a migration nesse banco.
 
-Eu já gerei o par de chaves e coloquei a pública no seu `.env` aqui do computador.
-As duas ficam guardadas no arquivo **`.vapid.local.json`**, na pasta do projeto. Esse arquivo
-**não vai para o GitHub** (a chave privada é secreta, como a senha do banco).
+Para outro ambiente:
 
-Na Vercel:
+1. Aplique as migrations em ordem, incluindo `20260922000000_push_duravel.sql`.
+2. Use o par de chaves existente de `.vapid.local.json`, que não entra no git. A pública precisa corresponder à `VITE_VAPID_PUBLIC_KEY` no ambiente do frontend.
+3. Com Supabase CLI autenticada e projeto vinculado, execute:
 
-1. **Settings** → **Environment Variables** → adicionar:
-   - Name: `VITE_VAPID_PUBLIC_KEY`
-   - Value: o valor de `publicKey` que está no `.vapid.local.json` (é o mesmo que está no seu `.env`)
-2. **Deployments** → três pontinhos no mais recente → **Redeploy**.
-
----
-
-## Parte 3: publicar a função que envia o aviso
-
-O aviso precisa de alguém para despachar. Esse alguém é uma função que roda no Supabase.
-Quatro comandos, uma vez só. No VS Code: menu **Terminal → New Terminal**, e digite um de cada vez.
-
-**Antes:** pegue o `project-ref` do seu projeto. É aquele pedaço do endereço do Supabase:
-`https://SEU-REF.supabase.co`. Também aparece em **Project Settings → General → Reference ID**.
-
-```
-npx supabase login
-```
-Abre o navegador para você autorizar. Volte ao terminal quando disser que deu certo.
-
-```
-npx supabase link --project-ref SEU-REF
-```
-Vai pedir a **senha do banco** (aquela que você guardou no Passo 1 do guia do Supabase).
-
-```
-npx supabase secrets set VAPID_PUBLIC_KEY=COLE_A_PUBLICA VAPID_PRIVATE_KEY=COLE_A_PRIVADA VAPID_SUBJECT=mailto:lucas.vhschunemann@gmail.com
-```
-As duas chaves estão no `.vapid.local.json`. Cole cada uma no lugar indicado, sem aspas.
-
-```
-npx supabase functions deploy notificar
+```sh
+python3 scripts/configure-push.py --subject mailto:seu-email@example.com
+npx supabase functions deploy notificar --use-api
 ```
 
-✅ **Deu certo se:** aparece algo como "Deployed Function notificar".
+O script configura VAPID e cria um segredo do worker, armazenado tanto nas Edge Function Secrets quanto no Vault. Arquivos temporários têm permissão restrita e são removidos. Não imprime chaves.
 
----
+`supabase/config.toml` desativa a verificação JWT legada do gateway; a função valida **todos** os pedidos: chamadas do app usam `Auth.getUser` e conferem usuário/sala/endpoint; o Cron usa segredo próprio. A chave de serviço e a VAPID privada nunca chegam ao frontend. Endpoints de push têm allowlist para evitar requisições a destinos arbitrários.
 
-## Parte 4: ligar no aparelho
+Publique o frontend após as mudanças. No manifesto, `start_url` vazio preserva a página de instalação, com o código da sala; `id` e `scope` são estáveis. Apps instalados anteriormente podem conservar a URL antiga, então o código também pode ser colado na tela de entrada.
 
-No celular, **com o app aberto pela tela inicial** (não pelo Safari):
+## Verificação
 
-1. Toque no **menu** (canto superior direito).
-2. Toque em **avisos no celular**.
-3. O iPhone pergunta se pode avisar: diga que sim.
-4. Deve ficar escrito **ligado**.
+- `npm run build`: tipos, testes unitários e build com service worker.
+- `npm run test:e2e`: fluxos mobile, entrada rápida, busca, preview, teclado e movimento reduzido.
+- `npx deno check --node-modules-dir=none supabase/functions/notificar/index.ts`: tipos do worker.
+- `supabase/tests/push.sql`: executar **dentro de BEGIN/ROLLBACK**, em ambiente de teste; cobre agrupamento, reenvio idempotente, isolamento de destinatários e lease.
+- Em aparelho físico: ativar em ambos, testar no atual, adicionar no outro, fechar imediatamente, esperar o Cron, abrir pela notificação. Testar também com Foco desativado.
 
-Cada aparelho liga o seu. Peça para a Bela fazer o mesmo no dela.
+O serviço responder com `enviados: 1` significa que o provedor aceitou o envio, não que a pessoa viu o aviso.
 
-**Para testar:** peça para ela colocar um item na lista e trave seu telefone. O aviso chega em
-até uns 12 segundos (o app junta o que aconteceu nesse meio tempo, para não mandar cinco avisos
-seguidos quando alguém adiciona cinco coisas).
+## Diagnóstico
 
----
+| Estado | Ação |
+|---|---|
+| Instalar na tela inicial | Abra pelo ícone instalado, não pela aba do Safari |
+| Reconectar aparelho | Regrava a assinatura na sala e pessoa atuais |
+| Em preparação | Configure a chave pública e publique o frontend |
+| Erro ao conectar | Confira rede, tabela, políticas e sessão |
+| Teste não enviado | Confira função, segredos e logs do Supabase |
+| Enviado, mas não apareceu | Confira permissões, Foco e conexão do iPhone |
 
-## Deu problema?
+`push_deliveries.last_error` guarda somente o status do erro, sem endpoint em logs. O job `despensa-push` deve estar ativo em `cron.job`. O Vault deve ter `despensa_push_url` e `despensa_push_secret`.
 
-| O que aparece no menu | O que quer dizer | O que fazer |
-|---|---|---|
-| **instale na tela inicial** | Está aberto no Safari | No iPhone, aviso só funciona com o app adicionado à Tela de Início. Abra por lá |
-| **bloqueado no aparelho** | Você negou a permissão alguma vez | Ajustes do iPhone → Notificações → despensa, e permita. No Mac: cadeado na barra de endereço |
-| **não dá neste aparelho** | Navegador sem suporte | Use Safari (iPhone) ou Chrome (Android/computador) |
-| A opção nem aparece | Falta a chave pública | Confira `VITE_VAPID_PUBLIC_KEY` no `.env` e na Vercel (Parte 2) |
-| Liga, mas não chega nada | A função não foi publicada | Refaça a Parte 3 |
+Lembretes agendados de vencimento ainda não fazem parte deste fluxo. Os avisos atuais refletem ações salvas no app.
 
-Se você perder o `.vapid.local.json`, dá para gerar outro par com `npx web-push generate-vapid-keys --json`,
-mas aí os dois celulares precisam ligar os avisos de novo.
-
-## O que ainda não existe
-
-Aviso de **conta vencendo** ("a luz vence amanhã") precisa de alguém acordando sozinho todo dia
-para conferir. Isso é um próximo passo; hoje os avisos só saem quando um de vocês faz alguma coisa.
+Fontes: [WebKit: Web Push no iOS](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/), [Supabase: agendar Edge Functions](https://supabase.com/docs/guides/functions/schedule-functions), [W3C: manifesto](https://www.w3.org/TR/appmanifest/).

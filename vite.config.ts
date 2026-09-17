@@ -9,6 +9,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
+        id: '/',
+        // Vazio mantém a URL de instalação (?sala=...), conforme o manifest spec.
+        start_url: '',
+        scope: '/',
         name: 'despensa',
         short_name: 'despensa',
         description: 'Lista de compras compartilhada',

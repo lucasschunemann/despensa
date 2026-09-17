@@ -1,8 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
 import { prefs, useSoundOn } from '../lib/prefs'
-import { disablePush, enablePush, pushConfigured, pushState, type PushState } from '../lib/push'
+import { PushSettings } from './PushSettings'
 import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
 
@@ -12,7 +12,7 @@ interface Props {
   open: boolean
   view: View
   me: string
-  /** sem sala (modo demonstração) o aviso no celular não aparece */
+  /** sem sala, exibe somente a prévia dos avisos */
   roomId?: string
   onClose: () => void
   onChangeView: (view: View) => void
@@ -65,22 +65,17 @@ const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }>
   },
 ]
 
-const PUSH_LABEL: Record<PushState, string> = {
-  ligado: 'ligado',
-  desligado: 'desligado',
-  bloqueado: 'bloqueado no aparelho',
-  'instale-primeiro': 'instale na tela inicial',
-  indisponível: 'não dá neste aparelho',
-}
-
 export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwitchPerson }: Props) {
   const soundOn = useSoundOn()
-  const [push, setPush] = useState<PushState>('desligado')
-  const [pushBusy, setPushBusy] = useState(false)
-
+  const sheet = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (open && roomId && pushConfigured()) void pushState().then(setPush)
-  }, [open, roomId])
+    if (!open) return
+    const previous = document.activeElement as HTMLElement | null
+    const stage = document.querySelector<HTMLElement>('.stage')
+    if (stage) stage.inert = true
+    const timer = requestAnimationFrame(() => sheet.current?.focus())
+    return () => { cancelAnimationFrame(timer); if (stage) stage.inert = false; previous?.focus() }
+  }, [open])
   const reduced = useReducedMotion()
   const spring = reduced ? { duration: 0 } : { type: 'spring' as const, stiffness: 380, damping: 34 }
 
@@ -97,6 +92,19 @@ export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwi
         >
           <motion.div
             className="sheet"
+            ref={sheet}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="menu-title"
+            tabIndex={-1}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') onClose()
+              if (e.key !== 'Tab') return
+              const nodes = Array.from(sheet.current?.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), input, [href]') ?? [])
+              const first = nodes[0], last = nodes[nodes.length - 1]
+              if (e.shiftKey && (document.activeElement === first || document.activeElement === sheet.current)) { e.preventDefault(); last?.focus() }
+              else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
+            }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -110,11 +118,13 @@ export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwi
             onClick={(e) => e.stopPropagation()}
           >
             <span className="sheet-grab" aria-hidden />
+            <div className="sheet-heading"><div><span className="section-eyebrow">do nosso jeito</span><h2 id="menu-title">nossa casa</h2></div><button className="sheet-close" aria-label="Fechar menu" onClick={onClose}>×</button></div>
 
             <nav className="sheet-modules">
               {MODULES.map((module, i) => (
                 <motion.button
                   key={module.id}
+                  aria-current={view === module.id ? 'page' : undefined}
                   className={`module${view === module.id ? ' is-current' : ''}`}
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -153,33 +163,6 @@ export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwi
                 <small>trocar</small>
               </button>
 
-              {roomId && pushConfigured() && (
-                <button
-                  className="sheet-option"
-                  aria-pressed={push === 'ligado'}
-                  disabled={pushBusy}
-                  onClick={() => {
-                    if (push === 'bloqueado' || push === 'indisponível' || push === 'instale-primeiro') return
-                    haptic('light')
-                    setPushBusy(true)
-                    const action = push === 'ligado' ? disablePush() : enablePush(roomId, me)
-                    void action
-                      .then(setPush)
-                      .catch(() => setPush('desligado'))
-                      .finally(() => setPushBusy(false))
-                  }}
-                >
-                  <span className="sheet-icon" aria-hidden>
-                    <svg viewBox="0 0 24 24">
-                      <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9Z" />
-                      <path d="M13.7 19.5a2 2 0 0 1-3.4 0" />
-                    </svg>
-                  </span>
-                  <span>avisos no celular</span>
-                  <small>{pushBusy ? '…' : PUSH_LABEL[push]}</small>
-                </button>
-              )}
-
               <button
                 className="sheet-option"
                 aria-pressed={soundOn}
@@ -207,6 +190,7 @@ export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwi
                 <small>{soundOn ? 'ligado' : 'desligado'}</small>
               </button>
             </div>
+            <PushSettings roomId={roomId} me={me} />
           </motion.div>
         </motion.div>
       )}

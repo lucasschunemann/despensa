@@ -113,11 +113,10 @@ Terceiro módulo. O que dá sentido a ele é o **cofre**: não é vitrine, é fi
 - `push_subscriptions` guarda a assinatura de cada aparelho; a Edge Function `notificar`
   (`supabase/functions/notificar/`) confere a sala pelo token de quem chamou e dispara com a chave
   de serviço, nunca para quem mandou
-- Os avisos são **agrupados numa janela de 12s** (`src/lib/notify.ts`): cinco itens seguidos viram
-  um aviso só
+- Os avisos são **agrupados no banco em janelas de 12s**, na tabela `push_deliveries`; Supabase Cron despacha a cada minuto. Não existe mais timer de envio no frontend.
 - O handler fica em `public/push-sw.js` e entra no service worker por `importScripts`
 - Chaves VAPID: pública no `.env` e na Vercel; as duas em `.vapid.local.json` (fora do git)
-- Depende de o Lucas publicar a função uma vez: [docs/AVISOS.md](docs/AVISOS.md)
+- Função, segredos e Cron configurados em 17/09/2026: [docs/AVISOS.md](docs/AVISOS.md)
 - Falta: aviso de conta vencendo (precisa de algo acordando todo dia)
 
 ## Reações e easter eggs
@@ -136,7 +135,7 @@ Terceiro módulo. O que dá sentido a ele é o **cofre**: não é vitrine, é fi
 - **Tudo que a fila envia precisa poder ser repetido** (o app pode reenviar algo que chegou mas cuja
   resposta se perdeu): inserts viram upsert com id gerado no app; o coração é `set_want` com o valor
   final, não "alternar"; conta recorrente nova usa `create_recurring_with_ids`
-- **Aviso para a outra pessoa só sai depois que a operação chega** (campo `notify` da operação)
+- **Aviso para a outra pessoa nasce na transação do banco**. O campo `notify` de operações antigas é mantido por compatibilidade, mas não dispara o envio.
 - Foto de desejo é a exceção: precisa de sinal na hora
 - **Editar usa a gramática de lançar** (`EditCard`): "2 pão integral", "luz 213,50 dia 22". Conta
   que se repete escolhe "só deste mês" ou "em diante" (`update_recurring`), igual ao apagar
@@ -220,3 +219,7 @@ Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em
 1. ~~Base funcional: projeto + Supabase/Realtime + schema + tela simples (adicionar, lista compartilhada, marcar pegado)~~
 2. ~~Estilo visual e microinterações (animação, som, tátil), PWA instalável~~
 3. Próximos passos possíveis: categorização visual por seção do mercado (depois do item entrar na lista), tela para ver as 3 últimas listas, sugestão de recompra por frequência (segue fora do MVP)
+
+## Revisão de UX e push (17/09/2026)
+
+Direção em PRODUCT.md e DESIGN.md. Início tem entrada rápida, lista tem busca e progresso; menu tem preview e teste de avisos, foco contido e fundo inert. A base de bilhetes e desejos foi preservada. A nova migration de push foi aplicada diretamente no banco existente, cujas migrations antigas também haviam sido aplicadas manualmente. Não rode db push cegamente nesse banco: o histórico remoto não reflete as migrations anteriores.

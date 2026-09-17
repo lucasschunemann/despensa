@@ -64,13 +64,16 @@ export function Stage({
         className="view is-home"
         style={{ x: homeX, opacity: homeOpacity, visibility: covered ? 'hidden' : 'visible' }}
         aria-hidden={visible !== null}
+        inert={visible !== null}
       >
         {renderHome()}
       </motion.div>
 
       {visible !== null && (
         <motion.div key="top" className="view is-top" style={{ x }}>
-          {renderModule(visible)}
+          <motion.div key={visible} className="module-surface" initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
+            {renderModule(visible)}
+          </motion.div>
           {!reduced && (
             <motion.div
               className="edge-back"
