@@ -16,6 +16,16 @@ export interface Item {
 
 export type ExpenseStatus = 'pendente' | 'pago'
 
+export interface ExpenseFolder {
+  id: string
+  room_id: string
+  name: string
+  color: string
+  position: number
+  created_by: string
+  created_at: string
+}
+
 /** 'meio' divide ao meio; o nome de uma pessoa deixa a conta inteira com ela. */
 export type Split = 'meio' | Person
 
@@ -33,6 +43,7 @@ export interface Expense {
   paid_at: string | null
   settled: boolean
   recurrence_id: string | null
+  folder_id: string | null
   created_by: string
   created_at: string
 }

@@ -45,3 +45,34 @@ test('acertamos destaca o cupom', async ({ page }) => {
   await expect(page.locator('.coupon')).toHaveCount(0)
   await expect(page.locator('.coupon-clear')).toBeVisible()
 })
+
+test('cria pasta e move várias contas de uma vez', async ({ page }) => {
+  await page.getByRole('button', { name: 'Nova pasta' }).click()
+  await page.getByPlaceholder('ex.: casa').fill('serviços')
+  await page.getByRole('button', { name: 'Cor mint' }).click()
+  await page.getByRole('button', { name: 'criar pasta' }).click()
+  await expect(page.locator('.folder-row', { hasText: 'serviços' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'selecionar' }).click()
+  await page.locator('.ticket-wrap', { hasText: 'Aluguel' }).locator('.ticket-main').click()
+  await page.locator('.ticket-wrap', { hasText: 'Luz' }).locator('.ticket-main').click()
+  await expect(page.locator('.selection-bar')).toContainText('2 selecionadas')
+  await page.getByRole('button', { name: 'mover' }).click()
+  await page.locator('.move-destinations button', { hasText: 'serviços' }).click()
+
+  await page.locator('.folder-row', { hasText: 'serviços' }).click()
+  await expect(page.locator('.ticket-wrap')).toHaveCount(2)
+  await expect(page.locator('.ticket-wrap')).toContainText(['Aluguel', 'Luz'])
+})
+
+test('adapta navegação e painel inicial ao desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 800 })
+  await page.reload()
+  await expect(page.locator('.finance-folders')).toHaveCSS('width', '292px')
+  await expect(page.locator('.folder-select-mode')).toBeVisible()
+
+  await page.goto('/?demo=1')
+  await expect(page.locator('.home-dashboard')).toHaveCSS('display', 'grid')
+  await expect(page.locator('.home-market')).toBeVisible()
+  await expect(page.locator('.home-wishes')).toBeVisible()
+})

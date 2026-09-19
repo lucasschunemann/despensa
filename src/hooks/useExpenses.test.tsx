@@ -16,8 +16,10 @@ const MONTH = '2026-09-01'
 beforeEach(async () => {
   fake.setOnline(true)
   fake.tables.expenses = [
-    { id: 'luz', room_id: ROOM, title: 'Luz', amount_cents: 18000, month: MONTH, due_day: 20, split: 'meio', status: 'pendente', paid_by: null, paid_at: null, settled: false, recurrence_id: 'r-luz', created_by: 'Lucas', created_at: '2026-09-01T00:00:00Z' },
+    { id: 'luz', room_id: ROOM, title: 'Luz', amount_cents: 18000, month: MONTH, due_day: 20, split: 'meio', status: 'pendente', paid_by: null, paid_at: null, settled: false, recurrence_id: 'r-luz', folder_id: null, created_by: 'Lucas', created_at: '2026-09-01T00:00:00Z' },
   ]
+  fake.tables.expense_folders = []
+  fake.tables.recurrences = [{ id: 'r-luz', room_id: ROOM, folder_id: null }]
   fake.tables.wishes = [
     { id: 'abajur', room_id: ROOM, title: 'Abajur', price_cents: 32000, link: null, image_url: null, want_level: 2, wanted_by: [], status: 'querendo', bought_at: null, bought_by: null, created_by: 'Bela', created_at: '2026-09-01T00:00:00Z' },
   ]
@@ -58,6 +60,26 @@ describe('contas', () => {
     })
     expect(result.current.expenses[0]).toMatchObject({ title: 'Energia', amount_cents: 19900 })
     expect(fake.calls).toContain('rpc update_recurring')
+  })
+
+  it('cria pasta e move contas mantendo a recorrência organizada', async () => {
+    const { result } = renderHook(() => useExpenses(ROOM, 'Lucas', MONTH))
+    await waitFor(() => expect(result.current.expenses).toHaveLength(1))
+
+    await act(async () => {
+      result.current.addFolder('casa', 'blue')
+      await outbox.flush()
+    })
+    expect(result.current.folders).toHaveLength(1)
+    expect(fake.tables.expense_folders[0]).toMatchObject({ name: 'casa', color: 'blue' })
+
+    const folder = result.current.folders[0]
+    await act(async () => {
+      result.current.moveExpenses(['luz'], folder.id)
+      await outbox.flush()
+    })
+    expect(fake.tables.expenses[0].folder_id).toBe(folder.id)
+    expect(fake.tables.recurrences[0].folder_id).toBe(folder.id)
   })
 })
 

@@ -98,6 +98,16 @@ export function createFakeSupabase() {
                 : r,
             )
           }
+          if (name === 'move_expenses_folder') {
+            const ids = args.p_expenses as string[]
+            const recurrenceIds = new Set<unknown>()
+            tables.expenses = table('expenses').map((r) => {
+              if (!ids.includes(String(r.id))) return r
+              if (r.recurrence_id) recurrenceIds.add(r.recurrence_id)
+              return { ...r, folder_id: args.p_folder }
+            })
+            tables.recurrences = table('recurrences').map((r) => recurrenceIds.has(r.id) ? { ...r, folder_id: args.p_folder } : r)
+          }
           if (name === 'set_want') {
             tables.wishes = table('wishes').map((r) => {
               if (r.id !== args.p_wish) return r

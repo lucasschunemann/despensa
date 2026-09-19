@@ -79,6 +79,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
       <AppHeader title="despensa" presence={presence} onOpenMenu={onOpenMenu} scrolled={scrolled} />
 
       <div className="scroll" onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 6)}>
+        <section className="home-intro">
         <motion.div
           className="hello"
           initial={{ opacity: 0, y: 10 }}
@@ -119,7 +120,9 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
           <motion.button type="submit" aria-label="Adicionar à lista" disabled={!parsed || !items.ready} whileTap={reduced ? undefined : { scale: 0.9 }}><svg viewBox="0 0 24 24" aria-hidden><path d="m7 12 5-5 5 5M12 7v11" /></svg></motion.button>
         </form>
         <p className="quick-entry-feedback" role="status">{added || (parsed?.quantity ? `${parsed.quantity} · ${parsed.name}` : 'anote aqui. a lista é de vocês dois.')}</p>
+        </section>
         <div className="home-section-title"><h3>sua casa, em dia</h3><span>{ready ? 'visão geral' : 'atualizando…'}</span></div>
+        <div className="home-dashboard">
 
         {/* ─── Mercado: uma prateleira com o que falta ─── */}
         <motion.button className="home-card home-market" onClick={() => open('lista')} {...card(0)}>
@@ -220,6 +223,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
             </span>
           )}
         </motion.button>
+        </div>
         <button className="home-notifications" onClick={onOpenMenu}><span aria-hidden>◉</span><span><strong>a casa avisa você</strong><small>conecte os avisos no celular</small></span><span aria-hidden>↗</span></button>
       </div>
     </div>

@@ -14,7 +14,7 @@ import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Presence, Reaction } from '../hooks/usePresence'
 import { monthKey } from '../lib/month'
-import type { Expense, Item, Wish } from '../lib/types'
+import type { Expense, ExpenseFolder, Item, Wish } from '../lib/types'
 import { uuid } from '../lib/uuid'
 
 const ITEMS: Array<[string, string | null, string, boolean]> = [
@@ -27,6 +27,8 @@ const ITEMS: Array<[string, string | null, string, boolean]> = [
 ]
 
 const MONTH = monthKey()
+const HOUSE_FOLDER = 'demo-folder-house'
+const PERSONAL_FOLDER = 'demo-folder-personal'
 
 const EXPENSES: Array<Partial<Expense>> = [
   { title: 'Aluguel', amount_cents: 185000, due_day: 10, recurrence_id: 'r1' },
@@ -74,6 +76,10 @@ export default function DemoApp() {
   const [menuOpen, setMenuOpen] = useState(params.has('menu'))
   const [month, setMonth] = useState(MONTH)
   const [savingsCents, setSavingsCents] = useState(50000)
+  const [folders, setFolders] = useState<ExpenseFolder[]>(() => vazio ? [] : [
+    { id: HOUSE_FOLDER, room_id: 'demo', name: 'casa', color: 'blue', position: 0, created_by: 'Lucas', created_at: new Date().toISOString() },
+    { id: PERSONAL_FOLDER, room_id: 'demo', name: 'pessoal', color: 'violet', position: 1, created_by: 'Lucas', created_at: new Date().toISOString() },
+  ])
 
   const [items, setItems] = useState<Item[]>(() =>
     (vazio ? [] : ITEMS).map(([name, quantity, added_by, picked], i) => ({
@@ -102,6 +108,7 @@ export default function DemoApp() {
       paid_at: null,
       settled: false,
       recurrence_id: null,
+      folder_id: ['Aluguel', 'Luz', 'Internet'].includes(e.title ?? '') ? HOUSE_FOLDER : e.title === 'Academia' ? PERSONAL_FOLDER : null,
       created_by: 'Lucas',
       created_at: new Date(Date.now() - (EXPENSES.length - i) * 60000).toISOString(),
       ...e,
@@ -157,6 +164,7 @@ export default function DemoApp() {
   const expensesStore: ExpensesStore = useMemo(
     () => ({
       expenses: expenses.filter((e) => e.month === month),
+      folders,
       ready: true,
       connection: 'live',
       error: null,
@@ -177,6 +185,7 @@ export default function DemoApp() {
             paid_at: options.paid ? new Date().toISOString() : null,
             settled: false,
             recurrence_id: options.recurring ? uuid() : null,
+            folder_id: options.folderId ?? null,
             created_by: 'Lucas',
             created_at: new Date().toISOString(),
           },
@@ -226,8 +235,18 @@ export default function DemoApp() {
       restore: (expense) => setExpenses((prev) => [...prev, expense]),
       settleMonth: () =>
         setExpenses((prev) => prev.map((e) => (e.status === 'pago' ? { ...e, settled: true } : e))),
+      addFolder: (name, color) => setFolders((prev) => [...prev, {
+        id: uuid(), room_id: 'demo', name, color, position: prev.length,
+        created_by: 'Lucas', created_at: new Date().toISOString(),
+      }]),
+      editFolder: (folder, name, color) => setFolders((prev) => prev.map((item) => item.id === folder.id ? { ...item, name, color } : item)),
+      removeFolder: (folder) => {
+        setFolders((prev) => prev.filter((item) => item.id !== folder.id))
+        setExpenses((prev) => prev.map((expense) => expense.folder_id === folder.id ? { ...expense, folder_id: null } : expense))
+      },
+      moveExpenses: (ids, folderId) => setExpenses((prev) => prev.map((expense) => ids.includes(expense.id) ? { ...expense, folder_id: folderId } : expense)),
     }),
-    [expenses, month],
+    [expenses, folders, month],
   )
 
   const [wishes, setWishes] = useState<Wish[]>(() =>

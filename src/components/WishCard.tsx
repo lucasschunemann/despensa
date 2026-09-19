@@ -231,10 +231,10 @@ export function WishCard({
           aria-pressed={mine}
           aria-label={mine ? 'Tirar meu coração' : 'Também quero'}
         >
-          {burst > 0 && <Hearts key={burst} />}
+          {burst > 0 && <Hearts key={`hearts-${burst}`} />}
           <motion.svg
             viewBox="0 0 24 24"
-            key={burst}
+            key={`icon-${burst}`}
             animate={burst > 0 ? { scale: [1, 1.35, 0.94, 1] } : undefined}
             transition={{ duration: 0.45 }}
           >

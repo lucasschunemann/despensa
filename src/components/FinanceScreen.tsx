@@ -14,6 +14,7 @@ import { AppHeader } from './AppHeader'
 import { CompleteOverlay } from './CompleteOverlay'
 import { EditCard } from './EditCard'
 import { ExpenseComposer } from './ExpenseComposer'
+import { FinanceFolderNav, FolderEditor, MoveExpensesTray, SelectionBar, type FolderFilter } from './FinanceFolders'
 import { MoneyRain } from './Money'
 import { Receipt } from './Receipt'
 import { PaidTicket, Ticket } from './Ticket'
@@ -33,6 +34,7 @@ interface Props {
 export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpenMenu, onHome }: Props) {
   const {
     expenses,
+    folders,
     ready,
     error,
     clearError,
@@ -44,6 +46,10 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
     stopRecurring,
     restore,
     settleMonth,
+    addFolder,
+    editFolder,
+    removeFolder,
+    moveExpenses,
   } = store
   const [openId, setOpenId] = useState<string | null>(null)
   const [rain, setRain] = useState(0)
@@ -53,6 +59,11 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
   const [notice, setNotice] = useState<string | null>(null)
   const [closing, setClosing] = useState(false)
   const [direction, setDirection] = useState(1)
+  const [folderFilter, setFolderFilter] = useState<FolderFilter>('all')
+  const [folderEditor, setFolderEditor] = useState<null | undefined | (typeof folders)[number]>(undefined)
+  const [selecting, setSelecting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [moving, setMoving] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
   // começa falso: ao abrir o mês a pessoa precisa ver o resumo, não o fim da lista
@@ -70,14 +81,19 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
   }, [scrollToEnd])
   useViewportFit(keepAnchored)
 
-  const summary = summarize(expenses, PEOPLE)
-  const pending = expenses
+  const filteredExpenses = expenses.filter((expense) =>
+    folderFilter === 'all' ? true : folderFilter === 'unfiled' ? !expense.folder_id : expense.folder_id === folderFilter,
+  )
+  const summary = summarize(filteredExpenses, PEOPLE)
+  const pending = filteredExpenses
     .filter((e) => e.status === 'pendente')
     .sort((a, b) => (a.due_day ?? 99) - (b.due_day ?? 99) || a.created_at.localeCompare(b.created_at))
-  const paid = expenses
+  const paid = filteredExpenses
     .filter((e) => e.status === 'pago')
     .sort((a, b) => (a.paid_at ?? '').localeCompare(b.paid_at ?? ''))
-  const done = expenses.length > 0 && pending.length === 0
+  const done = expenses.length > 0 && expenses.every((expense) => expense.status === 'pago')
+  const activeFolder = folders.find((folder) => folder.id === folderFilter)
+  const filterTitle = folderFilter === 'all' ? 'todas as contas' : folderFilter === 'unfiled' ? 'sem pasta' : activeFolder?.name ?? 'pasta'
 
   // o que já estava no mês ao abrir entra em cascata; o que é lançado depois "sai da impressora"
   const known = useRef<Set<string> | null>(null)
@@ -159,12 +175,44 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
   const handleAdd: typeof add = (entry, options) => {
     sound.print()
     haptic('light')
-    add(entry, options)
+    add(entry, { ...options, folderId: activeFolder?.id ?? null })
+  }
+
+  const cancelSelection = () => {
+    setSelecting(false)
+    setSelectedIds([])
+    setMoving(false)
+  }
+  const toggleSelection = (expense: Expense) => {
+    haptic('light')
+    setSelectedIds((prev) => prev.includes(expense.id) ? prev.filter((id) => id !== expense.id) : [...prev, expense.id])
+  }
+  const finishMove = (folderId: string | null) => {
+    moveExpenses(selectedIds, folderId)
+    const destination = folders.find((folder) => folder.id === folderId)?.name ?? 'sem pasta'
+    setNotice(`${selectedIds.length} ${selectedIds.length === 1 ? 'conta movida' : 'contas movidas'} para ${destination}`)
+    sound.print()
+    haptic('success')
+    cancelSelection()
+    setTimeout(() => setNotice(null), 3500)
   }
 
   return (
-    <div className="app">
+    <div className="app finance-app">
       <AppHeader title="contas" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} scrolled={scrolled} />
+
+      <div className="finance-workspace">
+        <FinanceFolderNav
+          folders={folders}
+          expenses={expenses}
+          active={folderFilter}
+          onChange={(next) => { setFolderFilter(next); cancelSelection() }}
+          onAdd={() => setFolderEditor(null)}
+          onEdit={setFolderEditor}
+          selecting={selecting}
+          onSelectMode={() => selecting ? cancelSelection() : setSelecting(true)}
+        />
+        <main className="finance-main">
 
       <div className="month-bar">
         <button className="month-arrow" onClick={() => goMonth(-1)} aria-label="Mês anterior">
@@ -211,6 +259,11 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
         </AnimatePresence>
       </div>
 
+      <div className="finance-filter-head">
+        <div>{activeFolder && <span className={`folder-glyph folder-${activeFolder.color}`} aria-hidden><i /></span>}<span>{filterTitle}</span><small>{filteredExpenses.length}</small></div>
+        <button onClick={() => selecting ? cancelSelection() : setSelecting(true)}>{selecting ? 'cancelar' : 'selecionar'}</button>
+      </div>
+
       {error && (
         <button className="banner banner-error" onClick={clearError}>
           {error}
@@ -230,7 +283,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
         <Receipt
           monthName={monthLabel(month)}
           summary={summary}
-          count={expenses.length}
+          count={filteredExpenses.length}
           paidCount={paid.length}
           me={me}
           onSettle={handleSettle}
@@ -238,9 +291,9 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
         {!ready && <Skeleton variant="tickets" />}
 
-        {ready && expenses.length === 0 && (
+        {ready && filteredExpenses.length === 0 && (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <p className="empty-title">Nenhuma conta em {monthLabel(month)}</p>
+            <p className="empty-title">Nada em {filterTitle}</p>
             <p className="empty-hint">
               Digite aí embaixo: “luz 180”. Ligue “todo mês” para ela voltar sozinha.
             </p>
@@ -263,6 +316,9 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
                 onCycleSplit={cycleSplit}
                 onRemove={handleRemove}
                 onEdit={setEditing}
+                selecting={selecting}
+                selected={selectedIds.includes(expense.id)}
+                onToggleSelect={toggleSelection}
               />
             ))}
           </AnimatePresence>
@@ -281,6 +337,9 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
                     enterDelay={index * 0.02}
                     onUnpay={handleUnpay}
                     onEdit={setEditing}
+                    selecting={selecting}
+                    selected={selectedIds.includes(expense.id)}
+                    onToggleSelect={toggleSelection}
                   />
                 ))}
               </AnimatePresence>
@@ -291,6 +350,25 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
       <div className="dock">
         <AnimatePresence>
+          {selecting && !moving && <SelectionBar count={selectedIds.length} total={filteredExpenses.length} onCancel={cancelSelection} onMove={() => setMoving(true)} onAll={() => setSelectedIds(selectedIds.length === filteredExpenses.length ? [] : filteredExpenses.map((expense) => expense.id))} />}
+          {moving && <MoveExpensesTray count={selectedIds.length} folders={folders} onMove={finishMove} onClose={() => setMoving(false)} />}
+          {folderEditor !== undefined && (
+            <FolderEditor
+              folder={folderEditor}
+              onClose={() => setFolderEditor(undefined)}
+              onSave={(name, color) => {
+                if (folderEditor) editFolder(folderEditor, name, color)
+                else addFolder(name, color)
+                setFolderEditor(undefined)
+                haptic('success')
+              }}
+              onDelete={folderEditor ? () => {
+                removeFolder(folderEditor)
+                if (folderFilter === folderEditor.id) setFolderFilter('unfiled')
+                setFolderEditor(undefined)
+              } : undefined}
+            />
+          )}
           {editing && (
             <EditCard
               key={`edit-${editing.id}`}
@@ -399,7 +477,9 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
             </Toast>
           )}
         </AnimatePresence>
-        {!editing && <ExpenseComposer onAdd={handleAdd} onFocus={() => scrollToEnd()} />}
+        {!editing && !selecting && <ExpenseComposer onAdd={handleAdd} onFocus={() => scrollToEnd()} />}
+      </div>
+        </main>
       </div>
 
       <AnimatePresence>{rain > 0 && <MoneyRain key={rain} onDone={() => setRain(0)} />}</AnimatePresence>

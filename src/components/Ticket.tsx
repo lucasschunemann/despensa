@@ -1,4 +1,4 @@
-import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
+import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/haptics'
 import { formatAmount } from '../lib/money'
@@ -29,6 +29,9 @@ interface TicketProps {
   onCycleSplit: (expense: Expense) => void
   onRemove: (expense: Expense) => void
   onEdit: (expense: Expense) => void
+  selecting?: boolean
+  selected?: boolean
+  onToggleSelect?: (expense: Expense) => void
 }
 
 export function Ticket({
@@ -43,6 +46,9 @@ export function Ticket({
   onCycleSplit,
   onRemove,
   onEdit,
+  selecting = false,
+  selected = false,
+  onToggleSelect,
 }: TicketProps) {
   const reduced = useReducedMotion()
   const [phase, setPhase] = useState<Phase>('idle')
@@ -100,7 +106,7 @@ export function Ticket({
   return (
     <motion.li
       layout={reduced ? false : 'position'}
-      className="ticket-wrap"
+      className={`ticket-wrap${selected ? ' is-selected' : ''}`}
       initial={
         printing
           ? { clipPath: 'inset(0 0 100% 0)', y: -10, opacity: 1 }
@@ -114,6 +120,21 @@ export function Ticket({
           : { ...spring, delay: enterDelay }
       }
     >
+      <AnimatePresence>
+        {selecting && (
+          <motion.button
+            className="expense-select"
+            aria-label={`${selected ? 'Desmarcar' : 'Selecionar'} ${expense.title}`}
+            aria-pressed={selected}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.6 }}
+            onClick={() => onToggleSelect?.(expense)}
+          >
+            {selected && <motion.span initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}>✓</motion.span>}
+          </motion.button>
+        )}
+      </AnimatePresence>
       {/* as camadas de trás só existem parado: quando o canhoto rasga, atrás dele é papel em branco */}
       {phase === 'idle' && (
         <>
@@ -134,7 +155,7 @@ export function Ticket({
       <motion.div
         className={`ticket phase-${phase}`}
         style={{ x }}
-        drag={phase === 'idle' ? 'x' : false}
+        drag={phase === 'idle' && !selecting ? 'x' : false}
         dragDirectionLock
         dragConstraints={{ left: -ACTION_WIDTH, right: PAY_WIDTH }}
         dragElastic={{ left: 0.04, right: 0.12 }}
@@ -169,6 +190,10 @@ export function Ticket({
         <div
           className="ticket-main"
           onClick={(e) => {
+            if (selecting) {
+              onToggleSelect?.(expense)
+              return
+            }
             // o chip da divisão tem ação própria
             if ((e.target as HTMLElement).closest('.ticket-split')) return
             if (wasDrag() || phase !== 'idle') return
@@ -190,6 +215,10 @@ export function Ticket({
               <button
                 className="ticket-split"
                 onClick={() => {
+                  if (selecting) {
+                    onToggleSelect?.(expense)
+                    return
+                  }
                   if (wasDrag()) return
                   onCycleSplit(expense)
                 }}
@@ -228,6 +257,10 @@ export function Ticket({
           animate={phase === 'tear' ? 'tear' : 'idle'}
           transition={{ duration: 0.45, ease: [0.4, 0, 0.7, 0.3] }}
           onClick={() => {
+            if (selecting) {
+              onToggleSelect?.(expense)
+              return
+            }
             if (wasDrag()) {
               // tocar com a gaveta aberta só fecha
               if (!dragged.current) onOpenChange(false)
@@ -267,22 +300,30 @@ interface PaidProps {
   enterDelay: number
   onUnpay: (expense: Expense) => void
   onEdit: (expense: Expense) => void
+  selecting?: boolean
+  selected?: boolean
+  onToggleSelect?: (expense: Expense) => void
 }
 
 /** O que sobra da conta depois de paga: o bilhete sem canhoto, com o carimbo. */
-export function PaidTicket({ expense, me, enterDelay, onUnpay, onEdit }: PaidProps) {
+export function PaidTicket({ expense, me, enterDelay, onUnpay, onEdit, selecting = false, selected = false, onToggleSelect }: PaidProps) {
   const reduced = useReducedMotion()
 
   return (
     <motion.li
       layout={reduced ? false : 'position'}
-      className="paid"
+      className={`paid${selected ? ' is-selected' : ''}`}
       initial={{ opacity: 0, scale: 0.96, y: -8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.2 } }}
       transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 32, delay: enterDelay }}
     >
-      <button className="paid-text" onClick={() => onEdit(expense)} aria-label={`Editar ${expense.title}`}>
+      {selecting && (
+        <button className="expense-select is-paid" aria-label={`${selected ? 'Desmarcar' : 'Selecionar'} ${expense.title}`} aria-pressed={selected} onClick={() => onToggleSelect?.(expense)}>
+          {selected && '✓'}
+        </button>
+      )}
+      <button className="paid-text" onClick={() => selecting ? onToggleSelect?.(expense) : onEdit(expense)} aria-label={selecting ? `${selected ? 'Desmarcar' : 'Selecionar'} ${expense.title}` : `Editar ${expense.title}`}>
         <span className="paid-title">{expense.title}</span>
         <span className="paid-meta">
           {expense.paid_by && (
@@ -296,7 +337,7 @@ export function PaidTicket({ expense, me, enterDelay, onUnpay, onEdit }: PaidPro
         </span>
       </button>
       <span className="paid-amount">{formatAmount(expense.amount_cents)}</span>
-      <button className="paid-stamp" onClick={() => onUnpay(expense)} aria-label={`Desmarcar ${expense.title}`}>
+      <button className="paid-stamp" onClick={() => selecting ? onToggleSelect?.(expense) : onUnpay(expense)} aria-label={selecting ? `${selected ? 'Desmarcar' : 'Selecionar'} ${expense.title}` : `Desmarcar ${expense.title}`}>
         pago
       </button>
     </motion.li>

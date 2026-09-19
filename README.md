@@ -77,6 +77,7 @@ nome, ou arrastar a partir da borda esquerda da tela.
   O valor é o último número; `dia N` vira o vencimento; o resto é o nome.
 - **Todo mês**: ligue o botão antes de lançar e a conta volta sozinha todo mês. Se você apagar a
   conta de um mês, ela não ressuscita naquele mês.
+- **Pastas**: crie pastas com nome e cor, filtre as contas e use **selecionar** para mover várias de uma vez. Contas recorrentes lembram a pasta nos meses seguintes.
 - **Pagar**: toque na conta, ou arraste para a direita. Chove dinheiro na tela.
 - **Quem pagou** fica registrado com o avatar de quem marcou.
 - **Divisão**: o chip `½` divide ao meio. Toque nele para alternar entre meio a meio, só sua, só dela.
@@ -163,6 +164,7 @@ Onde fica cada coisa:
 | Botão de segurar para finalizar | `src/components/HoldButton.tsx` |
 | Menu dos módulos | `src/components/MenuSheet.tsx` |
 | Tela das contas | `src/components/FinanceScreen.tsx` |
+| Pastas, editor e seleção em lote | `src/components/FinanceFolders.tsx` |
 | Linha da conta | `src/components/ExpenseRow.tsx` |
 | Dinheiro voando e valor animado | `src/components/Money.tsx` |
 | Contas do mês (dados) | `src/hooks/useExpenses.ts` |

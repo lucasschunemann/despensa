@@ -18,6 +18,7 @@ function expense(partial: Partial<Expense>): Expense {
     paid_at: null,
     settled: false,
     recurrence_id: null,
+    folder_id: null,
     created_by: 'Lucas',
     created_at: '2026-09-01T00:00:00Z',
     ...partial,
