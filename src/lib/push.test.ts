@@ -2,7 +2,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const { from, invoke } = vi.hoisted(() => ({ from: vi.fn(), invoke: vi.fn() }))
 vi.mock('./supabase', () => ({ supabase: { from, functions: { invoke } } }))
-import { disablePush, enablePush, pushState, pushSupport, reconcilePush, testPush, toBytes } from './push'
+// push lê a chave durante a carga do módulo; configure antes do import dinâmico para
+// o teste não depender do .env da máquina (o runner do GitHub não possui esse arquivo).
+vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'BAEC')
+const { disablePush, enablePush, pushState, pushSupport, reconcilePush, testPush, toBytes } = await import('./push')
 
 const subscription = () => ({ endpoint: 'https://web.push.apple.com/test', options: {}, toJSON: () => ({ keys: { p256dh: 'key', auth: 'auth' } }), unsubscribe: vi.fn().mockResolvedValue(true) })
 let sub: ReturnType<typeof subscription>
