@@ -118,7 +118,7 @@ export function WishCard({
         aria-hidden={!open}
         onClick={() => onRemove(wish)}
       >
-        Apagar
+        apagar
       </motion.button>
 
       <motion.div
@@ -206,7 +206,14 @@ export function WishCard({
           </div>
 
           <div className="wish-meta">
-            <button className="wish-level" onClick={() => !wasDrag() && onCycleLevel(wish)}>
+            <button
+              className="wish-level"
+              onClick={() => {
+                if (wasDrag()) return
+                sound.tick()
+                onCycleLevel(wish)
+              }}
+            >
               {WANT_LABEL[wish.want_level]}
             </button>
             {bought ? (

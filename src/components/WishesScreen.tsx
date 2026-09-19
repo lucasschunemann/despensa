@@ -186,9 +186,9 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
 
         {ready && wishes.length === 0 && (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <p className="empty-title">Nada na lista ainda</p>
+            <p className="empty-title">nenhum desejo ainda</p>
             <p className="empty-hint">
-              Digite aí embaixo: “abajur 320”. Depois toque na moldura para pôr a foto.
+              escreva aí embaixo: “abajur 320”. depois toque na moldura para pôr a foto.
             </p>
           </motion.div>
         )}
@@ -256,7 +256,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
               key="deleted"
               duration={5000}
               action={{
-                label: 'Desfazer',
+                label: 'desfazer',
                 onClick: () => {
                   if (undoTimer.current) clearTimeout(undoTimer.current)
                   haptic('light')
@@ -272,7 +272,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
           {bought && onRegisterExpense && (
             <AmountPrompt
               key="lancar"
-              question={`Comprou ${bought.title}. Quanto foi?`}
+              question={`comprou ${bought.title}. quanto foi?`}
               emptyHint={`entra nas contas de ${monthLabel(monthKey())}, já paga`}
               confirmHint={(valor) => `vai virar a conta “${bought.title}” de ${valor}`}
               initial={bought.price_cents > 0 ? (bought.price_cents / 100).toFixed(2).replace('.', ',') : ''}
@@ -303,7 +303,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
                 if (e.target.value.trim()) presence.notifyTyping()
               }}
               onFocus={() => scrollToEnd()}
-              placeholder="Desejo e preço: abajur 320"
+              placeholder="abajur 320"
               aria-label="Novo desejo"
               autoComplete="off"
               autoCapitalize="sentences"

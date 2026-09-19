@@ -36,3 +36,32 @@ test('navegação e menu funcionam com movimento reduzido', async ({ page }) => 
   await page.getByRole('button', { name: 'Voltar para o início' }).click()
   await expect(page.locator('.view.is-top')).toHaveCount(0)
 })
+
+// redesign de 19/09/2026: no celular, a primeira tela de cada módulo mostra o conteúdo, não o cabeçalho
+test('mercado abre no começo da lista, com o primeiro item inteiro', async ({ page }) => {
+  await open(page, '&lista=1')
+  const first = page.locator('.mrow').first()
+  const scroller = await page.locator('.scroll').last().boundingBox()
+  const box = await first.boundingBox()
+  expect(box!.y).toBeGreaterThanOrEqual(scroller!.y)
+  await expect(first).toContainText('Leite')
+})
+
+test('contas mostram um bilhete já na primeira tela do iPhone', async ({ page }) => {
+  await open(page, '&contas=1')
+  const ticket = await page.locator('.ticket-wrap').first().boundingBox()
+  const dock = await page.locator('.composer').boundingBox()
+  expect(ticket!.y).toBeLessThan(dock!.y)
+  // pastas rolam junto com as contas no celular
+  await expect(page.locator('.finance-folders.is-compact')).toBeVisible()
+})
+
+test('"todo mês" liga dentro do campo e encolhe enquanto digita', async ({ page }) => {
+  await open(page, '&contas=1')
+  const repeat = page.getByRole('switch', { name: 'todo mês' })
+  await repeat.click()
+  await expect(repeat).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('textbox', { name: 'Nova conta' }).fill('luz 180 dia 10')
+  await expect(page.locator('.repeat-label')).toHaveCount(0)
+  await expect(page.locator('.composer-preview')).toContainText('180,00')
+})

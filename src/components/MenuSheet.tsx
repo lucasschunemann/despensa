@@ -54,7 +54,7 @@ const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }>
   },
   {
     id: 'contas',
-    label: 'contas do mês',
+    label: 'contas',
     hint: 'o que falta pagar',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden>

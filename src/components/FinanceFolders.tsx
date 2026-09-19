@@ -9,14 +9,28 @@ export type FolderFilter = 'all' | 'unfiled' | string
 
 const COLORS = ['blue', 'mint', 'orange', 'rose', 'violet', 'slate'] as const
 
+/** "todas": quatro quadradinhos, o mesmo traço dos outros ícones */
+function AllIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="control-icon" width={18} height={18} aria-hidden>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="2" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="2" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="2" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2" />
+    </svg>
+  )
+}
+
 function FolderGlyph({ color = 'slate' }: { color?: string }) {
   return <span className={`folder-glyph folder-${color}`} aria-hidden><i /></span>
 }
 
-export function FinanceFolderNav({ folders, expenses, active, onChange, onAdd, onEdit, selecting, onSelectMode }: {
+export function FinanceFolderNav({ folders, expenses, active, compact = false, onChange, onAdd, onEdit, selecting, onSelectMode }: {
   folders: ExpenseFolder[]
   expenses: Expense[]
   active: FolderFilter
+  /** celular: uma faixa de chips que rola junto com as contas, com o "+" no fim */
+  compact?: boolean
   onChange: (id: FolderFilter) => void
   onAdd: () => void
   onEdit: (folder: ExpenseFolder) => void
@@ -31,15 +45,37 @@ export function FinanceFolderNav({ folders, expenses, active, onChange, onAdd, o
         <motion.button
           className="folder-row"
           aria-current={active === id ? 'page' : undefined}
-          onClick={() => { haptic('light'); onChange(id) }}
+          onClick={(e) => {
+            haptic('light')
+            onChange(id)
+            // chip escolhido nunca fica cortado na borda da faixa
+            if (compact) e.currentTarget.parentElement?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' })
+          }}
           whileTap={{ scale: 0.98 }}
         >
-          {id === 'all' ? <span className="folder-all" aria-hidden>⌘</span> : <FolderGlyph color={color} />}
+          {id === 'all' ? <span className="folder-all" aria-hidden><AllIcon /></span> : <FolderGlyph color={color} />}
           <span className="folder-row-copy"><strong>{name}</strong><small>{count} {count === 1 ? 'conta' : 'contas'}</small></span>
+          {compact && <span className="folder-row-count">{count}</span>}
           <span className="folder-row-value">{formatBRL(cents)}</span>
         </motion.button>
-        {folder && <button className="folder-edit" aria-label={`Editar pasta ${name}`} onClick={() => onEdit(folder)}><MoreIcon size={17} /></button>}
+        {active === id && <motion.span layoutId="folder-active" transition={{ type: 'spring', stiffness: 520, damping: 40 }} className="folder-active" aria-hidden />}
+        {folder && (!compact || active === id) && <button className="folder-edit" aria-label={`Editar pasta ${name}`} onClick={() => onEdit(folder)}><MoreIcon size={17} /></button>}
       </motion.div>
+    )
+  }
+
+  if (compact) {
+    return (
+      <nav className="finance-folders is-compact" aria-label="Pastas das contas">
+        <div className="folder-list">
+          {row('all', 'todas', expenses.length, sum())}
+          {folders.map((folder) => row(folder.id, folder.name, expenses.filter((e) => e.folder_id === folder.id).length, sum(folder.id), folder.color))}
+          {row('unfiled', 'sem pasta', expenses.filter((e) => !e.folder_id).length, sum(null), 'slate')}
+          <motion.button layout className="folder-add round-control" onClick={onAdd} aria-label="Nova pasta" whileTap={{ scale: 0.88, rotate: 8 }}>
+            <PlusIcon size={18} />
+          </motion.button>
+        </div>
+      </nav>
     )
   }
 

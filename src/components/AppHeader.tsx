@@ -1,6 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 import type { Presence } from '../hooks/usePresence'
+import { haptic } from '../lib/haptics'
+import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
 import { SyncBadge } from './SyncBadge'
 
@@ -58,7 +60,15 @@ export function AppHeader({ title, presence, onOpenMenu, onHome, accessory, scro
           ))}
         </AnimatePresence>
 
-        <button className="icon-button" onClick={onOpenMenu} aria-label="Abrir menu">
+        <button
+          className="icon-button"
+          onClick={() => {
+            sound.tick()
+            haptic('light')
+            onOpenMenu()
+          }}
+          aria-label="Abrir menu"
+        >
           <svg viewBox="0 0 24 24" aria-hidden>
             <path d="M4 7h16M4 12h16M4 17h16" />
           </svg>

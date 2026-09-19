@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
@@ -47,6 +47,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
   const [added, setAdded] = useState('')
   useViewportFit()
   const parsed = parseEntry(entry)
+  const mark = (parsed && productEmoji(parsed.name)) || '+'
   const ready = items.ready && expenses.ready && wishes.ready
 
   const onShelf = items.items.filter((i) => i.status === 'pendente')
@@ -115,9 +116,22 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
           sound.unlock(); sound.add(); haptic('light')
           setAdded(`${parsed.name} na lista`); setEntry('')
         }}>
-          <span className="quick-entry-mark" aria-hidden>{parsed ? productEmoji(parsed.name) || '+' : '+'}</span>
+          {/* o produto aparece na mão enquanto você digita, com um pulinho a cada troca */}
+          <span className="quick-entry-mark" aria-hidden>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={mark}
+                initial={reduced ? false : { scale: 0.3, rotate: -24, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                exit={{ scale: 0.3, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 620, damping: 20 }}
+              >
+                {mark}
+              </motion.span>
+            </AnimatePresence>
+          </span>
           <input aria-label="Adicionar ao mercado" placeholder="o que está faltando em casa?" value={entry} onChange={(e) => { setEntry(e.target.value); setAdded('') }} maxLength={160} enterKeyHint="send" />
-          <motion.button type="submit" aria-label="Adicionar à lista" disabled={!parsed || !items.ready} whileTap={reduced ? undefined : { scale: 0.9 }}><svg viewBox="0 0 24 24" aria-hidden><path d="m7 12 5-5 5 5M12 7v11" /></svg></motion.button>
+          <motion.button type="submit" aria-label="Adicionar à lista" className={parsed ? 'is-ready' : undefined} disabled={!parsed || !items.ready} animate={{ scale: parsed ? 1 : 0.86 }} transition={{ type: 'spring', stiffness: 600, damping: 26 }} whileTap={reduced ? undefined : { scale: 0.84 }} onPointerDown={(e) => e.preventDefault()}><svg viewBox="0 0 24 24" aria-hidden><path d="m7 12 5-5 5 5M12 7v11" /></svg></motion.button>
         </form>
         <p className="quick-entry-feedback" role="status">{added || (parsed?.quantity ? `${parsed.quantity} · ${parsed.name}` : 'anote aqui. a lista é de vocês dois.')}</p>
         </section>

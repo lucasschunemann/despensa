@@ -65,7 +65,8 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const cart = useRef<HTMLSpanElement>(null)
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const nearBottom = useRef(true)
+  // começa falso: ao abrir, a lista aparece do começo; só acompanha o fim depois de rolar até lá
+  const nearBottom = useRef(false)
   // o que já estava na lista ao abrir entra em cascata; o que chega depois tem o emoji pulando
   const known = useRef<Set<string> | null>(null)
 
@@ -265,12 +266,12 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
                 <Avatar person="Lucas" size={88} variant="full" />
               </motion.span>
             </div>
-            <p className="empty-title">Lista vazia</p>
-            <p className="empty-hint">Digite aí embaixo. Dá para incluir a quantidade: “2 leite”.</p>
+            <p className="empty-title">nada faltando</p>
+            <p className="empty-hint">escreva aí embaixo. dá para pôr a quantidade junto: “2 leite”.</p>
           </motion.div>
         )}
 
-        {search && visibleShelf.length === 0 && <p className="search-empty" role="status">Nenhum item pendente com “{search}”.<button onClick={() => setSearch('')}>ver toda a lista</button></p>}
+        {search && visibleShelf.length === 0 && <p className="search-empty" role="status">nada pendente com “{search}”.<button onClick={() => setSearch('')}>ver toda a lista</button></p>}
         <ul className="mlist">
           <AnimatePresence initial={false} mode="popLayout">
             {visibleShelf.map((item, index) => (
@@ -312,7 +313,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
           {editing && (
             <EditCard
               key={`edit-${editing.id}`}
-              title="Editar item"
+              title="editar item"
               initial={`${editing.quantity ? `${editing.quantity} ` : ''}${editing.name}`}
               preview={(text) => {
                 const entry = parseEntry(text)
@@ -397,7 +398,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
             <Toast
               key="deleted"
               duration={5000}
-              action={{ label: 'Desfazer', onClick: handleUndo }}
+              action={{ label: 'desfazer', onClick: handleUndo }}
               onDismiss={() => setDeleted(null)}
             >
               {deleted.name} apagado
@@ -431,7 +432,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
         <AnimatePresence>
           {askAmount && onRegisterMarket && (
             <AmountPrompt
-              question="Quanto deu no mercado?"
+              question="quanto deu no mercado?"
               emptyHint="entra nas contas do mês, já paga"
               confirmHint={(valor) => `vai virar a conta “Mercado” de ${valor}`}
               onClose={() => setAskAmount(false)}

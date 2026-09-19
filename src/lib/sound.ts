@@ -184,6 +184,20 @@ export const sound = {
     play((c, now) => {
       ;[1568, 2093, 2637].forEach((f, i) => tone(c, now + i * 0.06, f, 0.22, 0.05))
     }),
+  // seleção: o tique quase mudo de uma roda de seleção do iPhone (pasta, mês, chavinha)
+  tick: () =>
+    play((c, now) => {
+      click(c, now, { freq: 1900, decay: 0.012, gain: 0.14, q: 2.2 })
+    }),
+  // abrir um módulo: um sopro curto de papel subindo; voltar faz o caminho contrário
+  open: () =>
+    play((c, now) => {
+      sweep(c, now, 500, 1800, 0.13, 0.07)
+    }),
+  close: () =>
+    play((c, now) => {
+      sweep(c, now, 1600, 450, 0.12, 0.06)
+    }),
   complete: () =>
     play((c, now) => {
       click(c, now, { freq: 2400, decay: 0.03, gain: 0.3, q: 1.6 })

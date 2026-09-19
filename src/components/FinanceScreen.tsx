@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { Presence } from '../hooks/usePresence'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useViewportFit } from '../hooks/useViewportFit'
 import { summarize } from '../lib/balance'
 import { haptic } from '../lib/haptics'
@@ -17,6 +18,7 @@ import { ExpenseComposer } from './ExpenseComposer'
 import { FinanceFolderNav, FolderEditor, MoveExpensesTray, SelectionBar, type FolderFilter } from './FinanceFolders'
 import { MoneyRain } from './Money'
 import { Receipt } from './Receipt'
+import { Rolling } from './Rolling'
 import { PaidTicket, Ticket } from './Ticket'
 import { Skeleton } from './Skeleton'
 import { Toast } from './Toast'
@@ -65,6 +67,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [moving, setMoving] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
+  const wide = useMediaQuery('(min-width: 760px)')
   const [scrolled, setScrolled] = useState(false)
   // começa falso: ao abrir o mês a pessoa precisa ver o resumo, não o fim da lista
   const nearBottom = useRef(false)
@@ -125,6 +128,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
   const goMonth = (delta: number) => {
     setDirection(delta)
+    sound.tick()
     haptic('light')
     onMonthChange(shiftMonth(month, delta))
   }
@@ -197,72 +201,27 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
     setTimeout(() => setNotice(null), 3500)
   }
 
+  const folderNav = (
+    <FinanceFolderNav
+      folders={folders}
+      expenses={expenses}
+      active={folderFilter}
+      compact={!wide}
+      onChange={(next) => { sound.tick(); setFolderFilter(next); cancelSelection() }}
+      onAdd={() => setFolderEditor(null)}
+      onEdit={setFolderEditor}
+      selecting={selecting}
+      onSelectMode={() => selecting ? cancelSelection() : setSelecting(true)}
+    />
+  )
+
   return (
     <div className="app finance-app">
       <AppHeader title="contas" presence={presence} onOpenMenu={onOpenMenu} onHome={onHome} scrolled={scrolled} />
 
       <div className="finance-workspace">
-        <FinanceFolderNav
-          folders={folders}
-          expenses={expenses}
-          active={folderFilter}
-          onChange={(next) => { setFolderFilter(next); cancelSelection() }}
-          onAdd={() => setFolderEditor(null)}
-          onEdit={setFolderEditor}
-          selecting={selecting}
-          onSelectMode={() => selecting ? cancelSelection() : setSelecting(true)}
-        />
+        {wide && folderNav}
         <main className="finance-main">
-
-      <div className="month-bar">
-        <button className="month-arrow" onClick={() => goMonth(-1)} aria-label="Mês anterior">
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M14.5 5.5 8 12l6.5 6.5" />
-          </svg>
-        </button>
-
-        <div className="month-name">
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span
-              key={month}
-              initial={{ opacity: 0, x: direction * 18 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -18 }}
-              transition={{ type: 'spring', stiffness: 460, damping: 36 }}
-            >
-              {monthLabel(month)}
-            </motion.span>
-          </AnimatePresence>
-        </div>
-
-        <button className="month-arrow" onClick={() => goMonth(1)} aria-label="Próximo mês">
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M9.5 5.5 16 12l-6.5 6.5" />
-          </svg>
-        </button>
-
-        <AnimatePresence>
-          {!isCurrentMonth(month) && (
-            <motion.button
-              className="month-today"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={() => {
-                setDirection(month < monthKey() ? 1 : -1)
-                onMonthChange(monthKey())
-              }}
-            >
-              hoje
-            </motion.button>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className="finance-filter-head">
-        <div>{activeFolder && <span className={`folder-glyph folder-${activeFolder.color}`} aria-hidden><i /></span>}<span>{filterTitle}</span><small>{filteredExpenses.length}</small></div>
-        <button onClick={() => selecting ? cancelSelection() : setSelecting(true)}>{selecting ? 'cancelar' : 'selecionar'}</button>
-      </div>
 
       {error && (
         <button className="banner banner-error" onClick={clearError}>
@@ -280,8 +239,62 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
           nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
         }}
       >
+        {/* no celular as pastas rolam junto: a tela é das contas, não do cabeçalho */}
+        {!wide && folderNav}
+
+        <div className="finance-toolbar">
+          <div className="month-bar">
+            <button className="month-arrow" onClick={() => goMonth(-1)} aria-label="Mês anterior">
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M14.5 5.5 8 12l6.5 6.5" />
+              </svg>
+            </button>
+
+            <div className="month-name">
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                  key={month}
+                  initial={{ opacity: 0, x: direction * 18, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, x: direction * -18, filter: 'blur(4px)' }}
+                  transition={{ type: 'spring', stiffness: 460, damping: 36 }}
+                >
+                  {monthLabel(month)}
+                </motion.span>
+              </AnimatePresence>
+            </div>
+
+            <button className="month-arrow" onClick={() => goMonth(1)} aria-label="Próximo mês">
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M9.5 5.5 16 12l-6.5 6.5" />
+              </svg>
+            </button>
+
+            <AnimatePresence>
+              {!isCurrentMonth(month) && (
+                <motion.button
+                  className="month-today"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onClick={() => {
+                    setDirection(month < monthKey() ? 1 : -1)
+                    sound.tick()
+                    haptic('light')
+                    onMonthChange(monthKey())
+                  }}
+                >
+                  hoje
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+
+        </div>
+
         <Receipt
-          monthName={monthLabel(month)}
+          title={filterTitle}
+          color={activeFolder?.color}
           summary={summary}
           count={filteredExpenses.length}
           paidCount={paid.length}
@@ -293,11 +306,23 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
         {ready && filteredExpenses.length === 0 && (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <p className="empty-title">Nada em {filterTitle}</p>
+            <p className="empty-title">nada em {filterTitle}</p>
             <p className="empty-hint">
-              Digite aí embaixo: “luz 180”. Ligue “todo mês” para ela voltar sozinha.
+              escreva aí embaixo: “luz 180”. ligue “todo mês” para ela voltar sozinha.
             </p>
           </motion.div>
+        )}
+
+        {ready && filteredExpenses.length > 0 && (
+          <div className="section-head">
+            <h2>
+              {pending.length > 0 ? 'a pagar' : 'tudo pago'}
+              {pending.length > 0 && <small><Rolling value={pending.length} /></small>}
+            </h2>
+            <button className={`finance-select${selecting ? ' is-active' : ''}`} onClick={() => { sound.tick(); if (selecting) cancelSelection(); else setSelecting(true) }}>
+              {selecting ? 'cancelar' : 'selecionar'}
+            </button>
+          </div>
         )}
 
         <ul className="tickets">
@@ -326,7 +351,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
 
         {paid.length > 0 && (
           <>
-            <p className="divider">Pagas · {paid.length}</p>
+            <div className="section-head is-paid"><h2>pagas<small>{paid.length}</small></h2></div>
             <ul className="paid-list">
               <AnimatePresence initial={false} mode="popLayout">
                 {paid.map((expense, index) => (
@@ -372,7 +397,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
           {editing && (
             <EditCard
               key={`edit-${editing.id}`}
-              title={`Editar ${editing.title}`}
+              title={`editar ${editing.title}`}
               initial={`${editing.title} ${(editing.amount_cents / 100).toFixed(2).replace('.', ',')}${editing.due_day ? ` dia ${editing.due_day}` : ''}`}
               preview={(text) => {
                 const entry = parseExpenseEntry(text)
@@ -430,7 +455,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
               exit={{ opacity: 0, y: 20 }}
               transition={{ type: 'spring', stiffness: 440, damping: 34 }}
             >
-              <p className="choice-title">Apagar {asking.title}?</p>
+              <p className="choice-title">apagar {asking.title}?</p>
               <p className="choice-hint">Essa conta se repete todo mês.</p>
               <div className="choice-actions">
                 <button
@@ -463,7 +488,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
               key="deleted"
               duration={5000}
               action={{
-                label: 'Desfazer',
+                label: 'desfazer',
                 onClick: () => {
                   if (undoTimer.current) clearTimeout(undoTimer.current)
                   haptic('light')

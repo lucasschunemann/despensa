@@ -132,7 +132,7 @@ export function MarketRow({
         aria-hidden={!open}
         onClick={() => onRemove(item)}
       >
-        Apagar
+        apagar
       </motion.button>
 
       <motion.div
@@ -344,7 +344,7 @@ export function CartSection({ items, total, rolling, allPicked, onReturn, onFini
       </AnimatePresence>
 
       <div className="cart-finish">
-        <HoldButton label="Segure para finalizar" onComplete={onFinish} />
+        <HoldButton label="segure para finalizar" onComplete={onFinish} />
         <span className="finish-note">
           {allPicked ? 'a lista vai para o histórico' : 'o que falta fica para a próxima'}
         </span>

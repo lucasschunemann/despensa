@@ -6,7 +6,9 @@ import { Money } from './Money'
 import { Rolling } from './Rolling'
 
 interface Props {
-  monthName: string
+  /** pasta que está sendo vista ("todas as contas", "casa"…) */
+  title: string
+  color?: string
   summary: MonthSummary
   count: number
   paidCount: number
@@ -15,7 +17,7 @@ interface Props {
 }
 
 /** Resumo do mês como cupom de caixa: linhas pontilhadas e borda serrilhada. */
-export function Receipt({ monthName, summary, count, paidCount, me, onSettle }: Props) {
+export function Receipt({ title, color, summary, count, paidCount, me, onSettle }: Props) {
   const progress = summary.totalCents > 0 ? summary.paidCents / summary.totalCents : 0
   const debt = summary.debt
 
@@ -29,24 +31,17 @@ export function Receipt({ monthName, summary, count, paidCount, me, onSettle }: 
     >
       <div className="receipt">
         <p className="receipt-head">
-          <span>{monthName}</span>
+          <span className="receipt-folder">
+            {color && <span className={`folder-glyph folder-${color}`} aria-hidden><i /></span>}
+            {title}
+          </span>
           <span>
-            <Rolling value={paidCount} />/{count} contas
+            <Rolling value={paidCount} />/{count} pagas
           </span>
         </p>
 
-        <p className="receipt-line">
-          <span>total</span>
-          <i aria-hidden />
-          <span>{formatAmount(summary.totalCents)}</span>
-        </p>
-        <p className="receipt-line">
-          <span>pago</span>
-          <i aria-hidden />
-          <span>{formatAmount(summary.paidCents)}</span>
-        </p>
-
-        <p className="receipt-label">{summary.pendingCents > 0 ? 'falta pagar' : 'mês pago'}</p>
+        {/* o que importa primeiro: quanto falta. total e pago são detalhe, embaixo */}
+        <p className="receipt-label">{summary.pendingCents > 0 ? 'falta pagar' : summary.totalCents > 0 ? 'mês pago' : 'nada lançado'}</p>
         <Money
           className="receipt-total"
           cents={summary.pendingCents > 0 ? summary.pendingCents : summary.paidCents}
@@ -58,6 +53,19 @@ export function Receipt({ monthName, summary, count, paidCount, me, onSettle }: 
             animate={{ scaleX: progress }}
             transition={{ type: 'spring', stiffness: 200, damping: 30 }}
           />
+        </div>
+
+        <div className="receipt-lines">
+          <p className="receipt-line">
+            <span>total</span>
+            <i aria-hidden />
+            <span>{formatAmount(summary.totalCents)}</span>
+          </p>
+          <p className="receipt-line">
+            <span>pago</span>
+            <i aria-hidden />
+            <span>{formatAmount(summary.paidCents)}</span>
+          </p>
         </div>
       </div>
       <div className="receipt-edge" aria-hidden />

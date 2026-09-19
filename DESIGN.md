@@ -24,3 +24,12 @@ O material translúcido fica nas camadas de navegação e ação — sidebar, co
 
 ## Acessibilidade
 Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e navegação de tabs por setas. Progresso com valores acessíveis; mensagens de sucesso e erro com status/alert.
+
+## Redesign mobile (19/09/2026)
+- **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).
+- **Cabeçalho**: voltar e menu são botões redondos de vidro; ao rolar, o cabeçalho vira vidro com régua fina.
+- **Rodapé**: o campo fica sobre uma borda esmaecida da lista (sem régua); ao focar, o campo clareia e ganha sombra.
+- **Contas no celular**: pastas (chips com o "+" no fim) e mês rolam junto com as contas, para os bilhetes aparecerem na primeira tela. A pasta ativa é uma pílula preta que desliza entre os chips; os "…" só aparecem na pasta ativa. No tablet e no computador, a barra lateral continua. O cupom começa pelo "falta pagar"; total e pago viram detalhe. "Selecionar" mora no título da seção "a pagar". "Todo mês" é um chip dentro do campo, que encolhe para o ícone enquanto se digita.
+- **Mercado** abre no começo da lista. **Desejos** mostram o nome inteiro (até duas linhas) com o preço embaixo.
+- **Sons novos**: `tick` (seleção: pasta, mês, menu, "todo mês", nível de vontade), `open` e `close` (entrar e sair de um módulo).
+- Todo texto de interface em caixa baixa, inclusive placeholders e "desfazer".

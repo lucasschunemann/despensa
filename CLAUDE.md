@@ -220,6 +220,15 @@ Benchmark citado: The Coffee (rede de cafeterias brasileira), fluxo de pedido em
 2. ~~Estilo visual e microinterações (animação, som, tátil), PWA instalável~~
 3. Próximos passos possíveis: categorização visual por seção do mercado (depois do item entrar na lista), tela para ver as 3 últimas listas, sugestão de recompra por frequência (segue fora do MVP)
 
+## Redesign mobile (19/09/2026)
+Polimento geral pedido pelo Lucas, com foco no iPhone. Detalhes em DESIGN.md ("Redesign mobile"). O que
+mais mudou: nas **contas**, pastas e mês rolam junto com os bilhetes no celular (antes o cabeçalho
+ocupava a primeira tela inteira), o cupom começa pelo "falta pagar" e o "todo mês" virou chip dentro do
+campo; o **mercado** abre no começo da lista; **desejos** mostram o nome inteiro com o preço embaixo;
+escala de texto do iPhone em tokens (`--t-*`) e margem única (`--gutter`); sons `tick`, `open`, `close`.
+A estrutura das contas muda com a largura (`useMediaQuery('(min-width: 760px)')`): barra lateral no
+tablet/computador, faixa de chips no celular.
+
 ## Revisão de UX e push (17/09/2026)
 
 Direção em PRODUCT.md e DESIGN.md. Início tem entrada rápida, lista tem busca e progresso; menu tem preview e teste de avisos, foco contido e fundo inert. A base de bilhetes e desejos foi preservada. A nova migration de push foi aplicada diretamente no banco existente, cujas migrations antigas também haviam sido aplicadas manualmente. Não rode db push cegamente nesse banco: o histórico remoto não reflete as migrations anteriores.

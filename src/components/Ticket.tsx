@@ -147,7 +147,7 @@ export function Ticket({
             aria-hidden={!open}
             onClick={() => onRemove(expense)}
           >
-            Apagar
+            apagar
           </button>
         </>
       )}

@@ -1,6 +1,7 @@
 import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useTransform } from 'motion/react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
+import { sound } from '../lib/sound'
 
 // restDelta/restSpeed: a mola dá a tela por assentada a menos de 1px, em vez de ficar ~1s ajustando
 const SPRING = { type: 'spring' as const, stiffness: 380, damping: 40, mass: 0.9, restDelta: 0.5, restSpeed: 8 }
@@ -42,6 +43,7 @@ export function Stage({
   useEffect(() => {
     if (view !== home) {
       if (visible === null) {
+        sound.open()
         x.set(width())
         setVisible(view)
         animate(x, 0, transition)
@@ -52,6 +54,7 @@ export function Stage({
       return
     }
     if (visible !== null) {
+      sound.close()
       void animate(x, width(), transition).then(() => setVisible(null))
     }
     // só reage à troca de tela

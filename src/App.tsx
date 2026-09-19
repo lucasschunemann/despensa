@@ -68,7 +68,7 @@ export default function App() {
     return (
       <Gate title="despensa">
         <p className="gate-text">
-          {joinError ? `Não deu para entrar: ${joinError}` : 'Cole o código da sala para entrar.'}
+          {joinError ? `Não deu para entrar: ${joinError}` : 'cole o código da sala para entrar.'}
         </p>
         <form
           className="gate-form"
@@ -84,9 +84,9 @@ export default function App() {
             setCode(value)
           }}
         >
-          <input name="code" placeholder="Código da sala" autoFocus autoComplete="off" />
+          <input name="code" placeholder="código da sala" autoFocus autoComplete="off" />
           <button type="submit" className="button-primary">
-            Entrar
+            entrar
           </button>
         </form>
       </Gate>
@@ -101,7 +101,7 @@ export default function App() {
           animate={{ opacity: [0.35, 1, 0.35] }}
           transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
         >
-          Entrando…
+          entrando…
         </motion.p>
       </Gate>
     )
