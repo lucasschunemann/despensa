@@ -5,6 +5,7 @@ import { prefs, useSoundOn } from '../lib/prefs'
 import { PushSettings } from './PushSettings'
 import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
+import { CloseIcon } from './ControlIcons'
 
 export type View = 'inicio' | 'lista' | 'contas' | 'desejos'
 
@@ -118,7 +119,7 @@ export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwi
             onClick={(e) => e.stopPropagation()}
           >
             <span className="sheet-grab" aria-hidden />
-            <div className="sheet-heading"><div><span className="section-eyebrow">do nosso jeito</span><h2 id="menu-title">nossa casa</h2></div><button className="sheet-close" aria-label="Fechar menu" onClick={onClose}>×</button></div>
+            <div className="sheet-heading"><div><span className="section-eyebrow">do nosso jeito</span><h2 id="menu-title">nossa casa</h2></div><button className="sheet-close round-control" aria-label="Fechar menu" onClick={onClose}><CloseIcon size={20} /></button></div>
 
             <nav className="sheet-modules">
               {MODULES.map((module, i) => (

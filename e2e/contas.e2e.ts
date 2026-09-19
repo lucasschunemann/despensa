@@ -65,6 +65,37 @@ test('cria pasta e move várias contas de uma vez', async ({ page }) => {
   await expect(page.locator('.ticket-wrap')).toContainText(['Aluguel', 'Luz'])
 })
 
+test('centraliza controles e mantém nova pasta acima do teclado', async ({ page }) => {
+  const add = page.getByRole('button', { name: 'Nova pasta' })
+  const addBox = await add.boundingBox()
+  const addIconBox = await add.locator('svg').boundingBox()
+  expect(addBox).not.toBeNull()
+  expect(addIconBox).not.toBeNull()
+  expect(Math.abs((addBox!.x + addBox!.width / 2) - (addIconBox!.x + addIconBox!.width / 2))).toBeLessThan(1)
+  expect(Math.abs((addBox!.y + addBox!.height / 2) - (addIconBox!.y + addIconBox!.height / 2))).toBeLessThan(1)
+
+  await add.click()
+  await expect(page.getByPlaceholder('ex.: casa')).toBeFocused()
+  // É o mesmo valor que useViewportFit escreve quando a visualViewport encolhe
+  // com o teclado do iOS aberto.
+  await page.evaluate(() => document.documentElement.style.setProperty('--app-height', '430px'))
+  await expect(page.locator('.finance-app')).toHaveCSS('height', '430px')
+
+  const editor = page.locator('.folder-editor')
+  await expect(editor).toBeVisible()
+  await expect(editor).toHaveCSS('transform', 'none')
+  const editorBox = await editor.boundingBox()
+  expect(editorBox).not.toBeNull()
+  expect(editorBox!.y).toBeGreaterThanOrEqual(0)
+  expect(editorBox!.y + editorBox!.height).toBeLessThanOrEqual(430)
+
+  const close = page.getByRole('button', { name: 'Fechar' })
+  const closeBox = await close.boundingBox()
+  const closeIconBox = await close.locator('svg').boundingBox()
+  expect(Math.abs((closeBox!.x + closeBox!.width / 2) - (closeIconBox!.x + closeIconBox!.width / 2))).toBeLessThan(1)
+  expect(Math.abs((closeBox!.y + closeBox!.height / 2) - (closeIconBox!.y + closeIconBox!.height / 2))).toBeLessThan(1)
+})
+
 test('adapta navegação e painel inicial ao desktop', async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 800 })
   await page.reload()

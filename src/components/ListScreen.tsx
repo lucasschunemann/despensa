@@ -15,6 +15,7 @@ import { AppHeader } from './AppHeader'
 import { Avatar } from './Avatar'
 import { CompleteOverlay } from './CompleteOverlay'
 import { Composer } from './Composer'
+import { CloseIcon } from './ControlIcons'
 import { EditCard } from './EditCard'
 import { CartIcon, CartSection, MarketRow, ProductMark } from './Market'
 import { Rolling } from './Rolling'
@@ -207,7 +208,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
       {ready && items.length > 0 && <div className="market-overview">
         <div className="market-overview-label"><span>{allPicked ? 'pronto para passar no caixa' : `${onShelf.length} ${onShelf.length === 1 ? 'item para pegar' : 'itens para pegar'}`}</span><span>{Math.round(inCart.length / items.length * 100)}%</span></div>
         <div className="market-meter" role="progressbar" aria-label="Itens no carrinho" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={inCart.length}><motion.span animate={{ scaleX: inCart.length / items.length }} transition={{ duration: reduced ? 0 : 0.35 }} /></div>
-        {(items.length > 5 || search) && <div className="market-search"><svg viewBox="0 0 24 24" aria-hidden><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input type="search" aria-label="Buscar na lista" placeholder="encontrar na lista" value={search} onChange={(e) => setSearch(e.target.value)} />{search && <button aria-label="Limpar busca" onClick={() => setSearch('')}>×</button>}</div>}
+        {(items.length > 5 || search) && <div className="market-search"><svg viewBox="0 0 24 24" aria-hidden><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input type="search" aria-label="Buscar na lista" placeholder="encontrar na lista" value={search} onChange={(e) => setSearch(e.target.value)} />{search && <button className="round-control" aria-label="Limpar busca" onClick={() => setSearch('')}><CloseIcon size={17} /></button>}</div>}
       </div>}
 
       <AnimatePresence>
