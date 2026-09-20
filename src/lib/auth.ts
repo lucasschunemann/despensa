@@ -1,5 +1,6 @@
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { supabase, supabasePublishableKey, supabaseUrl } from './supabase'
+import { authRedirect } from './auth-url'
 
 export const AVATAR_PRESETS = [
   { id: 'cat', emoji: '🐈', color: '#f0a35e' },
@@ -37,18 +38,17 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signUp(email: string, password: string, username: string, avatar: string) {
-  const redirectTo = `${location.origin}${location.pathname}`
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: redirectTo, data: { username: username.trim(), avatar_value: avatar } },
+    options: { emailRedirectTo: authRedirect('confirmation'), data: { username: username.trim(), avatar_value: avatar } },
   })
   if (error) throw error
   return data
 }
 
 export async function continueWith(provider: 'apple' | 'google', linking = false) {
-  const redirectTo = location.href
+  const redirectTo = authRedirect('oauth')
   const result = linking
     ? await supabase.auth.linkIdentity({ provider, options: { redirectTo } })
     : await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } })
@@ -68,7 +68,7 @@ export async function upgradeAnonymous(email: string, username: string, avatar: 
   const { data, error } = await supabase.auth.updateUser({
     email,
     data: { username: username.trim(), avatar_value: avatar, onboarding_password_pending: true },
-  }, { emailRedirectTo: `${location.origin}${location.pathname}` })
+  }, { emailRedirectTo: authRedirect('conversion') })
   if (error) throw error
   const profile = {
     id: data.user.id,
@@ -90,7 +90,7 @@ export async function setAccountPassword(password: string) {
 
 export async function sendPasswordReset(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${location.origin}${location.pathname}?recovery=1`,
+    redirectTo: authRedirect('recovery'),
   })
   if (error) throw error
 }

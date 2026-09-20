@@ -40,7 +40,7 @@ export function AuthScreen({ legacy = false, initialUsername = '' }: { legacy?: 
           setNotice('Abra o e-mail de confirmação neste aparelho. Depois, você criará sua senha.')
         } else {
           const result = await signUp(email.trim(), password, username, avatar)
-          if (!result.session) setNotice('Conta criada. Confirme seu e-mail para entrar.')
+          if (!result.session) setNotice('Conta criada. Confirme pelo e-mail e depois abra novamente o Despensa na tela inicial.')
         }
       }
     } catch (cause) {

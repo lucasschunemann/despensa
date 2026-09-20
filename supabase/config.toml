@@ -1,3 +1,29 @@
 [functions.notificar]
 # JWT de usuário validado via Auth.getUser; cron autenticado por segredo do Vault.
 verify_jwt = false
+
+[auth]
+additional_redirect_urls = ["https://despensa-xi.vercel.app/", "https://despensa-xi.vercel.app/**", "http://localhost:5180/", "http://localhost:5180/**"]
+enable_anonymous_sign_ins = true
+enable_manual_linking = true
+site_url = "https://despensa-xi.vercel.app/"
+
+[auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[db.pooler]
+default_pool_size = 15
+max_client_conn = 200
+
+[storage.analytics]
+enabled = true
+max_namespaces = 10
+
+[storage.image_transformation]
+enabled = true
