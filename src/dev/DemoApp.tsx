@@ -2,6 +2,7 @@
 // sem Supabase e sem tocar na lista real.
 // Variações: &vazio=1, &quem=1, &digitando=1, &contas=1
 import { useCallback, useMemo, useState } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { PersonPicker } from '../App'
 import { FinanceScreen } from '../components/FinanceScreen'
 import { HomeScreen } from '../components/HomeScreen'
@@ -9,11 +10,13 @@ import { ListScreen } from '../components/ListScreen'
 import { MenuSheet, type View } from '../components/MenuSheet'
 import { ReactionBurst } from '../components/ReactionBurst'
 import { Stage } from '../components/Stage'
+import { UserSettingsSheet } from '../components/UserSettingsSheet'
 import { WishesScreen } from '../components/WishesScreen'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Presence, Reaction } from '../hooks/usePresence'
 import { monthKey } from '../lib/month'
+import type { Profile } from '../lib/auth'
 import type { Expense, ExpenseFolder, Item, Wish } from '../lib/types'
 import { uuid } from '../lib/uuid'
 
@@ -74,6 +77,8 @@ export default function DemoApp() {
     params.has('contas') ? 'contas' : params.has('desejos') ? 'desejos' : params.has('lista') ? 'lista' : 'inicio',
   )
   const [menuOpen, setMenuOpen] = useState(params.has('menu'))
+  const [settingsOpen, setSettingsOpen] = useState(params.has('settings'))
+  const [profile, setProfile] = useState<Profile>({ id: '00000000-0000-0000-0000-000000000001', username: 'Lucas', avatar_type: 'preset', avatar_value: 'cat', role: 'admin', created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
   const [month, setMonth] = useState(MONTH)
   const [savingsCents, setSavingsCents] = useState(50000)
   const [folders, setFolders] = useState<ExpenseFolder[]>(() => vazio ? [] : [
@@ -398,10 +403,17 @@ export default function DemoApp() {
         open={menuOpen}
         view={view}
         me="Lucas"
-        roomId={params.has('push') ? '00000000-0000-0000-0000-000000000000' : undefined}
         onClose={() => setMenuOpen(false)}
         onChangeView={setView}
-        onSwitchPerson={() => {}}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
+      <UserSettingsSheet
+        open={settingsOpen}
+        user={{ id: profile.id, email: 'lucas@despensa.app', identities: [{ provider: 'email' }] } as unknown as User}
+        profile={profile}
+        onClose={() => setSettingsOpen(false)}
+        onProfileChange={setProfile}
+        onSignOut={() => setSettingsOpen(false)}
       />
     </>
   )

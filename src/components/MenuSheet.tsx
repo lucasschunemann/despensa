@@ -1,8 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
-import { prefs, useSoundOn } from '../lib/prefs'
-import { PushSettings } from './PushSettings'
 import { sound } from '../lib/sound'
 import { Avatar } from './Avatar'
 import { CloseIcon } from './ControlIcons'
@@ -13,11 +11,9 @@ interface Props {
   open: boolean
   view: View
   me: string
-  /** sem sala, exibe somente a prévia dos avisos */
-  roomId?: string
   onClose: () => void
   onChangeView: (view: View) => void
-  onSwitchPerson: () => void
+  onOpenSettings: () => void
 }
 
 const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }> = [
@@ -66,8 +62,7 @@ const MODULES: Array<{ id: View; label: string; hint: string; icon: ReactNode }>
   },
 ]
 
-export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwitchPerson }: Props) {
-  const soundOn = useSoundOn()
+export function MenuSheet({ open, view, me, onClose, onChangeView, onOpenSettings }: Props) {
   const sheet = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -155,43 +150,15 @@ export function MenuSheet({ open, view, me, roomId, onClose, onChangeView, onSwi
                 className="sheet-option"
                 onClick={() => {
                   haptic('light')
-                  onSwitchPerson()
-                  onClose()
-                }}
-              >
-                <Avatar person={me} size={26} />
-                <span>você é {me}</span>
-                <small>trocar</small>
-              </button>
-
-              <button
-                className="sheet-option"
-                aria-pressed={soundOn}
-                onClick={() => {
-                  const next = !soundOn
-                  prefs.setSoundOn(next)
-                  haptic('light')
-                  if (next) {
-                    sound.unlock()
-                    sound.pick()
-                  }
-                }}
-              >
-                <span className="sheet-icon" aria-hidden>
-                  <svg viewBox="0 0 24 24">
-                    <path d="M11 5 6.5 9H3v6h3.5L11 19V5Z" />
-                    {soundOn ? (
-                      <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" />
-                    ) : (
-                      <path d="M16 10l4 4M20 10l-4 4" />
-                    )}
-                  </svg>
-                </span>
-                <span>som</span>
-                <small>{soundOn ? 'ligado' : 'desligado'}</small>
+                    onClose()
+                    onOpenSettings()
+                  }}
+                >
+                  <Avatar person={me} size={26} />
+                <span>{me}</span>
+                <small>conta e preferências</small>
               </button>
             </div>
-            <PushSettings roomId={roomId} me={me} />
           </motion.div>
         </motion.div>
       )}

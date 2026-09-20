@@ -14,15 +14,13 @@ test('adiciona no início e encontra no mercado sem acento', async ({ page }) =>
   await expect(page.locator('.mrow')).toHaveCount(5)
 })
 
-test('menu tem prévia interativa, fechamento e foco de teclado', async ({ page }) => {
+test('menu abre as configurações em painel separado e devolve o foco', async ({ page }) => {
   await open(page)
   await page.getByRole('button', { name: 'Abrir menu' }).click()
   await expect(page.getByRole('dialog', { name: 'nossa casa' })).toBeVisible()
-  await page.getByRole('tab', { name: 'contas', exact: true }).click()
-  await expect(page.getByRole('tabpanel')).toContainText('uma coisa a menos')
-  await page.getByRole('tab', { name: 'contas', exact: true }).press('ArrowRight')
-  await expect(page.getByRole('tab', { name: 'desejos' })).toHaveAttribute('aria-selected', 'true')
-  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: /Lucas/ }).click()
+  await expect(page.getByRole('dialog', { name: 'configurações' })).toBeVisible()
+  await page.getByRole('button', { name: 'Fechar configurações' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Abrir menu' })).toBeFocused()
 })
