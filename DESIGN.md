@@ -72,6 +72,14 @@ Fonte: <https://developer.apple.com/design/human-interface-guidelines/tab-bars>.
 - Ressalva honesta: as HIG descrevem o encolhimento para barra **com acessório acoplado** (o MiniPlayer do Music). A despensa não tem acessório, então o comportamento foi mantido por pedido do Lucas, não porque a Apple o prescreva neste caso.
 
 - A cápsula invade parte da área do indicador da tela, como a do iOS, em vez de ficar inteira acima dela: `--dock-gap` é `max(10px, safe-area-bottom - 15px)`, e `--dock-h` dá o respiro dos compositores dos módulos.
+- **Superfície invertida usa `--solid` e `--solid-text`, nunca `--ink` com branco fixo.** `--ink` é
+  cor de texto e inverte com o tema: como fundo de item selecionado ela fica quase branca no escuro,
+  e o texto branco por cima some. Foi o que aconteceu com a pasta selecionada das contas. Percurso
+  em `e2e/tema.e2e.ts` mede o contraste e barra a volta do problema.
+- Os avatares são WebP **com alfa**: o fundo branco do meme é recortado por preenchimento a partir
+  da borda em `scripts/avatars.mjs`, que anda só por branco vizinho para não furar o pelo claro do
+  gato, encolhe a silhueta em um pixel para não sobrar franja acesa no escuro, e esfuma a borda.
+  `node scripts/avatars.mjs` sem argumento refaz o recorte dos arquivos que já estão no projeto.
 - Texto: fragmento curto e concreto, sem ponto final e sem frase de efeito. Onde não há o que dizer, não entra linha nenhuma. A linha abaixo do campo devolve o que o app entendeu do que está escrito.
 - O cabeçalho mostra só a marca escrita. A ilustração não entra em barra de navegação: ela aparece grande no início.
 

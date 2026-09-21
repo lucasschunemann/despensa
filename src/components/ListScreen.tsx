@@ -267,7 +267,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
               </motion.span>
             </div>
             <p className="empty-title">nada faltando</p>
-            <p className="empty-hint">escreva aí embaixo. dá para pôr a quantidade junto: “2 leite”.</p>
+            <p className="empty-hint">escreva abaixo. a quantidade pode vir junto: “2 leite”.</p>
           </motion.div>
         )}
 

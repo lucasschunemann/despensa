@@ -308,7 +308,7 @@ export function FinanceScreen({ store, me, month, presence, onMonthChange, onOpe
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <p className="empty-title">nada em {filterTitle}</p>
             <p className="empty-hint">
-              escreva aí embaixo: “luz 180”. ligue “todo mês” para ela voltar sozinha.
+              escreva abaixo: “luz 180”. ligue “todo mês” para ela voltar sozinha.
             </p>
           </motion.div>
         )}

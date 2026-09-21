@@ -188,7 +188,7 @@ export function WishesScreen({ store, me, presence, onOpenMenu, onHome, onRegist
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <p className="empty-title">nenhum desejo ainda</p>
             <p className="empty-hint">
-              escreva aí embaixo: “abajur 320”. depois toque na moldura para pôr a foto.
+              escreva abaixo: “abajur 320”. depois toque na moldura para pôr a foto.
             </p>
           </motion.div>
         )}
