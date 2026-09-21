@@ -278,8 +278,8 @@ input {
   position: absolute;
   inset: 0 0 0 auto;
   width: 92px;
-  background: var(--danger);
-  color: #fff;
+  background: var(--danger-surface);
+  color: var(--danger-on);
   font-size: 15px;
   font-weight: 510;
 }
@@ -1654,8 +1654,8 @@ input {
   right: 0;
   width: 96px;
   justify-content: center;
-  background: var(--danger);
-  color: #fff;
+  background: var(--danger-surface);
+  color: var(--danger-on);
 }
 
 .ticket {
@@ -2136,8 +2136,8 @@ input {
   right: 0;
   width: 92px;
   justify-content: center;
-  background: var(--danger);
-  color: #fff;
+  background: var(--danger-surface);
+  color: var(--danger-on);
 }
 
 .mrow-face {
@@ -4514,6 +4514,9 @@ body,
   --glass-edge: 0 0 0 .5px rgb(0 0 0 / .06), 0 1px 2px rgb(0 0 0 / .04), 0 6px 18px rgb(0 0 0 / .05);
   --accent: var(--ink);
   --danger: #d92d20;
+  /* superfície vermelha (arrastar para apagar, selo) e o texto que vai em cima */
+  --danger-surface: #d92d20;
+  --danger-on: #ffffff;
   --sage: #7ea98a;
   --sage-soft: #eef4ef;
   --lilac-soft: #f0eef6;
@@ -4553,6 +4556,10 @@ body,
   --glass-edge: 0 0 0 .5px rgb(255 255 255 / .1), 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .36);
   --accent: var(--ink);
   --danger: #ff6b61;
+  /* no escuro o vermelho de texto clareia, mas o de fundo precisa fechar,
+     senão o branco por cima fica ilegível */
+  --danger-surface: #c62f24;
+  --danger-on: #ffffff;
   --sage: #6d9079;
   --sage-soft: #1d2620;
   --lilac-soft: #201f2a;
@@ -4754,8 +4761,8 @@ body,
   padding: 0 3.5px;
   border: 1.5px solid var(--paper);
   border-radius: 999px;
-  background: var(--danger);
-  color: #fff;
+  background: var(--danger-surface);
+  color: var(--danger-on);
   font: 640 9px/1 var(--font-numeric);
   letter-spacing: 0;
 }

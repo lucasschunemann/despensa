@@ -72,6 +72,11 @@ Fonte: <https://developer.apple.com/design/human-interface-guidelines/tab-bars>.
 - Ressalva honesta: as HIG descrevem o encolhimento para barra **com acessório acoplado** (o MiniPlayer do Music). A despensa não tem acessório, então o comportamento foi mantido por pedido do Lucas, não porque a Apple o prescreva neste caso.
 
 - A cápsula invade parte da área do indicador da tela, como a do iOS, em vez de ficar inteira acima dela: `--dock-gap` é `max(10px, safe-area-bottom - 15px)`, e `--dock-h` dá o respiro dos compositores dos módulos.
+- **Cor que pinta fundo e cor que pinta texto são tokens separados.** No escuro o vermelho de
+  texto precisa clarear e o de fundo precisa fechar — o mesmo valor não serve para os dois. Daí
+  `--danger` (texto e ícone) e o par `--danger-surface` / `--danger-on` (arrastar para apagar,
+  selo da barra). Vale a mesma regra do `--ink`: se o token aparece em `background` e em `color`,
+  ele está fazendo dois trabalhos.
 - **Superfície invertida usa `--solid` e `--solid-text`, nunca `--ink` com branco fixo.** `--ink` é
   cor de texto e inverte com o tema: como fundo de item selecionado ela fica quase branca no escuro,
   e o texto branco por cima some. Foi o que aconteceu com a pasta selecionada das contas. Percurso

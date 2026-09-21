@@ -9,7 +9,10 @@ const abrir = async (page: Page, extra = '') => {
 
 /** Luminância relativa, para comparar texto e fundo sem depender da cor exata. */
 const LUZ = `(css) => {
-  const m = css.match(/[\\d.]+/g) || ['0','0','0']
+  const hex = css.trim().match(/^#([0-9a-f]{6})$/i)
+  const m = hex
+    ? [parseInt(hex[1].slice(0, 2), 16), parseInt(hex[1].slice(2, 4), 16), parseInt(hex[1].slice(4, 6), 16)].map(String)
+    : (css.match(/[\\d.]+/g) || ['0','0','0'])
   const [r, g, b] = m.slice(0, 3).map(Number).map((v) => {
     const s = v / 255
     return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
@@ -51,4 +54,16 @@ test('os avatares têm fundo transparente', async ({ page }) => {
   // WebP com alfa é VP8L ou VP8X; VP8 puro (lossy sem alfa) não tem transparência
   const marca = buf.subarray(12, 16).toString('ascii')
   expect(['VP8L', 'VP8X']).toContain(marca)
+})
+
+test('no escuro, o vermelho de apagar aguenta o texto branco em cima', async ({ page }) => {
+  await abrir(page, '&contas=1')
+  const razao = await page.evaluate((fn) => {
+    const luz = eval(fn) as (css: string) => number
+    const raiz = getComputedStyle(document.documentElement)
+    const a = luz(raiz.getPropertyValue('--danger-on').trim())
+    const b = luz(raiz.getPropertyValue('--danger-surface').trim())
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+  }, LUZ)
+  expect(razao).toBeGreaterThan(4.5)
 })
