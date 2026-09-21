@@ -17,12 +17,14 @@ export function Stage({
   renderHome,
   renderModule,
   onBack,
+  dock,
 }: {
   view: string
   home: string
   renderHome: () => ReactNode
   renderModule: (view: string) => ReactNode
   onBack: () => void
+  dock?: ReactNode
 }) {
   const reduced = useReducedMotion()
   const width = () => window.innerWidth
@@ -98,6 +100,7 @@ export function Stage({
           )}
         </motion.div>
       )}
+      {dock}
     </div>
   )
 }

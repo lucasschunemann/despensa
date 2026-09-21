@@ -4,6 +4,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { PersonPicker } from '../App'
+import { AppDock } from '../components/AppDock'
 import { FinanceScreen } from '../components/FinanceScreen'
 import { HomeScreen } from '../components/HomeScreen'
 import { ListScreen } from '../components/ListScreen'
@@ -80,6 +81,7 @@ export default function DemoApp() {
   const [settingsOpen, setSettingsOpen] = useState(params.has('settings'))
   const [profile, setProfile] = useState<Profile>({ id: '00000000-0000-0000-0000-000000000001', username: 'Lucas', avatar_type: 'preset', avatar_value: 'cat', role: 'admin', created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
   const [month, setMonth] = useState(MONTH)
+  const changeView = (next: View) => { if (next === 'inicio') setMonth(MONTH); setView(next) }
   const [savingsCents, setSavingsCents] = useState(50000)
   const [folders, setFolders] = useState<ExpenseFolder[]>(() => vazio ? [] : [
     { id: HOUSE_FOLDER, room_id: 'demo', name: 'casa', color: 'blue', position: 0, created_by: 'Lucas', created_at: new Date().toISOString() },
@@ -348,7 +350,8 @@ export default function DemoApp() {
       <Stage
         view={view}
         home="inicio"
-        onBack={() => setView('inicio')}
+        onBack={() => changeView('inicio')}
+        dock={<AppDock view={view} onChange={changeView} />}
         renderHome={() => (
           <HomeScreen
             me="Lucas"
@@ -356,7 +359,7 @@ export default function DemoApp() {
             items={itemsStore}
             expenses={expensesStore}
             wishes={wishesStore}
-            onOpen={setView}
+            onOpen={changeView}
             onOpenMenu={() => setMenuOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
           />
@@ -368,7 +371,7 @@ export default function DemoApp() {
               me="Lucas"
               presence={presence}
               onOpenMenu={() => setMenuOpen(true)}
-              onHome={() => setView('inicio')}
+              onHome={() => changeView('inicio')}
               onRegisterExpense={(title, amountCents) =>
                 expensesStore.add({ title, amountCents, dueDay: null }, { paid: true })
               }
@@ -379,7 +382,7 @@ export default function DemoApp() {
               me="Lucas"
               presence={presence}
               onOpenMenu={() => setMenuOpen(true)}
-              onHome={() => setView('inicio')}
+              onHome={() => changeView('inicio')}
               onRegisterMarket={(amountCents) =>
                 expensesStore.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
               }
@@ -392,7 +395,7 @@ export default function DemoApp() {
               presence={presence}
               onMonthChange={setMonth}
               onOpenMenu={() => setMenuOpen(true)}
-              onHome={() => setView('inicio')}
+              onHome={() => changeView('inicio')}
             />
           )
         }
@@ -405,7 +408,7 @@ export default function DemoApp() {
         view={view}
         me="Lucas"
         onClose={() => setMenuOpen(false)}
-        onChangeView={setView}
+        onChangeView={changeView}
         onOpenSettings={() => setSettingsOpen(true)}
       />
       <UserSettingsSheet

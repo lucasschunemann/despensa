@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js'
 import { motion } from 'motion/react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { AuthScreen, PasswordSetup } from './components/AuthScreen'
+import { AppDock } from './components/AppDock'
 import { Avatar, Mark } from './components/Avatar'
 import { FinanceScreen } from './components/FinanceScreen'
 import { HomeScreen } from './components/HomeScreen'
@@ -130,6 +131,7 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   const [menuOpen, setMenuOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const goHome = () => { setMonth(monthKey()); setView('inicio') }
+  const changeView = (next: View) => next === 'inicio' ? goHome() : setView(next)
 
   const items = useItems(roomId, person)
   const expenses = useExpenses(roomId, person, month)
@@ -158,13 +160,13 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   useEffect(() => { if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`) }, [])
 
   return <>
-    <Stage view={view} home="inicio" onBack={goHome} renderHome={() => <HomeScreen me={person} presence={presence} items={items} expenses={expenses} wishes={wishes} onOpen={setView} onOpenMenu={() => setMenuOpen(true)} onOpenSettings={() => setSettingsOpen(true)} />} renderModule={(current) => {
+    <Stage view={view} home="inicio" onBack={goHome} dock={<AppDock view={view} onChange={changeView} />} renderHome={() => <HomeScreen me={person} presence={presence} items={items} expenses={expenses} wishes={wishes} onOpen={setView} onOpenMenu={() => setMenuOpen(true)} onOpenSettings={() => setSettingsOpen(true)} />} renderModule={(current) => {
       if (current === 'lista') return <ListScreen store={items} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterMarket={(amountCents) => expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })} />
       if (current === 'contas') return <FinanceScreen store={expenses} me={person} month={month} presence={presence} onMonthChange={setMonth} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} />
       return <WishesScreen store={wishes} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterExpense={(title, amountCents) => expenses.add({ title, amountCents, dueDay: null }, { paid: true })} />
     }} />
     <ReactionBurst reaction={presence.reaction} me={person} />
-    <MenuSheet open={menuOpen} view={view} me={person} onClose={() => setMenuOpen(false)} onChangeView={(next) => next === 'inicio' ? goHome() : setView(next)} onOpenSettings={() => setSettingsOpen(true)} />
+    <MenuSheet open={menuOpen} view={view} me={person} onClose={() => setMenuOpen(false)} onChangeView={changeView} onOpenSettings={() => setSettingsOpen(true)} />
     <UserSettingsSheet open={settingsOpen} user={user} profile={profile} roomId={roomId} onClose={() => setSettingsOpen(false)} onProfileChange={onProfileChange} onSignOut={onSignOut} />
   </>
 }

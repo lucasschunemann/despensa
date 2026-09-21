@@ -16,8 +16,10 @@ Resolver bem UMA coisa: adicionar item rápido, ver a lista organizada, marcar c
 ## Branding (definido em 16/09/2026)
 - Nome sempre em **caixa baixa**: "despensa". Vale para a marca na tela, o título da aba, o nome do
   app instalado e o manifesto
-- Marca: **"d" geométrico** (anel + haste na mesma grade), desenhado em `src/components/Avatar.tsx`
-  (`Mark`) e em `scripts/icons.mjs`. Ícone do app: "d" branco sobre preto
+- Marca (21/09/2026): **camarão saxofonista**, ilustração em `public/brand/logo.png`, usada por
+  `Mark` e `Mascot` em `src/components/Avatar.tsx`. Os ícones do app saem dela por
+  `node scripts/icons.mjs` (recorta a margem, centraliza, papel `#f7f7f5`). Antes disso a marca foi
+  um "d" geométrico e depois uma baleia de traço único; as duas saíram
 - Referência: design suíço, minimalismo caro. Muito branco, régua fina, nada decorativo
 - **Tipografia (16/09/2026)**: **Plus Jakarta Sans** em tudo; **Inter só onde tem número**
   (valores, quantidades, resumo), porque tem algarismo de largura fixa e o número não dança quando
@@ -26,7 +28,7 @@ Resolver bem UMA coisa: adicionar item rápido, ver a lista organizada, marcar c
   Títulos seguem com `letter-spacing` bem negativo; texto corrido fica quase neutro, porque a
   Jakarta já é estreita
 - **Só tema claro.** O modo escuro foi removido a pedido do Lucas
-- Paleta monocromática: tinta `#0a0a0a` sobre branco. A única cor fora disso é o vermelho do apagar
+- Paleta monocromática: tinta `#0a0a0a` sobre branco. Fora disso só o vermelho do apagar, a marca
   e as cores dos avatares
 - **Avatares**: são dois memes de gato com tomate, escolhidos pelo Lucas (16/09/2026). Bela é o gato
   que joga o tomate, Lucas é o gato que desvia dos tomates. Arquivos em `public/avatars/`, gerados

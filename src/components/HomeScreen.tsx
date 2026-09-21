@@ -124,7 +124,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
         <motion.section className="home-overview" {...reveal(0)}>
           <div className="home-overview-top">
             <div><span className="home-kicker">{TODAY.format(new Date())}</span><p>{greeting()}, {me}.</p></div>
-            <motion.div className="home-fish" initial={reduced ? false : { x: 44, opacity: 0, rotate: 8 }} animate={{ x: 0, opacity: 1, rotate: reduced ? 0 : [0, -2, 1, 0], y: reduced ? 0 : [0, -3, 0] }} transition={{ x: { type: 'spring', stiffness: 250, damping: 24 }, opacity: { duration: .24 }, rotate: { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }, y: { duration: 3.8, repeat: Infinity, ease: 'easeInOut' } }}><Mascot size={82} /></motion.div>
+            <motion.div className="home-brand" initial={reduced ? false : { x: 44, opacity: 0, rotate: 8 }} animate={{ x: 0, opacity: 1, rotate: reduced ? 0 : [0, -2, 1, 0], y: reduced ? 0 : [0, -3, 0] }} transition={{ x: { type: 'spring', stiffness: 250, damping: 24 }, opacity: { duration: .24 }, rotate: { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }, y: { duration: 3.8, repeat: Infinity, ease: 'easeInOut' } }}><Mascot size={82} /></motion.div>
           </div>
           <h2>{ready ? attention === 0 ? 'tudo em ordem.' : <><Rolling value={attention} /> {attention === 1 ? 'coisa pede' : 'coisas pedem'} atenção.</> : 'sincronizando a casa.'}</h2>
           <div className="home-overview-meta"><span>{overdue ? `${overdue} ${overdue === 1 ? 'conta atrasada' : 'contas atrasadas'}` : 'nenhum atraso'}</span><span>{completion}% das contas pagas</span></div>
@@ -157,12 +157,6 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
         </motion.section>
       </div>
 
-      <nav className="home-tabbar" aria-label="Atalhos principais">
-        <button aria-current="page"><HomeIcon /><span>início</span></button>
-        <button onClick={() => open('lista')}><BasketIcon /><span>mercado</span></button>
-        <button onClick={() => open('contas')}><BillIcon /><span>contas</span></button>
-        <button onClick={() => open('desejos')}><HeartIcon /><span>desejos</span></button>
-      </nav>
     </div>
   )
 }
@@ -172,7 +166,6 @@ function HomeRow({ className, label, value, detail, icon, onClick, index }: { cl
 }
 
 function CaptureIcon({ mode }: { mode: CaptureMode }) { return <span className="capture-icon" aria-hidden>{mode === 'lista' ? <BasketIcon /> : mode === 'contas' ? <BillIcon /> : <HeartIcon />}</span> }
-function HomeIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 10.8 12 4l8 6.8V20h-6v-6h-4v6H4Z" /></svg> }
 function BasketIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 8h16l-1.4 11H5.4Z"/><path d="M8.5 8A3.5 3.5 0 0 1 12 4.5 3.5 3.5 0 0 1 15.5 8"/></svg> }
 function BillIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg> }
 function HeartIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M12 20 4.8 13a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7A4.6 4.6 0 0 1 19.2 13Z"/></svg> }

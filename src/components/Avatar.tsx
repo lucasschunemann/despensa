@@ -35,38 +35,12 @@ export function Avatar({ person, size = 24, variant = 'face' }: Props) {
   )
 }
 
-// Uma baleia reduzida ao contorno: a marca continua reconhecível até em 18px.
 export function Mark({ size = 20 }: { size?: number }) {
-  return (
-    <svg className="brand-mark" width={size} height={size} viewBox="0 0 64 64" aria-hidden fill="none" stroke="currentColor" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 34.5C8 20 18.6 11 33 11c12.2 0 21.2 7.1 22.8 19.4.5 3.6-.6 7.3-3.4 9.8-3.8 3.5-9.8 5.2-18.8 5.2H16.2C10.8 45.4 8 41.5 8 34.5Z" />
-      <path d="M52.5 39.8c2.8 1.2 6.5.2 8-2.7.7 6.8-3 11.9-9.8 12.7" />
-      <circle cx="24" cy="29" r="2.2" fill="currentColor" stroke="none" />
-    </svg>
-  )
+  return <img className="brand-mark" src="/brand/logo.png" width={size} height={size} alt="" aria-hidden draggable={false} />
 }
 
 export function Mascot({ size = 120, className = '' }: { size?: number; className?: string }) {
-  return (
-    <svg
-      className={`brand-mascot ${className}`.trim()}
-      width={size}
-      height={Math.round(size * .68)}
-      viewBox="0 0 150 102"
-      role="img"
-      aria-label="Baleia da Despensa"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M18 60C18 31.4 37.6 15 67.5 15c25.2 0 44.2 13.2 48.7 36.8 1.2 6.5-.2 13.1-4.8 18.2-6.3 7.1-18.2 10.8-36.1 10.8H36.6C24.4 80.8 18 73.6 18 60Z" />
-      <path d="M111 70.2c6.7 2.8 15.3.4 18.9-6.3 1.7 14.8-6.9 25.1-22.3 26.2" />
-      <circle cx="49" cy="53" r="3.4" fill="currentColor" stroke="none" />
-      <path className="brand-spout" d="M65 8.5C62.5 3.5 58 1.8 54.8 2M69 8.5c2.5-5 7-6.7 10.2-6.5" />
-    </svg>
-  )
+  return <img className={`brand-mascot ${className}`.trim()} src="/brand/logo.png" width={size} height={size} alt="camarão saxofonista da despensa" draggable={false} />
 }
 
 // Tomate do easter egg (quem diria que ia ter um tomate no design system).

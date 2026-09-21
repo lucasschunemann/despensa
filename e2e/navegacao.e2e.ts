@@ -29,3 +29,19 @@ test('menu troca de módulo', async ({ page }) => {
   await page.locator('.module', { hasText: 'desejos' }).click()
   await expect(page.locator('.wish')).toHaveCount(5)
 })
+
+test('barra Liquid Glass permanece visível e acompanha o módulo atual', async ({ page }) => {
+  await open(page)
+  const dock = page.getByRole('navigation', { name: 'Navegação principal' })
+  await expect(dock).toBeVisible()
+  await expect(dock.getByRole('button', { name: 'início' })).toHaveAttribute('aria-current', 'page')
+
+  await dock.getByRole('button', { name: 'mercado' }).click()
+  await expect(page.locator('.mrow')).toHaveCount(4)
+  await expect(dock).toBeVisible()
+  await expect(dock.getByRole('button', { name: 'mercado' })).toHaveAttribute('aria-current', 'page')
+
+  await dock.getByRole('button', { name: 'contas' }).click()
+  await expect(page.locator('.ticket-wrap')).toHaveCount(3)
+  await expect(dock.getByRole('button', { name: 'contas' })).toHaveAttribute('aria-current', 'page')
+})

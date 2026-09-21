@@ -1,35 +1,31 @@
-// Gera os ícones do app. Rodar só quando o desenho mudar:  node scripts/icons.mjs
+// Gera os ícones do app a partir da marca. Rodar só quando o desenho mudar:  node scripts/icons.mjs
 import sharp from 'sharp'
 import { writeFile } from 'node:fs/promises'
 
-// "d" geométrico: anel + haste alinhados na mesma grade (bowl centrado em 200,320,
-// raio 116, miolo 62; haste encostando na borda direita do bowl).
-const mark = (fg) => `
-  <g fill="${fg}">
-    <path d="M200 204a116 116 0 1 0 0 232 116 116 0 0 0 0-232Zm0 54a62 62 0 1 1 0 124 62 62 0 0 1 0-124Z" fill-rule="evenodd"/>
-    <rect x="262" y="80" width="54" height="356"/>
-  </g>`
+const LOGO = 'public/brand/logo.png'
+// Mesmo papel do manifesto (vite.config.ts), para o ícone não brigar com a tela de abertura.
+const PAPER = '#f7f7f5'
 
-const canvas = (size, { bg, fg, scale }) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 512 512">
-    <rect width="512" height="512" fill="${bg}"/>
-    <g transform="translate(256 256) scale(${scale}) translate(-256 -256) translate(56 -2)">${mark(fg)}</g>
-  </svg>`
-
-const INK = '#0a0a0a'
-const PAPER = '#ffffff'
+// A arte vem com muita margem transparente e fora do centro: recorta e recentraliza,
+// senão o camarão nasce torto dentro do recorte redondo do sistema.
+const art = await sharp(LOGO).trim().toBuffer()
 
 const targets = [
-  ['public/icons/apple-touch-icon.png', 180, { bg: INK, fg: PAPER, scale: 0.72 }],
-  ['public/icons/icon-192.png', 192, { bg: INK, fg: PAPER, scale: 0.72 }],
-  ['public/icons/icon-512.png', 512, { bg: INK, fg: PAPER, scale: 0.72 }],
+  ['public/icons/apple-touch-icon.png', 180, 0.72],
+  ['public/icons/icon-192.png', 192, 0.72],
+  ['public/icons/icon-512.png', 512, 0.72],
   // maskable: o sistema recorta as bordas, então a marca vem menor
-  ['public/icons/maskable-512.png', 512, { bg: INK, fg: PAPER, scale: 0.52 }],
-  ['public/icons/favicon-48.png', 48, { bg: INK, fg: PAPER, scale: 0.76 }],
+  ['public/icons/maskable-512.png', 512, 0.52],
+  ['public/icons/favicon-48.png', 48, 0.76],
 ]
 
-for (const [file, size, opts] of targets) {
-  const png = await sharp(Buffer.from(canvas(size, opts))).png().toBuffer()
+for (const [file, size, scale] of targets) {
+  const inner = Math.round(size * scale)
+  const mark = await sharp(art).resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer()
+  const png = await sharp({ create: { width: size, height: size, channels: 4, background: PAPER } })
+    .composite([{ input: mark, gravity: 'center' }])
+    .png()
+    .toBuffer()
   await writeFile(file, png)
   console.log('gerado', file)
 }
