@@ -256,6 +256,8 @@ export default function DemoApp() {
     [expenses, folders, month],
   )
 
+  const overdueBills = expensesStore.expenses.filter((expense) => expense.status === 'pendente' && expense.due_day && expense.due_day < new Date().getDate()).length
+
   const [wishes, setWishes] = useState<Wish[]>(() =>
     (vazio ? [] : WISHES).map((w, i) => ({
       id: uuid(),
@@ -351,7 +353,7 @@ export default function DemoApp() {
         view={view}
         home="inicio"
         onBack={() => changeView('inicio')}
-        dock={<AppDock view={view} onChange={changeView} />}
+        dock={<AppDock view={view} onChange={changeView} badges={{ contas: overdueBills }} />}
         renderHome={() => (
           <HomeScreen
             me="Lucas"

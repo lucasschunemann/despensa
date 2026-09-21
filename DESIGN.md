@@ -32,9 +32,24 @@ Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e nave
 - A tela inicial começa pelo estado da casa, oferece captura direta para os três módulos e termina em uma fila curta de ações. Em tablet e desktop, o resumo fica ao lado das ações; no iPhone, forma uma sequência única para o polegar.
 - O menu separa claramente perfil e navegação. Os destinos formam uma lista, com seleção invertida que desliza entre eles.
 - A navegação principal é persistente e usa material Liquid Glass: cápsula flutuante, desfoque do conteúdo, reflexo preso à borda de cima, brilho interno e uma lente de vidro que desliza até o destino atual.
-- A barra segue o comportamento da barra do iOS 26: descer a tela **encolhe a cápsula até sobrar só a aba atual**, em pílula com ícone e nome lado a lado; subir, ou tocar na pílula, devolve a barra inteira, e perto do topo ela é sempre inteira. A largura é animada por layout, então a cápsula se contrai em vez de trocar de estado em corte seco. Quem rola é o contêiner de cada módulo, então a escuta é na fase de captura.
+
+### O que as HIG de tab bars mandam, e como o app cumpre
+Fonte: <https://developer.apple.com/design/human-interface-guidelines/tab-bars>.
+
+- **Navegação, nunca ação.** As quatro abas são só destinos. Ação de tela fica na barra do módulo.
+- **Sempre visível.** A barra acompanha os quatro módulos. A única exceção prevista é folha modal por cima: o menu e as configurações ficam acima dela e a cobrem.
+- **Rótulo de uma palavra.** início, mercado, contas, desejos.
+- **Ícone preenchido**, que é o que a plataforma usa. Só a alça da cesta é traço, porque preenchida vira borrão.
+- **Ícone acima do rótulo em vista compacta, ao lado em vista normal.** No celular fica empilhado; a partir de 760px a aba deita e a cápsula encolhe para caber no conteúdo.
+- **Nunca desabilitar nem esconder aba**, mesmo sem conteúdo. Lista vazia continua abrindo e explica que está vazia.
+- **Sem aba de excesso.** São quatro, cabem em qualquer largura.
+- **Selo só para informação crítica.** Conta vencida vira oval vermelho com número branco na aba de contas; acima de nove vira `!`. Item de mercado e desejo não ganham selo, para o selo não perder o sentido.
+- **Cor.** A barra é monocromática, como as HIG pedem quando o conteúdo já tem cor própria. O vermelho do selo é o mesmo do apagar.
+- **Encolher ao descer a leitura** e sair do estado encolhido **só de dois jeitos: tocar numa aba ou voltar ao topo da tela.** Rolar um pouco para cima não devolve a barra. A cápsula se contrai até sobrar a aba atual, em pílula com ícone e nome lado a lado, com a largura animada por layout.
+- Ressalva honesta: as HIG descrevem o encolhimento para barra **com acessório acoplado** (o MiniPlayer do Music). A despensa não tem acessório, então o comportamento foi mantido por pedido do Lucas, não porque a Apple o prescreva neste caso.
+
 - A cápsula invade parte da área do indicador da tela, como a do iOS, em vez de ficar inteira acima dela: `--dock-gap` é `max(10px, safe-area-bottom - 15px)`, e `--dock-h` dá o respiro dos compositores dos módulos.
-- Texto: fragmento curto e concreto, sem ponto final e sem frase de efeito. Onde não há o que dizer, não entra linha nenhuma. A linha abaixo do campo devolve o que o app entendeu do que está escrito, em vez de uma instrução fixa.
+- Texto: fragmento curto e concreto, sem ponto final e sem frase de efeito. Onde não há o que dizer, não entra linha nenhuma. A linha abaixo do campo devolve o que o app entendeu do que está escrito.
 - O cabeçalho mostra só a marca escrita. A ilustração não entra em barra de navegação: ela aparece grande no início.
 
 ## Redesign mobile (19/09/2026)

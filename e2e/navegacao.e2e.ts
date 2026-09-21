@@ -66,13 +66,24 @@ test('a barra encolhe até a aba atual quando a tela desce, e volta ao toque', a
   await expect(page.locator('.home-hello')).toBeVisible()
 })
 
-test('subir a tela também devolve a barra inteira', async ({ page }) => {
+test('voltar ao topo devolve a barra, mas rolar um pouco para cima não', async ({ page }) => {
   await open(page)
   const dock = page.getByRole('navigation', { name: 'Navegação principal' })
   await page.mouse.move(200, 400)
-  for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, 60); await page.waitForTimeout(30) }
+  for (let i = 0; i < 14; i++) { await page.mouse.wheel(0, 60); await page.waitForTimeout(30) }
   await expect(dock).toHaveAttribute('data-mini', 'true')
 
-  for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, -70); await page.waitForTimeout(30) }
+  // as HIG só devolvem a barra ao tocar numa aba ou ao voltar ao topo
+  await page.mouse.wheel(0, -90)
+  await page.waitForTimeout(350)
+  await expect(dock).toHaveAttribute('data-mini', 'true')
+
+  await page.evaluate(() => { const s = document.querySelector('.home-v3 .scroll'); if (s) s.scrollTop = 0 })
   await expect(dock).toHaveAttribute('data-mini', 'false')
+})
+
+test('conta em atraso vira selo na aba de contas', async ({ page }) => {
+  await open(page)
+  const dock = page.getByRole('navigation', { name: 'Navegação principal' })
+  await expect(dock.getByRole('button', { name: /^contas, \d+ em atraso$/ })).toBeVisible()
 })

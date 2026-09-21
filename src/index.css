@@ -4701,8 +4701,26 @@ body,
 }
 .app-dock-icon,
 .app-dock-label { position: relative; z-index: 1; }
-.app-dock-icon { display: grid; place-items: center; }
-.app-dock button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.app-dock-icon { position: relative; display: grid; place-items: center; }
+/* HIG: selo é oval vermelho com texto branco, e só para informação crítica. */
+.app-dock-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  padding: 0 3.5px;
+  border: 1.5px solid var(--paper);
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font: 640 9px/1 var(--font-numeric);
+  letter-spacing: 0;
+}
+.app-dock button svg { width: 21px; height: 21px; fill: currentColor; stroke: none; }
+.app-dock button svg [data-stroke] { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .app-dock button[aria-current='page'] { color: var(--text); }
 .app-dock-label { line-height: 1.2; white-space: nowrap; }
 /* A lente é o vidro de dentro: desliza entre os destinos. */
@@ -4732,7 +4750,15 @@ body,
   font-weight: 620;
   letter-spacing: -.015em;
 }
-.app-dock[data-mini='true'] button svg { width: 18px; height: 18px; }
+.app-dock[data-mini='true'] button svg { width: 19px; height: 19px; }
+
+/* HIG: em vista compacta o ícone fica acima do rótulo; em vista normal, ao lado. */
+@media (min-width: 760px) {
+  .app-dock { width: auto; }
+  .app-dock button { flex: 0 0 auto; flex-direction: row; gap: 9px; min-height: 44px; padding-inline: 18px; font-size: 12.5px; font-weight: 600; letter-spacing: -.015em; }
+  /* deitada, a aba tem o rótulo logo ao lado: o selo recua para não encostar nele */
+  .app-dock-badge { top: -6px; right: -3px; }
+}
 
 /* Os compositores continuam utilizáveis acima da navegação persistente. */
 .module-surface .dock { padding-bottom: calc(var(--dock-gap) + var(--dock-h) + 8px); background: var(--bg); }
@@ -4856,7 +4882,6 @@ body,
   .home-brand .brand-mascot { width: 104px; }
   .home-capture { grid-column: 2; grid-row: 1; margin-top: 0; }
   .home-flow { grid-column: 2; grid-row: 2; margin-top: 34px; }
-  .app-dock { width: 420px; }
   .sheet-layer { align-items: center; padding: 28px; }
   .sheet { max-width: 480px; border-radius: 30px; padding: 24px; }
   .sheet-grab { display: none; }

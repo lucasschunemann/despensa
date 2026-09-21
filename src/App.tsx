@@ -135,6 +135,8 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
 
   const items = useItems(roomId, person)
   const expenses = useExpenses(roomId, person, month)
+  // Conta vencida é a única informação crítica o bastante para virar selo na barra.
+  const overdueBills = expenses.expenses.filter((expense) => expense.status === 'pendente' && expense.due_day && expense.due_day < new Date().getDate()).length
   const wishes = useWishes(roomId, person)
   const presence = usePresence(roomId, person)
 
@@ -160,7 +162,7 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   useEffect(() => { if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`) }, [])
 
   return <>
-    <Stage view={view} home="inicio" onBack={goHome} dock={<AppDock view={view} onChange={changeView} />} renderHome={() => <HomeScreen me={person} presence={presence} items={items} expenses={expenses} wishes={wishes} onOpen={setView} onOpenMenu={() => setMenuOpen(true)} onOpenSettings={() => setSettingsOpen(true)} />} renderModule={(current) => {
+    <Stage view={view} home="inicio" onBack={goHome} dock={<AppDock view={view} onChange={changeView} badges={{ contas: overdueBills }} />} renderHome={() => <HomeScreen me={person} presence={presence} items={items} expenses={expenses} wishes={wishes} onOpen={setView} onOpenMenu={() => setMenuOpen(true)} onOpenSettings={() => setSettingsOpen(true)} />} renderModule={(current) => {
       if (current === 'lista') return <ListScreen store={items} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterMarket={(amountCents) => expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })} />
       if (current === 'contas') return <FinanceScreen store={expenses} me={person} month={month} presence={presence} onMonthChange={setMonth} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} />
       return <WishesScreen store={wishes} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterExpense={(title, amountCents) => expenses.add({ title, amountCents, dueDay: null }, { paid: true })} />
