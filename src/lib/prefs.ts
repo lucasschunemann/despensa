@@ -22,7 +22,7 @@ function applyTheme() {
   const resolved = resolvedTheme()
   document.documentElement.dataset.theme = resolved
   document.documentElement.style.colorScheme = resolved
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#171714' : '#f7f5ef')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolved === 'dark' ? '#101010' : '#f7f7f5')
 }
 
 let installed = false

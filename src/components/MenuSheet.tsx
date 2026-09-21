@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
 import { sound } from '../lib/sound'
-import { Avatar, Mascot } from './Avatar'
+import { Avatar } from './Avatar'
 import { CloseIcon } from './ControlIcons'
 
 export type View = 'inicio' | 'lista' | 'contas' | 'desejos'
@@ -114,11 +114,22 @@ export function MenuSheet({ open, view, me, onClose, onChangeView, onOpenSetting
             onClick={(e) => e.stopPropagation()}
           >
             <span className="sheet-grab" aria-hidden />
-            <div className="sheet-heading"><div><span className="section-eyebrow">tudo no lugar</span><h2 id="menu-title">nossa casa</h2></div><button className="sheet-close round-control" aria-label="Fechar menu" onClick={onClose}><CloseIcon size={20} /></button></div>
-            <div className="sheet-brand">
-              <Mascot size={84} />
-              <span><strong>oi, {me}</strong><small>onde vamos organizar agora?</small></span>
-            </div>
+            <div className="sheet-heading"><div><span className="section-eyebrow">navegação</span><h2 id="menu-title">nossa casa</h2></div><button className="sheet-close round-control" aria-label="Fechar menu" onClick={onClose}><CloseIcon size={20} /></button></div>
+
+            <button
+              className="sheet-account"
+              onClick={() => {
+                haptic('light')
+                onClose()
+                onOpenSettings()
+              }}
+            >
+              <Avatar person={me} size={38} />
+              <span><strong>{me}</strong><small>conta e preferências</small></span>
+              <svg className="sheet-option-chevron" viewBox="0 0 24 24" aria-hidden><path d="m9 5 7 7-7 7" /></svg>
+            </button>
+
+            <span className="sheet-section-label">espaços</span>
 
             <nav className="sheet-modules">
               {(['inicio', 'lista', 'contas', 'desejos'] as View[]).map((id) => MODULES.find((item) => item.id === id)!).map((module, i) => (
@@ -137,33 +148,16 @@ export function MenuSheet({ open, view, me, onClose, onChangeView, onOpenSetting
                     onClose()
                   }}
                 >
+                  {view === module.id && <motion.span layoutId="module-selection" className="module-selection" transition={spring} aria-hidden />}
                   <span className="module-icon">{module.icon}</span>
                   <span className="module-text">
                     <strong>{module.label}</strong>
                     <small>{module.hint}</small>
                   </span>
-                  {view === module.id && (
-                    <motion.span layoutId="module-dot" className="module-dot" aria-hidden />
-                  )}
+                  <svg className="module-chevron" viewBox="0 0 24 24" aria-hidden><path d="m9 5 7 7-7 7" /></svg>
                 </motion.button>
               ))}
             </nav>
-
-            <div className="sheet-options">
-              <button
-                className="sheet-option"
-                onClick={() => {
-                  haptic('light')
-                    onClose()
-                    onOpenSettings()
-                  }}
-                >
-                  <Avatar person={me} size={26} />
-                <span>{me}</span>
-                <small>conta e preferências</small>
-                <svg className="sheet-option-chevron" viewBox="0 0 24 24" aria-hidden><path d="m9 5 7 7-7 7" /></svg>
-              </button>
-            </div>
           </motion.div>
         </motion.div>
       )}

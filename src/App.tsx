@@ -158,7 +158,7 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   useEffect(() => { if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`) }, [])
 
   return <>
-    <Stage view={view} home="inicio" onBack={goHome} renderHome={() => <HomeScreen me={person} presence={presence} items={items} expenses={expenses} wishes={wishes} onOpen={setView} onOpenMenu={() => setMenuOpen(true)} />} renderModule={(current) => {
+    <Stage view={view} home="inicio" onBack={goHome} renderHome={() => <HomeScreen me={person} presence={presence} items={items} expenses={expenses} wishes={wishes} onOpen={setView} onOpenMenu={() => setMenuOpen(true)} onOpenSettings={() => setSettingsOpen(true)} />} renderModule={(current) => {
       if (current === 'lista') return <ListScreen store={items} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterMarket={(amountCents) => expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })} />
       if (current === 'contas') return <FinanceScreen store={expenses} me={person} month={month} presence={presence} onMonthChange={setMonth} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} />
       return <WishesScreen store={wishes} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterExpense={(title, amountCents) => expenses.add({ title, amountCents, dueDay: null }, { paid: true })} />

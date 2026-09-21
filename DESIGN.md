@@ -1,20 +1,20 @@
 # Despensa: sistema visual
 
-Interface clara para consultas rápidas no iPhone em casa e no mercado, com luz ambiente variável. A base usa neutros levemente quentes, tipografia firme e espaço suficiente para o polegar.
+Interface monocromática para consultas rápidas no iPhone em casa e no mercado, com luz ambiente variável. A base usa preto, branco e cinzas neutros, tipografia firme e espaço suficiente para o polegar.
 
 ## Fundação
 - Tema automático por padrão, seguindo o sistema, com escolhas persistentes de claro e escuro nas configurações. `--bg`, `--paper`, `--field` separam níveis sem excesso de contornos.
-- Neutros em OKLCH; texto principal escuro, texto auxiliar com mais contraste que a versão inicial.
+- A cor não separa módulos nem decora superfícies. Ela aparece somente quando comunica erro, perigo ou uma escolha de cor feita pelo usuário.
 - Plus Jakarta Sans preserva a identidade; Inter para números tabulares.
 - Títulos com tracking negativo. Corpo e controles em escala fixa; inputs com 16px para evitar zoom no Safari.
 - No iPhone, os fluxos preservam leitura em uma coluna e safe areas. A partir de 760px, a área chega a 1180px e reorganiza conteúdo em painéis próprios para tablet e desktop.
 
 ## Componentes
-- Início: saudação e captura rápida formam a coluna pessoal; os resumos acionáveis viram um painel editorial no tablet e desktop.
+- Início: um resumo mostra o que pede atenção, a captura unificada adiciona mercado, conta ou desejo e a área “agora” abre cada fluxo. A barra inferior mantém os quatro destinos ao alcance do polegar.
 - Mercado: linhas com emoji, progresso, busca sem acentos, carrinho recolhível e entrada fixa embaixo.
 - Contas: bilhetes com picote e código de barras. Pastas coloridas filtram a lista e aceitam movimentação em lote; no iPhone aparecem como uma faixa horizontal e em telas maiores como uma sidebar persistente.
-- Desejos: névoa suave e imagens, com identidade distinta.
-- Menu: sheet com título e fechamento explícito, atalhos em duas colunas, preferências e área de avisos. Rolagem interna para telas menores.
+- Desejos: cartões sólidos, imagens e reações expressivas dentro da mesma escala monocromática.
+- Menu: sheet com conta separada e destinos em lista; o destino atual recebe seleção invertida e animada. Preferências vivem no painel de usuário.
 - Avisos: três exemplos navegáveis, status do aparelho, ação explícita para permissão, teste real pelo servidor e erros contextuais.
 
 ## Movimento
@@ -25,12 +25,12 @@ O material translúcido fica nas camadas de navegação e ação — sidebar, co
 ## Acessibilidade
 Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e navegação de tabs por setas. Progresso com valores acessíveis; mensagens de sucesso e erro com status/alert.
 
-## Identidade Pote (21/09/2026)
-- A antiga marca com “d” isolado saiu do sistema. O símbolo agora é um pote com folhas, rosto mínimo e traço orgânico; ele continua legível em 20px e também sustenta o ícone instalado do PWA.
-- O mascote Pote aparece nos momentos de acolhimento: início, acesso e mapa da casa. Ele não compete com ações frequentes nem substitui os avatares dos moradores.
-- Coral queimado é a cor de assinatura. Sálvia identifica mercado, lilás identifica desejos e o preto quente continua concentrado nas contas e ações de alto contraste.
-- A tela inicial começa por uma saudação editorial e um resumo da casa, depois captura rápida e módulos com superfícies próprias. Em tablet e desktop, introdução e painel dividem a largura; no iPhone, formam uma sequência única para o polegar.
-- O menu é o mapa da casa. Navegação ocupa uma grade curta e a conta fica em uma área separada, reduzindo a mistura entre destino e preferência.
+## Identidade baleia (21/09/2026)
+- A marca é uma baleia construída com um único contorno, um olho e dois traços d’água. Ela continua legível no cabeçalho, no favicon e no ícone instalado do PWA.
+- A baleia aparece somente em momentos de orientação, como início e acesso. Ela não compete com ações frequentes nem substitui os avatares dos moradores.
+- A identidade é estritamente monocromática. Preto, branco e cinzas mudam de papel entre os temas claro e escuro; cores de pasta permanecem uma escolha funcional do usuário.
+- A tela inicial começa pelo estado da casa, oferece captura direta para os três módulos e termina em uma fila curta de ações. Em tablet e desktop, o resumo fica ao lado das ações; no iPhone, forma uma sequência única para o polegar.
+- O menu separa claramente perfil e navegação. Os destinos formam uma lista, com seleção invertida que desliza entre eles.
 
 ## Redesign mobile (19/09/2026)
 - **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).

@@ -14,6 +14,19 @@ test('adiciona no início e encontra no mercado sem acento', async ({ page }) =>
   await expect(page.locator('.mrow')).toHaveCount(5)
 })
 
+test('captura conta e desejo diretamente pelo início', async ({ page }) => {
+  await open(page)
+  await page.getByRole('tab', { name: 'conta' }).click()
+  await page.getByRole('textbox', { name: 'Adicionar conta' }).fill('internet 129,90 dia 15')
+  await page.getByRole('button', { name: 'Adicionar conta' }).click()
+  await expect(page.getByRole('status')).toContainText('Internet nas contas')
+
+  await page.getByRole('tab', { name: 'desejo' }).click()
+  await page.getByRole('textbox', { name: 'Adicionar desejo' }).fill('luminária 249,90')
+  await page.getByRole('button', { name: 'Adicionar desejo' }).click()
+  await expect(page.getByRole('status')).toContainText('Luminária nos desejos')
+})
+
 test('menu abre as configurações em painel separado e devolve o foco', async ({ page }) => {
   await open(page)
   await page.getByRole('button', { name: 'Abrir menu' }).click()

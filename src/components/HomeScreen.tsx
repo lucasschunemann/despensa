@@ -1,24 +1,23 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useState } from 'react'
+import { useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Presence } from '../hooks/usePresence'
 import type { WishesStore } from '../hooks/useWishes'
+import { useViewportFit } from '../hooks/useViewportFit'
 import { summarize } from '../lib/balance'
 import { haptic } from '../lib/haptics'
-import { formatBRL } from '../lib/money'
+import { formatBRL, parseExpenseEntry } from '../lib/money'
 import { parseEntry } from '../lib/parse'
 import { sound } from '../lib/sound'
-import { useViewportFit } from '../hooks/useViewportFit'
-import { productEmoji } from '../lib/products'
 import { PEOPLE } from '../lib/types'
-import { forecast, sortWishes, totalDream, whenLabel } from '../lib/wishes'
+import { forecast, sortWishes, whenLabel } from '../lib/wishes'
 import { AppHeader } from './AppHeader'
 import { Avatar, Mascot } from './Avatar'
-import { Barcode } from './Barcode'
 import type { View } from './MenuSheet'
-import { Money } from './Money'
 import { Rolling } from './Rolling'
+
+type CaptureMode = 'lista' | 'contas' | 'desejos'
 
 interface Props {
   me: string
@@ -28,9 +27,12 @@ interface Props {
   wishes: WishesStore
   onOpen: (view: View) => void
   onOpenMenu: () => void
+  onOpenSettings: () => void
 }
 
-function greeting(date = new Date()): string {
+const TODAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+
+function greeting(date = new Date()) {
   const hour = date.getHours()
   if (hour < 5) return 'boa madrugada'
   if (hour < 12) return 'bom dia'
@@ -38,201 +40,140 @@ function greeting(date = new Date()): string {
   return 'boa noite'
 }
 
-const TODAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+const CAPTURE: Record<CaptureMode, { label: string; aria: string; placeholder: string; action: string }> = {
+  lista: { label: 'mercado', aria: 'Adicionar ao mercado', placeholder: 'ex.: 2 leites', action: 'Adicionar à lista' },
+  contas: { label: 'conta', aria: 'Adicionar conta', placeholder: 'ex.: internet 129,90 dia 15', action: 'Adicionar conta' },
+  desejos: { label: 'desejo', aria: 'Adicionar desejo', placeholder: 'ex.: poltrona 1.490', action: 'Adicionar desejo' },
+}
 
-export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOpenMenu }: Props) {
+export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOpenMenu, onOpenSettings }: Props) {
   const reduced = useReducedMotion()
+  const input = useRef<HTMLInputElement>(null)
   const [scrolled, setScrolled] = useState(false)
+  const [mode, setMode] = useState<CaptureMode>('lista')
   const [entry, setEntry] = useState('')
-  const [added, setAdded] = useState('')
+  const [feedback, setFeedback] = useState('')
   useViewportFit()
-  const parsed = parseEntry(entry)
-  const mark = (parsed && productEmoji(parsed.name)) || '+'
-  const ready = items.ready && expenses.ready && wishes.ready
 
-  const onShelf = items.items.filter((i) => i.status === 'pendente')
-  const inCart = items.items.filter((i) => i.status === 'pegado')
-
+  const pendingItems = items.items.filter((item) => item.status === 'pendente')
+  const cartItems = items.items.filter((item) => item.status === 'pegado')
+  const pendingBills = expenses.expenses.filter((expense) => expense.status === 'pendente')
   const month = summarize(expenses.expenses, PEOPLE)
-  const nextBill = expenses.expenses
-    .filter((e) => e.status === 'pendente')
-    .sort((a, b) => (a.due_day ?? 99) - (b.due_day ?? 99))[0]
-
-  const queue = sortWishes(wishes.wishes.filter((w) => w.status === 'querendo'))
-  const plan = forecast(queue, wishes.savingsCents)
+  const nextBill = [...pendingBills].sort((a, b) => (a.due_day ?? 99) - (b.due_day ?? 99))[0]
+  const overdue = pendingBills.filter((bill) => bill.due_day && bill.due_day < new Date().getDate()).length
+  const queue = sortWishes(wishes.wishes.filter((wish) => wish.status === 'querendo'))
   const nextWish = queue[0]
+  const plan = forecast(queue, wishes.savingsCents)
   const nextWhen = nextWish ? whenLabel(plan.get(nextWish.id)?.monthsAway ?? null) : null
+  const ready = items.ready && expenses.ready && wishes.ready
+  const attention = pendingItems.length + pendingBills.length + (nextWish ? 1 : 0)
+  const paid = expenses.expenses.filter((expense) => expense.status === 'pago').length
+  const completion = expenses.expenses.length ? Math.round((paid / expenses.expenses.length) * 100) : 100
 
-  const card = (index: number) => ({
-    initial: reduced ? false : { opacity: 0, y: 10, scale: 0.99 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-    transition: { type: 'spring' as const, stiffness: 320, damping: 28, delay: index * 0.025 },
-    whileTap: reduced ? undefined : { scale: 0.975 },
-  })
+  const parsedMarket = mode === 'lista' ? parseEntry(entry) : null
+  const parsedMoney = mode !== 'lista' ? parseExpenseEntry(entry) : null
+  const canSubmit = mode === 'lista' ? Boolean(parsedMarket && items.ready) : Boolean(parsedMoney && (mode === 'contas' ? expenses.ready : wishes.ready))
 
   const open = (view: View) => {
     haptic('light')
+    sound.tick()
     onOpen(view)
   }
 
+  const selectMode = (next: CaptureMode) => {
+    setMode(next)
+    setFeedback('')
+    haptic('light')
+    sound.tick()
+    requestAnimationFrame(() => input.current?.focus())
+  }
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!canSubmit) return
+    if (mode === 'lista' && parsedMarket) {
+      items.add(parsedMarket.name, parsedMarket.quantity)
+      setFeedback(`${parsedMarket.name} na lista`)
+    } else if (mode === 'contas' && parsedMoney) {
+      expenses.add(parsedMoney, {})
+      setFeedback(`${parsedMoney.title} nas contas`)
+    } else if (mode === 'desejos' && parsedMoney) {
+      wishes.add(parsedMoney.title, parsedMoney.amountCents)
+      setFeedback(`${parsedMoney.title} nos desejos`)
+    }
+    sound.unlock(); sound.add(); haptic('success'); setEntry('')
+  }
+
+  const reveal = (index: number) => ({
+    initial: reduced ? false : { opacity: 0, y: 18, filter: 'blur(5px)' },
+    animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+    transition: { type: 'spring' as const, stiffness: 330, damping: 30, delay: index * .055 },
+  })
+
   return (
-    <div className="app home">
-      <AppHeader title="despensa" presence={presence} onOpenMenu={onOpenMenu} scrolled={scrolled} />
+    <div className="app home home-v3">
+      <AppHeader
+        title="despensa"
+        presence={presence}
+        onOpenMenu={onOpenMenu}
+        scrolled={scrolled}
+        accessory={<button className="home-profile" onClick={onOpenSettings} aria-label="Abrir configurações"><Avatar person={me} size={28} /></button>}
+      />
 
-      <div className="scroll" onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 6)}>
-        <section className="home-intro">
-        <motion.div className="home-hero" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}>
-          <div className="hello">
-            <p className="hello-date">{TODAY.format(new Date())}</p>
-            <h2 className="hello-title">{greeting()},<br />{me}<span className="hello-period">.</span></h2>
-            <div className="home-hero-status">
-              <Avatar person={me} size={28} />
-              <span>{ready ? `${onShelf.length} na lista · ${queue.length} desejos` : 'arrumando a casa…'}</span>
-            </div>
-            {presence.online.length > 0 && (
-              <motion.p className="hello-together" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <span className="pulse-dot" aria-hidden />
-                {presence.online.join(' e ')} está por aqui
-              </motion.p>
-            )}
+      <div className="scroll" onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 6)}>
+        <motion.section className="home-overview" {...reveal(0)}>
+          <div className="home-overview-top">
+            <div><span className="home-kicker">{TODAY.format(new Date())}</span><p>{greeting()}, {me}.</p></div>
+            <motion.div className="home-fish" initial={reduced ? false : { x: 44, opacity: 0, rotate: 8 }} animate={{ x: 0, opacity: 1, rotate: reduced ? 0 : [0, -2, 1, 0], y: reduced ? 0 : [0, -3, 0] }} transition={{ x: { type: 'spring', stiffness: 250, damping: 24 }, opacity: { duration: .24 }, rotate: { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }, y: { duration: 3.8, repeat: Infinity, ease: 'easeInOut' } }}><Mascot size={82} /></motion.div>
           </div>
-          <motion.div className="home-mascot" animate={reduced ? undefined : { y: [0, -5, 0], rotate: [0, 1.4, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}>
-            <span className="mascot-halo" aria-hidden />
-            <Mascot size={184} />
-          </motion.div>
-        </motion.div>
+          <h2>{ready ? attention === 0 ? 'tudo em ordem.' : <><Rolling value={attention} /> {attention === 1 ? 'coisa pede' : 'coisas pedem'} atenção.</> : 'sincronizando a casa.'}</h2>
+          <div className="home-overview-meta"><span>{overdue ? `${overdue} ${overdue === 1 ? 'conta atrasada' : 'contas atrasadas'}` : 'nenhum atraso'}</span><span>{completion}% das contas pagas</span></div>
+          <div className="home-completion" aria-label={`${completion}% das contas pagas`}><motion.span initial={{ scaleX: 0 }} animate={{ scaleX: completion / 100 }} transition={{ type: 'spring', stiffness: 170, damping: 26, delay: .25 }} /></div>
+        </motion.section>
 
-        <form className="quick-entry" onSubmit={(e) => {
-          e.preventDefault()
-          if (!parsed || !items.ready) return
-          items.add(parsed.name, parsed.quantity)
-          sound.unlock(); sound.add(); haptic('light')
-          setAdded(`${parsed.name} na lista`); setEntry('')
-        }}>
-          {/* o produto aparece na mão enquanto você digita, com um pulinho a cada troca */}
-          <span className="quick-entry-mark" aria-hidden>
+        <motion.section className="home-capture" {...reveal(1)}>
+          <div className="home-capture-head"><h3>captura rápida</h3><span>salva direto na casa</span></div>
+          <div className="capture-modes" role="tablist" aria-label="Onde adicionar">
+            {(Object.keys(CAPTURE) as CaptureMode[]).map((value) => <button key={value} type="button" role="tab" aria-selected={mode === value} onClick={() => selectMode(value)}>{mode === value && <motion.span className="capture-selection" layoutId="capture-selection" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}<span>{CAPTURE[value].label}</span></button>)}
+          </div>
+          <form className="capture-form" onSubmit={submit}>
+            <CaptureIcon mode={mode} />
             <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span
-                key={mark}
-                initial={reduced ? false : { scale: 0.3, rotate: -24, opacity: 0 }}
-                animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                exit={{ scale: 0.3, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 620, damping: 20 }}
-              >
-                {mark}
-              </motion.span>
+              <motion.input key={mode} ref={input} aria-label={CAPTURE[mode].aria} placeholder={CAPTURE[mode].placeholder} value={entry} onChange={(event) => { setEntry(event.target.value); setFeedback('') }} maxLength={160} enterKeyHint="send" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: .16 }} />
             </AnimatePresence>
-          </span>
-          <input aria-label="Adicionar ao mercado" placeholder="o que está faltando em casa?" value={entry} onChange={(e) => { setEntry(e.target.value); setAdded('') }} maxLength={160} enterKeyHint="send" />
-          <motion.button type="submit" aria-label="Adicionar à lista" className={parsed ? 'is-ready' : undefined} disabled={!parsed || !items.ready} animate={{ scale: parsed ? 1 : 0.86 }} transition={{ type: 'spring', stiffness: 600, damping: 26 }} whileTap={reduced ? undefined : { scale: 0.84 }} onPointerDown={(e) => e.preventDefault()}><svg viewBox="0 0 24 24" aria-hidden><path d="m7 12 5-5 5 5M12 7v11" /></svg></motion.button>
-        </form>
-        <p className="quick-entry-feedback" role="status">{added || (parsed?.quantity ? `${parsed.quantity} · ${parsed.name}` : 'anote aqui. a lista é de vocês dois.')}</p>
-        </section>
-        <div className="home-section-title"><h3>sua casa, em dia</h3><span>{ready ? 'toque para abrir' : 'atualizando…'}</span></div>
-        <div className="home-dashboard">
+            <motion.button type="submit" aria-label={CAPTURE[mode].action} disabled={!canSubmit} animate={{ rotate: canSubmit ? 0 : -45, scale: canSubmit ? 1 : .9 }} whileTap={{ scale: .84 }}><svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg></motion.button>
+          </form>
+          <p className="capture-feedback" role="status">{feedback || (entry && parsedMoney ? `${parsedMoney.title}${parsedMoney.amountCents ? ` · ${formatBRL(parsedMoney.amountCents)}` : ''}` : 'escreva do jeito que você lembra.')}</p>
+        </motion.section>
 
-        {/* ─── Mercado: uma prateleira com o que falta ─── */}
-        <motion.button className="home-card home-market" onClick={() => open('lista')} {...card(0)}>
-          <span className="home-awning" aria-hidden />
-          <span className="home-card-head">
-            <span className="home-card-name">mercado</span>
-            <span className="home-card-arrow" aria-hidden>
-              →
-            </span>
-          </span>
-          <span className="home-big">
-            {onShelf.length === 0 ? (
-              !items.ready ? 'carregando…' : items.items.length > 0 ? 'tudo no carrinho' : 'nada faltando'
-            ) : (
-              <>
-                faltam <Rolling value={onShelf.length} />
-              </>
-            )}
-          </span>
-          <span className="home-shelf">
-            {onShelf.slice(0, 7).map((item, i) => (
-              <motion.span
-                key={item.id}
-                initial={reduced ? false : { y: -30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 520, damping: 15, delay: 0.35 + i * 0.05 }}
-              >
-                {productEmoji(item.name) ?? <b className="home-initial">{item.name.charAt(0)}</b>}
-              </motion.span>
-            ))}
-            {onShelf.length > 7 && <small>+{onShelf.length - 7}</small>}
-          </span>
-          {inCart.length > 0 && <span className="home-foot">{inCart.length} no carrinho</span>}
-        </motion.button>
-
-        {/* ─── Contas: um bilhete com o que falta pagar ─── */}
-        <motion.button className="home-card home-bills" onClick={() => open('contas')} {...card(1)}>
-          <span className="home-bills-main">
-            <span className="home-card-head">
-              <span className="home-card-name">contas do mês</span>
-            </span>
-            <small>{month.pendingCents > 0 ? 'falta pagar' : month.totalCents > 0 ? 'tudo pago' : 'nenhuma conta'}</small>
-            <Money className="home-money" cents={month.pendingCents} />
-            <Barcode seed="despensa-contas" width={112} height={16} />
-          </span>
-          <span className="home-bills-stub">
-            {nextBill ? (
-              <>
-                <small>{nextBill.due_day && nextBill.due_day < new Date().getDate() ? 'em atraso' : nextBill.due_day === new Date().getDate() ? 'vence hoje' : 'próxima'}</small>
-                <strong>{nextBill.due_day ?? '—'}</strong>
-                <em>{nextBill.title}</em>
-              </>
-            ) : (
-              <>
-                <small>mês</small>
-                <strong>✓</strong>
-              </>
-            )}
-          </span>
-          <span className="ticket-notch is-top home-notch" aria-hidden />
-          <span className="ticket-notch is-bottom home-notch" aria-hidden />
-        </motion.button>
-
-        {month.debt && (
-          <motion.button className="home-debt" onClick={() => open('contas')} {...card(2)}>
-            <Avatar person={month.debt.from} size={22} />
-            <span>
-              {month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}
-            </span>
-          </motion.button>
-        )}
-
-        {/* ─── Desejos: vidro sobre névoa ─── */}
-        <motion.button className="home-card home-wishes" onClick={() => open('desejos')} {...card(3)}>
-          <span className="home-mist" aria-hidden />
-          <span className="home-card-head">
-            <span className="home-card-name">
-              <motion.span
-                className="twinkle"
-                animate={reduced ? undefined : { opacity: [0.4, 1, 0.4], rotate: [0, 90] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                aria-hidden
-              >
-                ✦
-              </motion.span>{' '}
-              desejos
-            </span>
-            <span className="home-card-arrow" aria-hidden>
-              →
-            </span>
-          </span>
-          <small>{queue.length ? `${queue.length} ${queue.length === 1 ? 'plano para realizar' : 'planos para realizar'}` : 'um espaço para os próximos planos'}</small>
-          <Money className="home-money" cents={totalDream(queue)} />
-          {nextWish && (
-            <span className="home-foot">
-              próximo: {nextWish.title}
-              {nextWhen ? ` · ${nextWhen === 'já dá' ? 'já dá' : `dá em ${nextWhen}`}` : ''}
-            </span>
-          )}
-        </motion.button>
-        </div>
-        <button className="home-notifications" onClick={onOpenMenu}><span aria-hidden>◉</span><span><strong>a casa avisa você</strong><small>conecte os avisos no celular</small></span><span aria-hidden>↗</span></button>
+        <motion.section className="home-flow" {...reveal(2)}>
+          <div className="home-section-title"><h3>agora</h3><span>visão da casa</span></div>
+          <div className="home-dashboard">
+            <HomeRow className="home-market" label="mercado" value={pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'} detail={cartItems.length ? `${cartItems.length} no carrinho` : 'pronto para a próxima compra'} onClick={() => open('lista')} icon={<BasketIcon />} index={0} />
+            <HomeRow className="home-bills" label="contas" value={month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'} detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : 'nenhuma pendência neste mês'} onClick={() => open('contas')} icon={<BillIcon />} index={1} />
+            <HomeRow className="home-wishes" label="desejos" value={queue.length ? `${queue.length} ${queue.length === 1 ? 'plano' : 'planos'}` : 'nenhum plano'} detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen}` : ''}` : 'guarde aqui o que vem depois'} onClick={() => open('desejos')} icon={<HeartIcon />} index={2} />
+          </div>
+          {month.debt && <motion.button className="home-balance-note" onClick={() => open('contas')} whileTap={{ scale: .985 }}><Avatar person={month.debt.from} size={24} /><span>{month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}</span><Chevron /></motion.button>}
+        </motion.section>
       </div>
+
+      <nav className="home-tabbar" aria-label="Atalhos principais">
+        <button aria-current="page"><HomeIcon /><span>início</span></button>
+        <button onClick={() => open('lista')}><BasketIcon /><span>mercado</span></button>
+        <button onClick={() => open('contas')}><BillIcon /><span>contas</span></button>
+        <button onClick={() => open('desejos')}><HeartIcon /><span>desejos</span></button>
+      </nav>
     </div>
   )
 }
+
+function HomeRow({ className, label, value, detail, icon, onClick, index }: { className: string; label: string; value: string; detail: string; icon: ReactNode; onClick: () => void; index: number }) {
+  return <motion.button className={`home-module-row ${className}`} onClick={onClick} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ type: 'spring', stiffness: 360, damping: 31, delay: .2 + index * .06 }} whileTap={{ scale: .975 }}><span className="home-module-icon">{icon}</span><span className="home-module-copy"><small>{label}</small><strong>{value}</strong><em>{detail}</em></span><Chevron /></motion.button>
+}
+
+function CaptureIcon({ mode }: { mode: CaptureMode }) { return <span className="capture-icon" aria-hidden>{mode === 'lista' ? <BasketIcon /> : mode === 'contas' ? <BillIcon /> : <HeartIcon />}</span> }
+function HomeIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 10.8 12 4l8 6.8V20h-6v-6h-4v6H4Z" /></svg> }
+function BasketIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 8h16l-1.4 11H5.4Z"/><path d="M8.5 8A3.5 3.5 0 0 1 12 4.5 3.5 3.5 0 0 1 15.5 8"/></svg> }
+function BillIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg> }
+function HeartIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M12 20 4.8 13a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7A4.6 4.6 0 0 1 19.2 13Z"/></svg> }
+function Chevron() { return <svg className="home-chevron" viewBox="0 0 24 24" aria-hidden><path d="m9 5 7 7-7 7" /></svg> }

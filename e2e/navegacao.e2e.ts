@@ -3,7 +3,7 @@ import { edgeSwipe, open } from './helpers'
 
 test('abre sempre no início, mesmo com módulo no endereço', async ({ page }) => {
   await page.goto('/?demo=1#contas')
-  await expect(page.locator('.hello')).toBeVisible()
+  await expect(page.locator('.home-overview')).toBeVisible()
 })
 
 test('abre um módulo, volta pela seta e volta arrastando da borda', async ({ page }) => {

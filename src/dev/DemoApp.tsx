@@ -358,6 +358,7 @@ export default function DemoApp() {
             wishes={wishesStore}
             onOpen={setView}
             onOpenMenu={() => setMenuOpen(true)}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
         )}
         renderModule={(current) =>

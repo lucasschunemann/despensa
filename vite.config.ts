@@ -18,8 +18,8 @@ export default defineConfig({
         description: 'Mercado, contas e planos da sua casa em sintonia',
         lang: 'pt-BR',
         display: 'standalone',
-        background_color: '#f7f5ef',
-        theme_color: '#f7f5ef',
+        background_color: '#f7f7f5',
+        theme_color: '#f7f7f5',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
