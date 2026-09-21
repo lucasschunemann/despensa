@@ -3,7 +3,7 @@ import { edgeSwipe, open } from './helpers'
 
 test('abre sempre no início, mesmo com módulo no endereço', async ({ page }) => {
   await page.goto('/?demo=1#contas')
-  await expect(page.locator('.home-overview')).toBeVisible()
+  await expect(page.locator('.home-hello')).toBeVisible()
 })
 
 test('abre um módulo, volta pela seta e volta arrastando da borda', async ({ page }) => {
@@ -44,4 +44,19 @@ test('barra Liquid Glass permanece visível e acompanha o módulo atual', async 
   await dock.getByRole('button', { name: 'contas' }).click()
   await expect(page.locator('.ticket-wrap')).toHaveCount(3)
   await expect(dock.getByRole('button', { name: 'contas' })).toHaveAttribute('aria-current', 'page')
+})
+
+test('a barra recolhe quando a tela desce e volta inteira quando sobe', async ({ page }) => {
+  await open(page)
+  const dock = page.getByRole('navigation', { name: 'Navegação principal' })
+  await expect(dock).toHaveAttribute('data-compact', 'false')
+
+  await page.mouse.move(200, 400)
+  for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, 60); await page.waitForTimeout(30) }
+  await expect(dock).toHaveAttribute('data-compact', 'true')
+  // recolhida mostra só os ícones, mas continua navegando
+  await expect(dock.getByRole('button', { name: 'mercado' })).toBeVisible()
+
+  for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, -70); await page.waitForTimeout(30) }
+  await expect(dock).toHaveAttribute('data-compact', 'false')
 })

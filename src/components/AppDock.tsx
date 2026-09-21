@@ -1,5 +1,5 @@
-import { motion } from 'motion/react'
-import type { ReactNode } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
 import { sound } from '../lib/sound'
 import type { View } from './MenuSheet'
@@ -11,10 +11,47 @@ const DESTINATIONS: Array<{ id: View; label: string; icon: ReactNode }> = [
   { id: 'desejos', label: 'desejos', icon: <HeartIcon /> },
 ]
 
+// Padrão da barra do iOS 26: descer a tela recolhe a barra para só os ícones,
+// subir devolve ela inteira. Escuta na fase de captura porque quem rola é o
+// contêiner de cada módulo, não a janela.
+function useCompactOnScroll(view: View) {
+  const [compact, setCompact] = useState(false)
+
+  useEffect(() => { setCompact(false) }, [view])
+
+  useEffect(() => {
+    let last = 0
+    let waiting = false
+    const onScroll = (event: Event) => {
+      const target = event.target as HTMLElement | null
+      if (!target || typeof target.scrollTop !== 'number') return
+      const y = target.scrollTop
+      if (waiting) return
+      waiting = true
+      requestAnimationFrame(() => {
+        waiting = false
+        const delta = y - last
+        // Perto do topo a barra é sempre inteira; depois disso, o sentido manda.
+        if (y < 26) setCompact(false)
+        else if (delta > 5) setCompact(true)
+        else if (delta < -7) setCompact(false)
+        last = y
+      })
+    }
+    document.addEventListener('scroll', onScroll, true)
+    return () => document.removeEventListener('scroll', onScroll, true)
+  }, [])
+
+  return compact
+}
+
 export function AppDock({ view, onChange }: { view: View; onChange: (view: View) => void }) {
+  const reduced = useReducedMotion()
+  const compact = useCompactOnScroll(view)
+
   return (
-    <nav className="app-dock" aria-label="Navegação principal">
-      <span className="app-dock-highlight" aria-hidden />
+    <nav className="app-dock" data-compact={compact ? 'true' : 'false'} aria-label="Navegação principal">
+      <span className="app-dock-sheen" aria-hidden />
       {DESTINATIONS.map((destination) => {
         const active = destination.id === view
         return (
@@ -23,7 +60,8 @@ export function AppDock({ view, onChange }: { view: View; onChange: (view: View)
             type="button"
             aria-current={active ? 'page' : undefined}
             aria-label={destination.label}
-            whileTap={{ scale: .86 }}
+            whileTap={{ scale: .88 }}
+            transition={{ type: 'spring', stiffness: 600, damping: 30 }}
             onClick={() => {
               haptic(active ? 'light' : 'medium')
               sound.tick()
@@ -32,19 +70,13 @@ export function AppDock({ view, onChange }: { view: View; onChange: (view: View)
           >
             {active && (
               <motion.span
-                layoutId="app-dock-selection"
-                className="app-dock-selection"
-                transition={{ type: 'spring', stiffness: 460, damping: 34, mass: .72 }}
+                layoutId="app-dock-lens"
+                className="app-dock-lens"
+                transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 36, mass: .7 }}
                 aria-hidden
               />
             )}
-            <motion.span
-              className="app-dock-icon"
-              animate={{ y: active ? -1 : 0, scale: active ? 1.04 : 1 }}
-              transition={{ type: 'spring', stiffness: 520, damping: 30 }}
-            >
-              {destination.icon}
-            </motion.span>
+            <span className="app-dock-icon">{destination.icon}</span>
             <span className="app-dock-label">{destination.label}</span>
           </motion.button>
         )

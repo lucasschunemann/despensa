@@ -10,7 +10,7 @@ Interface monocromática para consultas rápidas no iPhone em casa e no mercado,
 - No iPhone, os fluxos preservam leitura em uma coluna e safe areas. A partir de 760px, a área chega a 1180px e reorganiza conteúdo em painéis próprios para tablet e desktop.
 
 ## Componentes
-- Início: um resumo mostra o que pede atenção, a captura unificada adiciona mercado, conta ou desejo e a área “agora” abre cada fluxo. A barra Liquid Glass mantém os quatro destinos ao alcance do polegar em todas as telas.
+- Início: saudação, captura unificada e uma lista de réguas finas para os três módulos. Sem cartão, sem barra de progresso e sem número agregado: o conteúdo fica direto no papel e o respiro faz a separação. A linha de estado só aparece quando tem o que dizer. A barra Liquid Glass mantém os quatro destinos ao alcance do polegar em todas as telas.
 - Mercado: linhas com emoji, progresso, busca sem acentos, carrinho recolhível e entrada fixa embaixo.
 - Contas: bilhetes com picote e código de barras. Pastas coloridas filtram a lista e aceitam movimentação em lote; no iPhone aparecem como uma faixa horizontal e em telas maiores como uma sidebar persistente.
 - Desejos: cartões sólidos, imagens e reações expressivas dentro da mesma escala monocromática.
@@ -26,12 +26,13 @@ O material translúcido fica nas camadas de navegação e ação — sidebar, co
 Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e navegação de tabs por setas. Progresso com valores acessíveis; mensagens de sucesso e erro com status/alert.
 
 ## Identidade camarão saxofonista (21/09/2026)
-- A marca fornecida combina um camarão coral e um saxofone dourado. Ela aparece no cabeçalho, no favicon e no ícone instalado do PWA.
+- A marca fornecida combina um camarão coral e um saxofone dourado. Ela aparece no cabeçalho, no favicon e no ícone instalado do PWA. Os ícones saem da própria arte por `node scripts/icons.mjs`, que recorta a margem transparente e centraliza.
 - A ilustração completa aparece somente em momentos de orientação, como início e acesso. Ela não compete com ações frequentes nem substitui os avatares dos moradores.
 - A interface continua monocromática: preto, branco e cinzas mudam de papel entre os temas claro e escuro. A marca é a exceção deliberada, com o coral do camarão e o dourado do saxofone; cores de pasta permanecem uma escolha funcional do usuário.
 - A tela inicial começa pelo estado da casa, oferece captura direta para os três módulos e termina em uma fila curta de ações. Em tablet e desktop, o resumo fica ao lado das ações; no iPhone, forma uma sequência única para o polegar.
 - O menu separa claramente perfil e navegação. Os destinos formam uma lista, com seleção invertida que desliza entre eles.
-- A navegação principal é persistente e usa material Liquid Glass: desfoque do conteúdo, reflexo de borda, brilho interno e uma lente animada que acompanha o destino atual.
+- A navegação principal é persistente e usa material Liquid Glass: cápsula flutuante, desfoque do conteúdo, reflexo preso à borda de cima, brilho interno e uma lente de vidro que desliza até o destino atual.
+- A barra segue o comportamento da barra do iOS 26: descer a tela recolhe ela para só os ícones, subir devolve ela inteira, e perto do topo ela é sempre inteira. Quem rola é o contêiner de cada módulo, então a escuta é na fase de captura.
 
 ## Redesign mobile (19/09/2026)
 - **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).
