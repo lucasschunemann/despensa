@@ -3,7 +3,7 @@
 Interface clara para consultas rápidas no iPhone em casa e no mercado, com luz ambiente variável. A base usa neutros levemente quentes, tipografia firme e espaço suficiente para o polegar.
 
 ## Fundação
-- Tema claro; `--bg`, `--paper`, `--field` separam níveis sem excesso de contornos.
+- Tema automático por padrão, seguindo o sistema, com escolhas persistentes de claro e escuro nas configurações. `--bg`, `--paper`, `--field` separam níveis sem excesso de contornos.
 - Neutros em OKLCH; texto principal escuro, texto auxiliar com mais contraste que a versão inicial.
 - Plus Jakarta Sans preserva a identidade; Inter para números tabulares.
 - Títulos com tracking negativo. Corpo e controles em escala fixa; inputs com 16px para evitar zoom no Safari.
@@ -24,6 +24,13 @@ O material translúcido fica nas camadas de navegação e ação — sidebar, co
 
 ## Acessibilidade
 Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e navegação de tabs por setas. Progresso com valores acessíveis; mensagens de sucesso e erro com status/alert.
+
+## Identidade Pote (21/09/2026)
+- A antiga marca com “d” isolado saiu do sistema. O símbolo agora é um pote com folhas, rosto mínimo e traço orgânico; ele continua legível em 20px e também sustenta o ícone instalado do PWA.
+- O mascote Pote aparece nos momentos de acolhimento: início, acesso e mapa da casa. Ele não compete com ações frequentes nem substitui os avatares dos moradores.
+- Coral queimado é a cor de assinatura. Sálvia identifica mercado, lilás identifica desejos e o preto quente continua concentrado nas contas e ações de alto contraste.
+- A tela inicial começa por uma saudação editorial e um resumo da casa, depois captura rápida e módulos com superfícies próprias. Em tablet e desktop, introdução e painel dividem a largura; no iPhone, formam uma sequência única para o polegar.
+- O menu é o mapa da casa. Navegação ocupa uma grade curta e a conta fica em uma área separada, reduzindo a mistura entre destino e preferência.
 
 ## Redesign mobile (19/09/2026)
 - **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).

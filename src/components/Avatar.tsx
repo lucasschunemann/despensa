@@ -35,17 +35,23 @@ export function Avatar({ person, size = 24, variant = 'face' }: Props) {
   )
 }
 
-// Marca "d": anel e haste na mesma grade do ícone do app.
+// O pote é o guardião da despensa: uma marca própria que continua legível em 20px.
 export function Mark({ size = 20 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M25 25.5a14.5 14.5 0 1 0 0 29 14.5 14.5 0 0 0 0-29Zm0 6.75a7.75 7.75 0 1 1 0 15.5 7.75 7.75 0 0 1 0-15.5Z"
-      />
-      <rect x="32.75" y="10" width="6.75" height="44.5" />
+    <svg className="brand-mark" width={size} height={size} viewBox="0 0 64 64" aria-hidden fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 19C11.5 15 10 7.5 11 4c7.5.7 12.2 5.5 13.3 12.5M45 19c7.5-4 9-11.5 8-15-7.5.7-12.2 5.5-13.3 12.5" />
+      <path d="M15 22c2.8-5.8 8.7-8.5 17-8.5S46.2 16.2 49 22" />
+      <path d="M14.5 25h35L48 48.5c-.4 6.4-5.7 11.5-12.2 11.5h-7.6C21.7 60 16.4 54.9 16 48.5Z" />
+      <path d="M18 31.5c8.6 2 19.4 2 28 0" opacity=".45" />
+      <circle cx="26" cy="43" r="1.9" fill="currentColor" stroke="none" />
+      <circle cx="38" cy="43" r="1.9" fill="currentColor" stroke="none" />
+      <path d="M29 49c2 1.7 4 1.7 6 0" />
     </svg>
   )
+}
+
+export function Mascot({ size = 120, className = '' }: { size?: number; className?: string }) {
+  return <img className={`brand-mascot ${className}`.trim()} src="/brand/pote.png" width={size} height={size} alt="Pote, o guardião da despensa" draggable={false} />
 }
 
 // Tomate do easter egg (quem diria que ia ter um tomate no design system).

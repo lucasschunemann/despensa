@@ -14,7 +14,7 @@ import { productEmoji } from '../lib/products'
 import { PEOPLE } from '../lib/types'
 import { forecast, sortWishes, totalDream, whenLabel } from '../lib/wishes'
 import { AppHeader } from './AppHeader'
-import { Avatar } from './Avatar'
+import { Avatar, Mascot } from './Avatar'
 import { Barcode } from './Barcode'
 import type { View } from './MenuSheet'
 import { Money } from './Money'
@@ -81,32 +81,25 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
 
       <div className="scroll" onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 6)}>
         <section className="home-intro">
-        <motion.div
-          className="hello"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-        >
-          <p className="hello-date">{TODAY.format(new Date())}</p>
-          <h2 className="hello-title">
-            {greeting()},
-            <br />
-            {me}<span className="hello-period">.</span>
-            <motion.span
-              className="hello-avatar"
-              initial={{ scale: 0, rotate: -30 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 420, damping: 14, delay: 0.35 }}
-            >
-              <Avatar person={me} size={40} />
-            </motion.span>
-          </h2>
-          {presence.online.length > 0 && (
-            <motion.p className="hello-together" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <span className="pulse-dot" aria-hidden />
-              {presence.online.join(' e ')} está com o app aberto agora
-            </motion.p>
-          )}
+        <motion.div className="home-hero" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}>
+          <div className="hello">
+            <p className="hello-date">{TODAY.format(new Date())}</p>
+            <h2 className="hello-title">{greeting()},<br />{me}<span className="hello-period">.</span></h2>
+            <div className="home-hero-status">
+              <Avatar person={me} size={28} />
+              <span>{ready ? `${onShelf.length} na lista · ${queue.length} desejos` : 'arrumando a casa…'}</span>
+            </div>
+            {presence.online.length > 0 && (
+              <motion.p className="hello-together" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <span className="pulse-dot" aria-hidden />
+                {presence.online.join(' e ')} está por aqui
+              </motion.p>
+            )}
+          </div>
+          <motion.div className="home-mascot" animate={reduced ? undefined : { y: [0, -5, 0], rotate: [0, 1.4, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}>
+            <span className="mascot-halo" aria-hidden />
+            <Mascot size={184} />
+          </motion.div>
         </motion.div>
 
         <form className="quick-entry" onSubmit={(e) => {
@@ -135,7 +128,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
         </form>
         <p className="quick-entry-feedback" role="status">{added || (parsed?.quantity ? `${parsed.quantity} · ${parsed.name}` : 'anote aqui. a lista é de vocês dois.')}</p>
         </section>
-        <div className="home-section-title"><h3>sua casa, em dia</h3><span>{ready ? 'visão geral' : 'atualizando…'}</span></div>
+        <div className="home-section-title"><h3>sua casa, em dia</h3><span>{ready ? 'toque para abrir' : 'atualizando…'}</span></div>
         <div className="home-dashboard">
 
         {/* ─── Mercado: uma prateleira com o que falta ─── */}

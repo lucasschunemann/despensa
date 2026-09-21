@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { continueWith, friendlyAuthError, getSocialProviders, sendPasswordReset, setAccountPassword, signIn, signUp, upgradeAnonymous } from '../lib/auth'
 import { haptic } from '../lib/haptics'
-import { Mark } from './Avatar'
+import { Mark, Mascot } from './Avatar'
 import { AvatarPicker } from './UserAvatar'
 import { supabase } from '../lib/supabase'
 
@@ -66,6 +66,7 @@ export function AuthScreen({ legacy = false, initialUsername = '' }: { legacy?: 
           <h2>Menos coisas<br />na cabeça.</h2>
           <p>Contas, mercado e planos vivendo juntos em um lugar calmo.</p>
         </div>
+        <motion.div className="auth-mascot" initial={reduced ? false : { opacity: 0, y: 20, rotate: -4 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ type: 'spring', stiffness: 250, damping: 24, delay: .2 }}><Mascot size={230} /></motion.div>
         <div className="auth-preview" aria-hidden>
           <span>hoje</span><strong>tudo em ordem</strong>
           <div><i /><i /><i /></div>

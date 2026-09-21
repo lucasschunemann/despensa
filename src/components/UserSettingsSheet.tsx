@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { friendlyAuthError, setAccountPassword, signIn, type Profile, updateProfile, uploadProfileAvatar } from '../lib/auth'
 import { haptic } from '../lib/haptics'
-import { prefs, useSoundOn } from '../lib/prefs'
+import { prefs, useSoundOn, useThemePreference, type ThemePreference } from '../lib/prefs'
 import { supabase } from '../lib/supabase'
 import { CloseIcon } from './ControlIcons'
 import { PushSettings } from './PushSettings'
@@ -29,6 +29,7 @@ export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProf
   const [message, setMessage] = useState<string | null>(null)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const soundOn = useSoundOn()
+  const theme = useThemePreference()
 
   useEffect(() => { setUsername(profile.username); setAvatar(profile.avatar_value) }, [profile])
   useEffect(() => {
@@ -100,7 +101,7 @@ export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProf
 
             <section className="settings-group"><button className="settings-row" aria-expanded={passwordOpen} onClick={() => setPasswordOpen((value) => !value)}><span className="settings-row-icon"><LockIcon /></span><span><strong>senha e segurança</strong><small>altere sua senha de acesso</small></span><Chevron open={passwordOpen} /></button><AnimatePresence>{passwordOpen && <motion.div className="password-change" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}><PasswordChange user={user} onDone={() => { setPasswordOpen(false); setMessage('Senha alterada com segurança.') }} /></motion.div>}</AnimatePresence></section>
 
-            <section className="settings-group"><div className="settings-group-title"><span>preferências</span><small>neste aparelho</small></div><button className="settings-row" aria-pressed={soundOn} onClick={() => { prefs.setSoundOn(!soundOn); haptic('light') }}><span className="settings-row-icon"><SoundIcon /></span><span><strong>sons do app</strong><small>feedback sutil nas ações</small></span><span className={`apple-switch${soundOn ? ' is-on' : ''}`}><i /></span></button>{roomId && <div className="settings-push"><PushSettings roomId={roomId} me={profile.username} /></div>}</section>
+            <section className="settings-group"><div className="settings-group-title"><span>preferências</span><small>neste aparelho</small></div><div className="settings-theme"><div className="settings-theme-copy"><span className="settings-row-icon"><ThemeIcon /></span><span><strong>aparência</strong><small>acompanha o celular ou fica como você escolher</small></span></div><div className="theme-picker" role="radiogroup" aria-label="Aparência do app">{([['system', 'auto'], ['light', 'claro'], ['dark', 'escuro']] as Array<[ThemePreference, string]>).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={theme === value} onClick={() => { prefs.setTheme(value); haptic('light') }}>{theme === value && <motion.span className="theme-selection" layoutId="theme-selection" transition={{ type: 'spring', stiffness: 460, damping: 38 }} />}<span>{label}</span></button>)}</div></div><button className="settings-row" aria-pressed={soundOn} onClick={() => { prefs.setSoundOn(!soundOn); haptic('light') }}><span className="settings-row-icon"><SoundIcon /></span><span><strong>sons do app</strong><small>feedback sutil nas ações</small></span><span className={`apple-switch${soundOn ? ' is-on' : ''}`}><i /></span></button>{roomId && <div className="settings-push"><PushSettings roomId={roomId} me={profile.username} /></div>}</section>
 
             {message && <motion.p className="settings-message" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>{message}</motion.p>}
             <button className="settings-logout" disabled={busy === 'logout'} onClick={() => void logout()}><LogoutIcon />{busy === 'logout' ? 'saindo…' : 'sair desta conta'}</button>
@@ -136,5 +137,6 @@ function PasswordChange({ user, onDone }: { user: User; onDone: () => void }) {
 function CameraIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 8.5h3l1.3-2h7.4l1.3 2h3v10H4Z"/><circle cx="12" cy="13.5" r="3.2"/></svg> }
 function LockIcon() { return <svg viewBox="0 0 24 24" aria-hidden><rect x="5" y="10" width="14" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> }
 function SoundIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M11 5 6.5 9H3v6h3.5L11 19Z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/></svg> }
+function ThemeIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2Z"/></svg> }
 function LogoutIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M10 5H5v14h5M14 8l4 4-4 4M9 12h9"/></svg> }
 function Chevron({ open }: { open: boolean }) { return <motion.svg className="settings-chevron" viewBox="0 0 24 24" animate={{ rotate: open ? 180 : 0 }} aria-hidden><path d="m7 10 5 5 5-5"/></motion.svg> }

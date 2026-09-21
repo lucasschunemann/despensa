@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { Presence } from '../hooks/usePresence'
 import { haptic } from '../lib/haptics'
 import { sound } from '../lib/sound'
-import { Avatar } from './Avatar'
+import { Avatar, Mark } from './Avatar'
 import { SyncBadge } from './SyncBadge'
 
 interface Props {
@@ -26,7 +26,8 @@ export function AppHeader({ title, presence, onOpenMenu, onHome, accessory, scro
       animate={{ scale: scrolled && !reduced ? 0.86 : 1 }}
       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
     >
-      {title}
+      {!onHome && <span className="header-brand-mark"><Mark size={27} /></span>}
+      <span>{title}</span>
     </motion.h1>
   )
   return (
@@ -69,8 +70,11 @@ export function AppHeader({ title, presence, onOpenMenu, onHome, accessory, scro
           }}
           aria-label="Abrir menu"
         >
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M4 7h16M4 12h16M4 17h16" />
+          <svg className="menu-grid-icon" viewBox="0 0 24 24" aria-hidden>
+            <circle cx="8" cy="8" r="2.2" />
+            <circle cx="16" cy="8" r="2.2" />
+            <circle cx="8" cy="16" r="2.2" />
+            <circle cx="16" cy="16" r="2.2" />
           </svg>
         </button>
       </div>

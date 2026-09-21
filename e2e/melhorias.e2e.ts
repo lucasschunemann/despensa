@@ -25,6 +25,17 @@ test('menu abre as configurações em painel separado e devolve o foco', async (
   await expect(page.getByRole('button', { name: 'Abrir menu' })).toBeFocused()
 })
 
+test('aparência acompanha o sistema e guarda a escolha do aparelho', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await open(page)
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await page.getByRole('button', { name: 'Abrir menu' }).click()
+  await page.getByRole('button', { name: /Lucas/ }).click()
+  await page.getByRole('radio', { name: 'claro' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  expect(await page.evaluate(() => localStorage.getItem('despensa:tema'))).toBe('light')
+})
+
 test('navegação e menu funcionam com movimento reduzido', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await open(page)

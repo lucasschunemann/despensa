@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
 import { sound } from '../lib/sound'
-import { Avatar } from './Avatar'
+import { Avatar, Mascot } from './Avatar'
 import { CloseIcon } from './ControlIcons'
 
 export type View = 'inicio' | 'lista' | 'contas' | 'desejos'
@@ -114,10 +114,14 @@ export function MenuSheet({ open, view, me, onClose, onChangeView, onOpenSetting
             onClick={(e) => e.stopPropagation()}
           >
             <span className="sheet-grab" aria-hidden />
-            <div className="sheet-heading"><div><span className="section-eyebrow">do nosso jeito</span><h2 id="menu-title">nossa casa</h2></div><button className="sheet-close round-control" aria-label="Fechar menu" onClick={onClose}><CloseIcon size={20} /></button></div>
+            <div className="sheet-heading"><div><span className="section-eyebrow">tudo no lugar</span><h2 id="menu-title">nossa casa</h2></div><button className="sheet-close round-control" aria-label="Fechar menu" onClick={onClose}><CloseIcon size={20} /></button></div>
+            <div className="sheet-brand">
+              <Mascot size={84} />
+              <span><strong>oi, {me}</strong><small>onde vamos organizar agora?</small></span>
+            </div>
 
             <nav className="sheet-modules">
-              {MODULES.map((module, i) => (
+              {(['inicio', 'lista', 'contas', 'desejos'] as View[]).map((id) => MODULES.find((item) => item.id === id)!).map((module, i) => (
                 <motion.button
                   key={module.id}
                   aria-current={view === module.id ? 'page' : undefined}
@@ -157,6 +161,7 @@ export function MenuSheet({ open, view, me, onClose, onChangeView, onOpenSetting
                   <Avatar person={me} size={26} />
                 <span>{me}</span>
                 <small>conta e preferências</small>
+                <svg className="sheet-option-chevron" viewBox="0 0 24 24" aria-hidden><path d="m9 5 7 7-7 7" /></svg>
               </button>
             </div>
           </motion.div>
