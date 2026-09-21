@@ -33,6 +33,29 @@ Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e nave
 - O menu separa claramente perfil e navegação. Os destinos formam uma lista, com seleção invertida que desliza entre eles.
 - A navegação principal é persistente e usa material Liquid Glass: cápsula flutuante, desfoque do conteúdo, reflexo preso à borda de cima, brilho interno e uma lente de vidro que desliza até o destino atual.
 
+### Até onde o Liquid Glass chega na web
+O material de verdade é nativo: `glassEffect(_:in:)` no SwiftUI e `UIGlassEffect` no UIKit.
+Página web nenhuma consegue chamar isso. A propriedade `-apple-visual-effect` existe, mas é
+privada e só responde dentro de WKWebView com um ajuste interno ligado — não no Safari nem em
+PWA. E a técnica que a web usa para imitar (refração por `feDisplacementMap` dentro de
+`backdrop-filter: url(#…)`) **só funciona em Chromium**: o WebKit ignora e cai em desfoque
+simples, então no iPhone do Lucas seria código morto.
+
+O que dá para fazer é cumprir a especificação do material com o que o WebKit suporta, que é o
+que o app faz, seguindo <https://developer.apple.com/design/human-interface-guidelines/materials>:
+
+- **Variante `regular`**, que é a que a Apple usa na maioria dos componentes: além de desfocar,
+  ela **ajusta a luminosidade** do que está atrás. Daí o `brightness()` no `backdrop-filter` —
+  clareia no tema claro (`1.08`) e escurece no escuro (`.72`). A variante `clear` não se aplica:
+  ela é para componentes sobre foto e vídeo.
+- **Camada funcional, nunca camada de conteúdo.** O vidro fica na barra e nas folhas que sobem.
+  Fundo de tela e cartão usam material comum.
+- **Efeito de borda de rolagem**: o conteúdo perde opacidade antes de passar por baixo da barra.
+- **Responde às preferências do sistema**, como a especificação manda: `prefers-reduced-transparency`
+  deixa o vidro sólido, `prefers-contrast: more` encorpa borda e fundo.
+- Todo o material sai de tokens (`--lg-*`), definidos por tema, para claro e escuro não
+  divergirem de novo.
+
 ### O que as HIG de tab bars mandam, e como o app cumpre
 Fonte: <https://developer.apple.com/design/human-interface-guidelines/tab-bars>.
 

@@ -153,9 +153,9 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
         </motion.section>
 
         <motion.section className="home-capture" {...reveal(1)}>
-          <div className="capture-modes" role="tablist" aria-label="Onde adicionar">
+          <div className="capture-modes" role="radiogroup" aria-label="Onde adicionar">
             {(Object.keys(CAPTURE) as CaptureMode[]).map((value) => (
-              <button key={value} type="button" role="tab" aria-selected={mode === value} onClick={() => selectMode(value)}>
+              <button key={value} type="button" role="radio" aria-checked={mode === value} onClick={() => selectMode(value)}>
                 <span>{CAPTURE[value].label}</span>
                 {mode === value && <motion.span className="capture-selection" layoutId="capture-selection" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
               </button>

@@ -87,3 +87,18 @@ test('conta em atraso vira selo na aba de contas', async ({ page }) => {
   const dock = page.getByRole('navigation', { name: 'Navegação principal' })
   await expect(dock.getByRole('button', { name: /^contas, \d+ em atraso$/ })).toBeVisible()
 })
+
+test('o vidro da barra acompanha o tema escuro', async ({ page }) => {
+  await open(page)
+  const dock = page.locator('.app-dock')
+  const claro = await dock.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await page.waitForTimeout(200)
+  const escuro = await dock.evaluate((el) => getComputedStyle(el).backgroundColor)
+  const filtro = await dock.evaluate((el) => getComputedStyle(el).backdropFilter || (getComputedStyle(el) as CSSStyleDeclaration & { webkitBackdropFilter?: string }).webkitBackdropFilter || '')
+
+  expect(escuro).not.toBe(claro)
+  // a variante "regular" ajusta a luminosidade do que está atrás, não só desfoca
+  expect(filtro).toContain('brightness')
+})
