@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { Presence } from '../hooks/usePresence'
 import { haptic } from '../lib/haptics'
 import { sound } from '../lib/sound'
-import { Avatar, Mark } from './Avatar'
+import { Avatar } from './Avatar'
 import { SyncBadge } from './SyncBadge'
 
 interface Props {
@@ -26,7 +26,6 @@ export function AppHeader({ title, presence, onOpenMenu, onHome, accessory, scro
       animate={{ scale: scrolled && !reduced ? 0.86 : 1 }}
       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
     >
-      {!onHome && <span className="header-brand-mark"><Mark size={27} /></span>}
       <span>{title}</span>
     </motion.h1>
   )

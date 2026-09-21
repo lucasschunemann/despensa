@@ -1,5 +1,5 @@
-import { motion, useReducedMotion } from 'motion/react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { haptic } from '../lib/haptics'
 import { sound } from '../lib/sound'
 import type { View } from './MenuSheet'
@@ -11,13 +11,15 @@ const DESTINATIONS: Array<{ id: View; label: string; icon: ReactNode }> = [
   { id: 'desejos', label: 'desejos', icon: <HeartIcon /> },
 ]
 
-// Padrão da barra do iOS 26: descer a tela recolhe a barra para só os ícones,
-// subir devolve ela inteira. Escuta na fase de captura porque quem rola é o
-// contêiner de cada módulo, não a janela.
-function useCompactOnScroll(view: View) {
-  const [compact, setCompact] = useState(false)
+const GLASS = { type: 'spring' as const, stiffness: 420, damping: 38, mass: .9 }
 
-  useEffect(() => { setCompact(false) }, [view])
+// Descer a tela encolhe a barra até sobrar só a aba atual; subir, ou tocar na
+// pílula, devolve ela inteira. Quem rola é o contêiner de cada módulo, então a
+// escuta é na fase de captura.
+function useMinimizeOnScroll(view: View) {
+  const [mini, setMini] = useState(false)
+
+  useEffect(() => { setMini(false) }, [view])
 
   useEffect(() => {
     let last = 0
@@ -25,63 +27,89 @@ function useCompactOnScroll(view: View) {
     const onScroll = (event: Event) => {
       const target = event.target as HTMLElement | null
       if (!target || typeof target.scrollTop !== 'number') return
-      const y = target.scrollTop
+      const top = target.scrollTop
       if (waiting) return
       waiting = true
       requestAnimationFrame(() => {
         waiting = false
-        const delta = y - last
-        // Perto do topo a barra é sempre inteira; depois disso, o sentido manda.
-        if (y < 26) setCompact(false)
-        else if (delta > 5) setCompact(true)
-        else if (delta < -7) setCompact(false)
-        last = y
+        const delta = top - last
+        if (top < 28) setMini(false)
+        else if (delta > 6) setMini(true)
+        else if (delta < -8) setMini(false)
+        last = top
       })
     }
     document.addEventListener('scroll', onScroll, true)
     return () => document.removeEventListener('scroll', onScroll, true)
   }, [])
 
-  return compact
+  return [mini, setMini] as const
 }
 
 export function AppDock({ view, onChange }: { view: View; onChange: (view: View) => void }) {
   const reduced = useReducedMotion()
-  const compact = useCompactOnScroll(view)
+  const [mini, setMini] = useMinimizeOnScroll(view)
+  const spring = reduced ? { duration: 0 } : GLASS
+  const shown = mini ? DESTINATIONS.filter((item) => item.id === view) : DESTINATIONS
+
+  const expand = useCallback(() => {
+    haptic('light')
+    sound.open()
+    setMini(false)
+  }, [setMini])
 
   return (
-    <nav className="app-dock" data-compact={compact ? 'true' : 'false'} aria-label="Navegação principal">
-      <span className="app-dock-sheen" aria-hidden />
-      {DESTINATIONS.map((destination) => {
-        const active = destination.id === view
-        return (
-          <motion.button
-            key={destination.id}
-            type="button"
-            aria-current={active ? 'page' : undefined}
-            aria-label={destination.label}
-            whileTap={{ scale: .88 }}
-            transition={{ type: 'spring', stiffness: 600, damping: 30 }}
-            onClick={() => {
-              haptic(active ? 'light' : 'medium')
-              sound.tick()
-              if (!active) onChange(destination.id)
-            }}
-          >
-            {active && (
-              <motion.span
-                layoutId="app-dock-lens"
-                className="app-dock-lens"
-                transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 36, mass: .7 }}
-                aria-hidden
-              />
-            )}
-            <span className="app-dock-icon">{destination.icon}</span>
-            <span className="app-dock-label">{destination.label}</span>
-          </motion.button>
-        )
-      })}
-    </nav>
+    <div className="app-dock-layer">
+      <motion.nav
+        layout
+        transition={spring}
+        className="app-dock"
+        data-mini={mini ? 'true' : 'false'}
+        style={{ borderRadius: 999 }}
+        aria-label="Navegação principal"
+      >
+        <span className="app-dock-sheen" aria-hidden />
+        <AnimatePresence initial={false} mode="popLayout">
+          {shown.map((destination) => {
+            const active = destination.id === view
+            return (
+              <motion.button
+                key={destination.id}
+                layout
+                type="button"
+                aria-current={active ? 'page' : undefined}
+                aria-label={mini ? `${destination.label} — abrir navegação` : destination.label}
+                aria-expanded={mini ? false : undefined}
+                style={{ borderRadius: 999 }}
+                initial={{ opacity: 0, scale: .7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: .7 }}
+                transition={spring}
+                whileTap={{ scale: .9 }}
+                onClick={() => {
+                  if (mini) { expand(); return }
+                  haptic(active ? 'light' : 'medium')
+                  sound.tick()
+                  if (!active) onChange(destination.id)
+                }}
+              >
+                {active && !mini && (
+                  <motion.span
+                    layoutId="app-dock-lens"
+                    className="app-dock-lens"
+                    style={{ borderRadius: 999 }}
+                    transition={spring}
+                    aria-hidden
+                  />
+                )}
+                <motion.span layout="position" className="app-dock-icon">{destination.icon}</motion.span>
+                <motion.span layout="position" className="app-dock-label">{destination.label}</motion.span>
+              </motion.button>
+            )
+          })}
+        </AnimatePresence>
+      </motion.nav>
+    </div>
   )
 }
 

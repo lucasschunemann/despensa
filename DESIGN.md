@@ -32,7 +32,10 @@ Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e nave
 - A tela inicial começa pelo estado da casa, oferece captura direta para os três módulos e termina em uma fila curta de ações. Em tablet e desktop, o resumo fica ao lado das ações; no iPhone, forma uma sequência única para o polegar.
 - O menu separa claramente perfil e navegação. Os destinos formam uma lista, com seleção invertida que desliza entre eles.
 - A navegação principal é persistente e usa material Liquid Glass: cápsula flutuante, desfoque do conteúdo, reflexo preso à borda de cima, brilho interno e uma lente de vidro que desliza até o destino atual.
-- A barra segue o comportamento da barra do iOS 26: descer a tela recolhe ela para só os ícones, subir devolve ela inteira, e perto do topo ela é sempre inteira. Quem rola é o contêiner de cada módulo, então a escuta é na fase de captura.
+- A barra segue o comportamento da barra do iOS 26: descer a tela **encolhe a cápsula até sobrar só a aba atual**, em pílula com ícone e nome lado a lado; subir, ou tocar na pílula, devolve a barra inteira, e perto do topo ela é sempre inteira. A largura é animada por layout, então a cápsula se contrai em vez de trocar de estado em corte seco. Quem rola é o contêiner de cada módulo, então a escuta é na fase de captura.
+- A cápsula invade parte da área do indicador da tela, como a do iOS, em vez de ficar inteira acima dela: `--dock-gap` é `max(10px, safe-area-bottom - 15px)`, e `--dock-h` dá o respiro dos compositores dos módulos.
+- Texto: fragmento curto e concreto, sem ponto final e sem frase de efeito. Onde não há o que dizer, não entra linha nenhuma. A linha abaixo do campo devolve o que o app entendeu do que está escrito, em vez de uma instrução fixa.
+- O cabeçalho mostra só a marca escrita. A ilustração não entra em barra de navegação: ela aparece grande no início.
 
 ## Redesign mobile (19/09/2026)
 - **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).

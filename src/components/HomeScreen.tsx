@@ -68,11 +68,11 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
 
   // A linha só existe quando tem o que dizer. Sem pendência, o lugar dela vira respiro.
   const note = !ready
-    ? 'sincronizando a casa.'
+    ? 'sincronizando'
     : overdue
-      ? `${overdue} ${overdue === 1 ? 'conta atrasada' : 'contas atrasadas'}.`
+      ? `${overdue} ${overdue === 1 ? 'conta atrasada' : 'contas atrasadas'}`
       : pendingItems.length + pendingBills.length === 0
-        ? 'nada pendente por aqui.'
+        ? 'tudo em dia'
         : null
 
   const parsedMarket = mode === 'lista' ? parseEntry(entry) : null
@@ -108,6 +108,14 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
     }
     sound.unlock(); sound.add(); haptic('success'); setEntry('')
   }
+
+  // Em vez de uma frase fixa, a linha devolve o que o app entendeu do que está escrito.
+  const parsed = parsedMoney
+    ? `${parsedMoney.title}${parsedMoney.amountCents ? ` · ${formatBRL(parsedMoney.amountCents)}` : ''}${parsedMoney.dueDay ? ` · dia ${parsedMoney.dueDay}` : ''}`
+    : parsedMarket
+      ? `${parsedMarket.name}${parsedMarket.quantity ? ` · ${parsedMarket.quantity}` : ''}`
+      : ''
+  const hint = feedback || (entry ? parsed : '')
 
   const reveal = (index: number) => ({
     initial: reduced ? false : { opacity: 0, y: 14, filter: 'blur(4px)' },
@@ -158,16 +166,33 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.input key={mode} ref={input} aria-label={CAPTURE[mode].aria} placeholder={CAPTURE[mode].placeholder} value={entry} onChange={(event) => { setEntry(event.target.value); setFeedback('') }} maxLength={160} enterKeyHint="send" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: .16 }} />
             </AnimatePresence>
-            <motion.button type="submit" aria-label={CAPTURE[mode].action} disabled={!canSubmit} animate={{ rotate: canSubmit ? 0 : -45, scale: canSubmit ? 1 : .88 }} whileTap={{ scale: .84 }}><svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg></motion.button>
+            {/* O botão só existe quando há o que adicionar: girar o "+" para virar "×"
+                parecia um botão de limpar. */}
+            <AnimatePresence>
+              {canSubmit && (
+                <motion.button
+                  key="enviar"
+                  type="submit"
+                  aria-label={CAPTURE[mode].action}
+                  initial={reduced ? false : { opacity: 0, scale: .6 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: .6 }}
+                  transition={{ type: 'spring', stiffness: 560, damping: 32 }}
+                  whileTap={{ scale: .86 }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+                </motion.button>
+              )}
+            </AnimatePresence>
           </form>
-          <p className="capture-feedback" role="status">{feedback || (entry && parsedMoney ? `${parsedMoney.title}${parsedMoney.amountCents ? ` · ${formatBRL(parsedMoney.amountCents)}` : ''}` : 'escreva do jeito que você lembra.')}</p>
+          <p className="capture-feedback" role="status">{hint}</p>
         </motion.section>
 
         <motion.section className="home-flow" {...reveal(2)}>
           <div className="home-dashboard">
-            <HomeRow className="home-market" label="mercado" value={pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'} detail={cartItems.length ? `${cartItems.length} no carrinho` : 'pronto para a próxima compra'} onClick={() => open('lista')} icon={<BasketIcon />} index={0} />
-            <HomeRow className="home-bills" label="contas" value={month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'} detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : 'nenhuma pendência neste mês'} onClick={() => open('contas')} icon={<BillIcon />} index={1} />
-            <HomeRow className="home-wishes" label="desejos" value={queue.length ? `${queue.length} ${queue.length === 1 ? 'plano' : 'planos'}` : 'nenhum plano'} detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen}` : ''}` : 'guarde aqui o que vem depois'} onClick={() => open('desejos')} icon={<HeartIcon />} index={2} />
+            <HomeRow className="home-market" label="mercado" value={pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'} detail={cartItems.length ? `${cartItems.length} no carrinho` : ''} onClick={() => open('lista')} icon={<BasketIcon />} index={0} />
+            <HomeRow className="home-bills" label="contas" value={month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'} detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : ''} onClick={() => open('contas')} icon={<BillIcon />} index={1} />
+            <HomeRow className="home-wishes" label="desejos" value={queue.length ? `${queue.length} ${queue.length === 1 ? 'plano' : 'planos'}` : 'nenhum plano'} detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen}` : ''}` : ''} onClick={() => open('desejos')} icon={<HeartIcon />} index={2} />
           </div>
           {month.debt && <motion.button className="home-balance-note" onClick={() => open('contas')} whileTap={{ scale: .985 }}><Avatar person={month.debt.from} size={22} /><span>{month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}</span><Chevron /></motion.button>}
         </motion.section>
@@ -187,7 +212,7 @@ function HomeRow({ className, label, value, detail, icon, onClick, index }: { cl
       whileTap={{ scale: .99 }}
     >
       <span className="home-module-icon" aria-hidden>{icon}</span>
-      <span className="home-module-copy"><strong>{label}</strong><em>{detail}</em></span>
+      <span className="home-module-copy"><strong>{label}</strong>{detail && <em>{detail}</em>}</span>
       <span className="home-module-value">{value}</span>
       <Chevron />
     </motion.button>

@@ -46,17 +46,33 @@ test('barra Liquid Glass permanece visível e acompanha o módulo atual', async 
   await expect(dock.getByRole('button', { name: 'contas' })).toHaveAttribute('aria-current', 'page')
 })
 
-test('a barra recolhe quando a tela desce e volta inteira quando sobe', async ({ page }) => {
+test('a barra encolhe até a aba atual quando a tela desce, e volta ao toque', async ({ page }) => {
   await open(page)
   const dock = page.getByRole('navigation', { name: 'Navegação principal' })
-  await expect(dock).toHaveAttribute('data-compact', 'false')
+  await expect(dock).toHaveAttribute('data-mini', 'false')
+  await expect(dock.getByRole('button')).toHaveCount(4)
 
   await page.mouse.move(200, 400)
   for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, 60); await page.waitForTimeout(30) }
-  await expect(dock).toHaveAttribute('data-compact', 'true')
-  // recolhida mostra só os ícones, mas continua navegando
-  await expect(dock.getByRole('button', { name: 'mercado' })).toBeVisible()
+  await expect(dock).toHaveAttribute('data-mini', 'true')
+  // sobra só a aba em que a pessoa está
+  await expect(dock.getByRole('button')).toHaveCount(1)
+  await expect(dock.getByRole('button').first()).toHaveAttribute('aria-current', 'page')
+
+  // tocar na pílula abre a barra de volta, sem trocar de módulo
+  await dock.getByRole('button').first().click()
+  await expect(dock).toHaveAttribute('data-mini', 'false')
+  await expect(dock.getByRole('button')).toHaveCount(4)
+  await expect(page.locator('.home-hello')).toBeVisible()
+})
+
+test('subir a tela também devolve a barra inteira', async ({ page }) => {
+  await open(page)
+  const dock = page.getByRole('navigation', { name: 'Navegação principal' })
+  await page.mouse.move(200, 400)
+  for (let i = 0; i < 12; i++) { await page.mouse.wheel(0, 60); await page.waitForTimeout(30) }
+  await expect(dock).toHaveAttribute('data-mini', 'true')
 
   for (let i = 0; i < 8; i++) { await page.mouse.wheel(0, -70); await page.waitForTimeout(30) }
-  await expect(dock).toHaveAttribute('data-compact', 'false')
+  await expect(dock).toHaveAttribute('data-mini', 'false')
 })
