@@ -8,6 +8,7 @@ import { FinanceScreen } from './components/FinanceScreen'
 import { HomeScreen } from './components/HomeScreen'
 import { ListScreen } from './components/ListScreen'
 import { MenuSheet, type View } from './components/MenuSheet'
+import { Onboarding } from './components/Onboarding'
 import { ReactionBurst } from './components/ReactionBurst'
 import { Stage } from './components/Stage'
 import { UserSettingsSheet } from './components/UserSettingsSheet'
@@ -22,6 +23,7 @@ import type { Profile } from './lib/auth'
 import { friendlyAuthError } from './lib/auth'
 import { haptic } from './lib/haptics'
 import { monthKey } from './lib/month'
+import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding'
 import { reconcilePush } from './lib/push'
 import { createRoom, getMyRoom, joinRoom } from './lib/room'
 import { load, save } from './lib/storage'
@@ -130,6 +132,8 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   const [month, setMonth] = useState(monthKey)
   const [menuOpen, setMenuOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [onboardingOpen, setOnboardingOpen] = useState(() => !hasCompletedOnboarding(user))
+  const [onboardingReplay, setOnboardingReplay] = useState(false)
   const goHome = () => { setMonth(monthKey()); setView('inicio') }
   const changeView = (next: View) => next === 'inicio' ? goHome() : setView(next)
 
@@ -169,7 +173,12 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
     }} />
     <ReactionBurst reaction={presence.reaction} me={person} />
     <MenuSheet open={menuOpen} view={view} me={person} onClose={() => setMenuOpen(false)} onChangeView={changeView} onOpenSettings={() => setSettingsOpen(true)} />
-    <UserSettingsSheet open={settingsOpen} user={user} profile={profile} roomId={roomId} onClose={() => setSettingsOpen(false)} onProfileChange={onProfileChange} onSignOut={onSignOut} />
+    <UserSettingsSheet open={settingsOpen} user={user} profile={profile} roomId={roomId} onClose={() => setSettingsOpen(false)} onProfileChange={onProfileChange} onSignOut={onSignOut} onReplayOnboarding={() => { setSettingsOpen(false); setOnboardingReplay(true); setOnboardingOpen(true) }} />
+    <Onboarding open={onboardingOpen} name={profile.username} replay={onboardingReplay} onDismiss={() => {
+      setOnboardingOpen(false)
+      setOnboardingReplay(false)
+      void completeOnboarding(user.id).catch(() => {})
+    }} />
   </>
 }
 

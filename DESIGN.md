@@ -16,9 +16,12 @@ Interface monocromática para consultas rápidas no iPhone em casa e no mercado,
 - Desejos: cartões sólidos, imagens e reações expressivas dentro da mesma escala monocromática.
 - Menu: sheet com conta separada e destinos em lista; o destino atual recebe seleção invertida e animada. Preferências vivem no painel de usuário.
 - Avisos: três exemplos navegáveis, status do aparelho, ação explícita para permissão, teste real pelo servidor e erros contextuais.
+- Onboarding: cinco cenas curtas e interativas apresentam captura, sincronização, organização e avisos. O progresso é sempre visível, cada cena aceita gesto horizontal e a saída devolve diretamente ao início. No primeiro acesso, a conclusão é salva na conta e no aparelho; depois, a apresentação fica em configurações.
 
 ## Movimento
 Entrada curta e resposta tátil visual no toque. Trocas de módulo têm transição; seleção de exemplo desliza e o conteúdo faz crossfade. Elementos persistentes continuam montados. MotionConfig respeita o sistema; CSS decorativo também tem alternativa de movimento reduzido.
+
+O onboarding concentra a animação mais expressiva do produto: a marca entra em órbita, exemplos são interpretados, uma compra viaja entre moradores, contas se reorganizam e um aviso fecha a história. A navegação continua imediata, sem avanço automático, com transições direcionais de 340–460 ms e controles sempre disponíveis.
 
 O material translúcido fica nas camadas de navegação e ação — sidebar, composer e trays. Cartões de conteúdo permanecem sólidos para preservar contraste e evitar uma pilha de “vidros”. Seleção, criação de pasta e mudança de destino usam spring curto, escalas pequenas e feedback háptico.
 

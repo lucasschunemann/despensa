@@ -22,6 +22,7 @@ Dashboards genéricos, excesso de cor, gôndola de produtos em grade (já rejeit
 - O app comunica o estado verdadeiro: guardado no aparelho, sincronizado, assinatura conectada ou erro.
 - Preservar a identidade de cada módulo dentro de uma base monocromática comum.
 - Push é opcional, solicitado por um toque e enviado pelo servidor após salvar a mudança.
+- A primeira visita apresenta o valor da casa compartilhada em menos de um minuto. A apresentação pode ser pulada e reassistida nas configurações.
 
 ## Accessibility & Inclusion
 Áreas de toque confortáveis, contraste legível, navegação por teclado e foco contido nos diálogos. Respeitar Reduzir Movimento do sistema, sem depender de animação, som ou cor para concluir tarefas.
