@@ -82,6 +82,7 @@ export default function DemoApp() {
   const [settingsOpen, setSettingsOpen] = useState(params.has('settings'))
   const [onboardingOpen, setOnboardingOpen] = useState(params.has('onboarding'))
   const [onboardingReplay, setOnboardingReplay] = useState(false)
+  const [onboardingPending, setOnboardingPending] = useState(false)
   const [profile, setProfile] = useState<Profile>({ id: '00000000-0000-0000-0000-000000000001', username: 'Lucas', avatar_type: 'preset', avatar_value: 'cat', role: 'admin', created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
   const [month, setMonth] = useState(MONTH)
   const changeView = (next: View) => { if (next === 'inicio') setMonth(MONTH); setView(next) }
@@ -423,7 +424,13 @@ export default function DemoApp() {
         onClose={() => setSettingsOpen(false)}
         onProfileChange={setProfile}
         onSignOut={() => setSettingsOpen(false)}
-        onReplayOnboarding={() => { setSettingsOpen(false); setOnboardingReplay(true); setOnboardingOpen(true) }}
+        onReplayOnboarding={() => { setOnboardingPending(true); setSettingsOpen(false) }}
+        onClosed={() => {
+          if (!onboardingPending) return
+          setOnboardingPending(false)
+          setOnboardingReplay(true)
+          setOnboardingOpen(true)
+        }}
       />
       <Onboarding open={onboardingOpen} name={profile.username} replay={onboardingReplay} onDismiss={() => { setOnboardingOpen(false); setOnboardingReplay(false) }} />
     </>

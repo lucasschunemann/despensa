@@ -18,9 +18,10 @@ interface Props {
   onProfileChange: (profile: Profile) => void
   onSignOut: () => void
   onReplayOnboarding: () => void
+  onClosed?: () => void
 }
 
-export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProfileChange, onSignOut, onReplayOnboarding }: Props) {
+export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProfileChange, onSignOut, onReplayOnboarding, onClosed }: Props) {
   const reduced = useReducedMotion()
   const panel = useRef<HTMLDivElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -70,7 +71,7 @@ export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProf
   }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onClosed}>
       {open && <motion.div className="settings-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
         <motion.div
           className="settings-panel"

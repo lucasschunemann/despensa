@@ -134,6 +134,7 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(() => !hasCompletedOnboarding(user))
   const [onboardingReplay, setOnboardingReplay] = useState(false)
+  const [onboardingPending, setOnboardingPending] = useState(false)
   const goHome = () => { setMonth(monthKey()); setView('inicio') }
   const changeView = (next: View) => next === 'inicio' ? goHome() : setView(next)
 
@@ -173,7 +174,12 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
     }} />
     <ReactionBurst reaction={presence.reaction} me={person} />
     <MenuSheet open={menuOpen} view={view} me={person} onClose={() => setMenuOpen(false)} onChangeView={changeView} onOpenSettings={() => setSettingsOpen(true)} />
-    <UserSettingsSheet open={settingsOpen} user={user} profile={profile} roomId={roomId} onClose={() => setSettingsOpen(false)} onProfileChange={onProfileChange} onSignOut={onSignOut} onReplayOnboarding={() => { setSettingsOpen(false); setOnboardingReplay(true); setOnboardingOpen(true) }} />
+    <UserSettingsSheet open={settingsOpen} user={user} profile={profile} roomId={roomId} onClose={() => setSettingsOpen(false)} onProfileChange={onProfileChange} onSignOut={onSignOut} onReplayOnboarding={() => { setOnboardingPending(true); setSettingsOpen(false) }} onClosed={() => {
+      if (!onboardingPending) return
+      setOnboardingPending(false)
+      setOnboardingReplay(true)
+      setOnboardingOpen(true)
+    }} />
     <Onboarding open={onboardingOpen} name={profile.username} replay={onboardingReplay} onDismiss={() => {
       setOnboardingOpen(false)
       setOnboardingReplay(false)

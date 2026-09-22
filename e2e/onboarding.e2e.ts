@@ -3,7 +3,7 @@ import { open } from './helpers'
 
 test('apresentação explica o produto e entrega o usuário no início', async ({ page }) => {
   const errors = await open(page, '&onboarding=1')
-  const dialog = page.getByRole('dialog')
+  const dialog = page.locator('.onboarding')
   const progress = page.getByRole('progressbar', { name: 'Progresso da apresentação' })
 
   await expect(dialog).toContainText('bem-vindo à despensa')
@@ -31,7 +31,8 @@ test('configurações permite reassistir à apresentação', async ({ page }) =>
   await page.getByRole('button', { name: 'Abrir configurações' }).click()
   await page.getByRole('button', { name: /reassistir à apresentação/ }).click()
 
-  const dialog = page.getByRole('dialog')
+  await expect(page.getByRole('dialog', { name: 'configurações' })).toHaveCount(0)
+  const dialog = page.locator('.onboarding')
   await expect(dialog).toContainText('a casa toda em um só ritmo')
   await expect(dialog.getByRole('button', { name: 'Pular apresentação' })).toBeVisible()
   await dialog.getByRole('button', { name: 'Pular apresentação' }).click()
