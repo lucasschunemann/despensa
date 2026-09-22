@@ -22,7 +22,7 @@ const MOLA_MACIA = { type: 'spring' as const, stiffness: 180, damping: 20 }
  * módulo, feito pela pessoa. Por isso não há "continuar" antes da hora — o botão
  * nasce depois que o gesto acontece.
  *
- * Aqui `prefers-reduced-motion` é ignorado de propósito, a pedido do Lucas: a
+ * Aqui `prefers-reduced-motion` é ignorado de propósito, a pedido do dono do app: a
  * apresentação É a animação. O resto do app continua respeitando.
  */
 const CENAS = ['abertura', 'escrever', 'pegar', 'pagar', 'desejar', 'fim'] as const
@@ -123,7 +123,7 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
                 {cena === 'escrever' && <Escrever key="escrever" onPronto={avancar} />}
                 {cena === 'pegar' && <Pegar key="pegar" onPronto={avancar} />}
                 {cena === 'pagar' && <Pagar key="pagar" onPronto={avancar} />}
-                {cena === 'desejar' && <Desejar key="desejar" onPronto={avancar} />}
+                {cena === 'desejar' && <Desejar key="desejar" nome={name} onPronto={avancar} />}
                 {cena === 'fim' && <Fim key="fim" replay={replay} onPronto={onDismiss} />}
               </AnimatePresence>
             </div>
@@ -634,12 +634,13 @@ function Pagar({ onPronto }: { onPronto: () => void }) {
 
 /* ── cena 5: desejar ─────────────────────────────────────────────────── */
 
-function Desejar({ onPronto }: { onPronto: () => void }) {
+// Sem nomes fixos: quem assiste é a primeira pessoa, e a segunda é só "a outra pessoa" da casa.
+function Desejar({ nome, onPronto }: { nome: string; onPronto: () => void }) {
   const [quem, setQuem] = useState<string[]>([])
   const dois = quem.length === 2
 
   function querer() {
-    const proximo = quem.length === 0 ? ['Lucas'] : ['Lucas', 'Bela']
+    const proximo = quem.length === 0 ? [nome] : [nome, '']
     if (quem.length >= 2) return
     sound.unlock(); jazz.comecar()
     if (quem.length === 1) jazz.dupla()
@@ -650,7 +651,7 @@ function Desejar({ onPronto }: { onPronto: () => void }) {
 
   return (
     <motion.section className="ob-cena" exit={{ opacity: 0, y: -60, filter: 'blur(10px)' }} transition={{ duration: .4 }}>
-      <Fala titulo={<>o que a casa<br />ainda quer.</>} dica={dois ? undefined : quem.length ? 'agora toque pela Bela' : 'toque no coração'} />
+      <Fala titulo={<>o que a casa<br />ainda quer.</>} dica={dois ? undefined : quem.length ? 'agora pela outra pessoa' : 'toque no coração'} />
 
       <motion.div className={`ob-vidro${dois ? ' is-dois' : ''}`} initial={{ opacity: 0, y: 40, scale: .9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={MOLA_MACIA}>
         <motion.div className="ob-vidro-halo" animate={dois ? { opacity: [.4, .9, .4], scale: [1, 1.06, 1] } : { opacity: 0 }} transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }} />
@@ -672,8 +673,8 @@ function Desejar({ onPronto }: { onPronto: () => void }) {
         <div className="ob-quem">
           <AnimatePresence>
             {quem.map((pessoa, i) => (
-              <motion.span key={pessoa} initial={{ scale: 0, y: 12 }} animate={{ scale: 1, y: 0 }} transition={{ ...MOLA, delay: i * .05 }}>
-                <Avatar person={pessoa} size={22} />
+              <motion.span key={i} initial={{ scale: 0, y: 12 }} animate={{ scale: 1, y: 0 }} transition={{ ...MOLA, delay: i * .05 }}>
+                {pessoa ? <Avatar person={pessoa} size={22} /> : <span className="avatar avatar-letter ob-outra" style={{ width: 22, height: 22 }} aria-label="a outra pessoa" />}
               </motion.span>
             ))}
           </AnimatePresence>

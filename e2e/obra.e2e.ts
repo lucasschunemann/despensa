@@ -1,18 +1,17 @@
 import { expect, test } from '@playwright/test'
 import { open } from './helpers'
 
-test('a luz da casa muda com a hora e nunca pega toque', async ({ page }) => {
-  await open(page, '&hora=8')
-  const light = page.locator('.atmosphere')
-  await expect(light).toHaveClass(/is-dia/)
-  await expect(light).toHaveCSS('pointer-events', 'none')
-  // o toque atravessa a luz e chega no módulo
+test('o grão do papel nunca pega toque', async ({ page }) => {
+  await open(page)
+  await expect(page.locator('.atmosphere')).toHaveCSS('pointer-events', 'none')
+  await expect(page.locator('.atmosphere-window')).toHaveCount(0)
   await page.locator('.home-market').click()
   await expect(page.locator('.mrow').first()).toBeVisible()
+})
 
-  await open(page, '&hora=23')
-  await expect(page.locator('.atmosphere')).toHaveClass(/is-noite/)
-  await expect(page.locator('.atmosphere-window')).toHaveCount(0)
+test('o rodapé do início não leva nome de ninguém', async ({ page }) => {
+  await open(page)
+  await expect(page.locator('.colophon')).not.toContainText(/lucas|bela/i)
 })
 
 test('o camarão do início toca e solta notas', async ({ page }) => {

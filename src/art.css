@@ -1,23 +1,11 @@
 /* ─── A peça ────────────────────────────────────────────────────────────────
-   Camada que trata o app como uma obra, não como painel: a luz da casa cai sobre o papel,
-   o papel tem grão, a abertura é um letreiro, a compra termina com créditos e o camarão
+   Camada que trata o app como uma obra, não como painel: o papel tem grão, a abertura é um letreiro, a compra termina com créditos e o camarão
    toca quando alguém toca nele. Tudo monocromático; a cor segue sendo só da marca. */
 
-:root {
-  --shade: rgb(20 18 14 / 0.036);
-  --shade-soft: rgb(20 18 14 / 0.022);
-  --grain-opacity: 0.05;
-  --vignette: rgb(20 18 14 / 0.075);
-}
+:root { --grain-opacity: 0.05; }
+:root[data-theme='dark'] { --grain-opacity: 0.07; }
 
-:root[data-theme='dark'] {
-  --shade: rgb(0 0 0 / 0.22);
-  --shade-soft: rgb(0 0 0 / 0.12);
-  --grain-opacity: 0.07;
-  --vignette: rgb(0 0 0 / 0.34);
-}
-
-/* ─── Luz da casa ───────────────────────────────────────────────────────── */
+/* ─── Papel ─────────────────────────────────────────────────────────────── */
 .atmosphere {
   position: fixed;
   inset: 0;
@@ -25,45 +13,6 @@
   overflow: hidden;
   pointer-events: none;
   contain: strict;
-}
-
-/* A janela: o retângulo é a luz que entra; a sombra enorme em volta é o resto da parede.
-   Os caixilhos são gradientes de borda macia, e o giro/inclinação vem da hora. */
-.atmosphere-window {
-  position: absolute;
-  top: 44%;
-  width: min(82vw, 520px);
-  height: 64vh;
-  border-radius: 2px;
-  box-shadow: 0 0 90px 220vmax var(--shade);
-  background:
-    linear-gradient(90deg, transparent calc(50% - 16px), var(--shade) calc(50% - 5px), var(--shade) calc(50% + 5px), transparent calc(50% + 16px)),
-    linear-gradient(180deg, transparent calc(46% - 16px), var(--shade) calc(46% - 5px), var(--shade) calc(46% + 5px), transparent calc(46% + 16px));
-  transition: left 4s var(--ease-glass), opacity 4s ease, transform 4s var(--ease-glass);
-  will-change: transform;
-}
-
-/* Folhas do lado de fora da janela: manchas que passam devagar pela luz. */
-.atmosphere-leaves {
-  position: absolute;
-  inset: -20%;
-  background:
-    radial-gradient(28% 18% at 22% 30%, var(--shade-soft), transparent 70%),
-    radial-gradient(22% 26% at 70% 20%, var(--shade-soft), transparent 70%),
-    radial-gradient(30% 16% at 60% 76%, var(--shade-soft), transparent 70%),
-    radial-gradient(16% 20% at 30% 82%, var(--shade-soft), transparent 70%);
-  animation: leaves 26s ease-in-out infinite alternate;
-}
-
-@keyframes leaves {
-  0% { transform: translate3d(-3%, -2%, 0) rotate(-2deg); opacity: 0.7; }
-  50% { opacity: 1; }
-  100% { transform: translate3d(4%, 3%, 0) rotate(2deg); opacity: 0.8; }
-}
-
-/* De noite não entra janela: as bordas escurecem, como um quarto com abajur. */
-.atmosphere.is-noite {
-  background: radial-gradient(120% 90% at 50% 38%, transparent 52%, var(--vignette));
 }
 
 /* Grão de papel de gravura: fixo, rasterizado uma vez, quase invisível. */
@@ -76,11 +25,6 @@
 }
 
 :root[data-theme='dark'] .atmosphere-grain { filter: invert(1); mix-blend-mode: normal; }
-
-@media (prefers-reduced-motion: reduce) {
-  .atmosphere-leaves { animation: none; }
-  .atmosphere-window { transition: none; }
-}
 
 @media (prefers-reduced-transparency: reduce) {
   .atmosphere { display: none; }
@@ -194,13 +138,6 @@
   letter-spacing: 0.08em;
   text-transform: lowercase;
   font-variant-numeric: tabular-nums;
-}
-
-.colophon-names {
-  margin: 0;
-  font-size: 12px;
-  letter-spacing: -0.005em;
-  color: var(--text-3);
 }
 
 .moon {
@@ -335,3 +272,28 @@
   font-size: 13px;
   color: var(--text-2);
 }
+
+/* a outra pessoa da apresentação: sem nome nem rosto, só um lugar */
+.ob-outra { background: var(--field); box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+/* ─── Navegação ─────────────────────────────────────────────────────────── */
+/* O app inteiro fica num cartão, para as folhas poderem empurrá-lo para trás como no iOS.
+   Atrás dele, preto: é o que aparece nas bordas quando ele recua. */
+.stage { transition: background-color 320ms ease; }
+.stage.is-receded { background: #000; }
+
+.stage-card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 88%, var(--ink) 12%);
+  transform-origin: 50% 0;
+  will-change: transform;
+}
+
+/* dois módulos se cruzam por um instante na troca pela barra */
+.view.is-top .module-surface { position: absolute; inset: 0; }
+
+/* o zoom não tem a sombra lateral do empurrar: a borda é o próprio recorte */
+.view.is-top.is-zoom { box-shadow: none; }
+.zoom-content { position: absolute; inset: 0; }

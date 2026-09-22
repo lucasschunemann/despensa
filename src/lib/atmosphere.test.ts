@@ -1,31 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { editionNumber, lightFor, moonName, moonPath, moonPhase } from './atmosphere'
-
-const at = (h: number, m = 0) => new Date(2026, 8, 22, h, m)
-
-describe('luz da casa', () => {
-  it('de noite não tem janela', () => {
-    expect(lightFor(at(23)).kind).toBe('noite')
-    expect(lightFor(at(3)).kind).toBe('noite')
-  })
-
-  it('o sol anda da esquerda para a direita e a luz cai do lado oposto', () => {
-    const morning = lightFor(at(7))
-    const evening = lightFor(at(17))
-    expect(morning.kind).toBe('dia')
-    expect(morning.x).toBeGreaterThan(evening.x)
-    expect(Math.sign(morning.skew)).toBe(-Math.sign(evening.skew))
-  })
-
-  it('a janela é mais marcada com o sol baixo do que ao meio-dia', () => {
-    expect(lightFor(at(7)).strength).toBeGreaterThan(lightFor(at(12, 15)).strength)
-    for (const h of [6, 9, 12, 15, 18]) {
-      const { strength } = lightFor(at(h))
-      expect(strength).toBeGreaterThan(0)
-      expect(strength).toBeLessThanOrEqual(1)
-    }
-  })
-})
+import { editionNumber, moonName, moonPath, moonPhase } from './atmosphere'
 
 describe('lua', () => {
   it('acerta luas conhecidas', () => {

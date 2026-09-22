@@ -1,7 +1,7 @@
 // Só existe em desenvolvimento (?demo=1): roda a interface com dados de mentira,
 // sem Supabase e sem tocar na lista real.
-// Variações: &vazio=1, &quem=1, &digitando=1, &contas=1, &abertura=1 (letreiro de abertura), &hora=7 (luz das 7h)
-import { useCallback, useMemo, useState } from 'react'
+// Variações: &vazio=1, &quem=1, &digitando=1, &contas=1, &abertura=1 (letreiro de abertura), &abrindo=1 (letreiro que vira o app)
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { PersonPicker } from '../App'
 import { AppDock } from '../components/AppDock'
@@ -82,6 +82,9 @@ export default function DemoApp() {
   const [menuOpen, setMenuOpen] = useState(params.has('menu'))
   const [settingsOpen, setSettingsOpen] = useState(params.has('settings'))
   const [onboardingOpen, setOnboardingOpen] = useState(params.has('onboarding'))
+  // &abrindo=1: o letreiro fica 1,8s e dá lugar ao app, para ver a marca voar até o cabeçalho
+  const [opening, setOpening] = useState(params.has('abrindo'))
+  useEffect(() => { if (!opening) return; const t = setTimeout(() => setOpening(false), 1800); return () => clearTimeout(t) }, [opening])
   const [onboardingReplay, setOnboardingReplay] = useState(false)
   const [onboardingPending, setOnboardingPending] = useState(false)
   const [profile, setProfile] = useState<Profile>({ id: '00000000-0000-0000-0000-000000000001', username: 'Lucas', avatar_type: 'preset', avatar_value: 'cat', role: 'admin', created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
@@ -341,7 +344,7 @@ export default function DemoApp() {
     sendReaction: (emoji, about) => setReaction({ id: Date.now(), person: 'Lucas', emoji, about }),
   }
 
-  if (params.has('abertura')) return <Overture label="abrindo sua casa…" />
+  if (params.has('abertura') || opening) return <Overture label="abrindo sua casa…" />
 
   if (params.has('quem')) {
     return (
@@ -360,6 +363,7 @@ export default function DemoApp() {
         view={view}
         home="inicio"
         onBack={() => changeView('inicio')}
+        receded={menuOpen || settingsOpen}
         dock={<AppDock view={view} onChange={changeView} badges={{ contas: overdueBills }} />}
         renderHome={() => (
           <HomeScreen

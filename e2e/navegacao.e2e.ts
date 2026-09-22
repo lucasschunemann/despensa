@@ -14,13 +14,43 @@ test('abre um módulo, volta pela seta e volta arrastando da borda', async ({ pa
   await page.locator('.wordmark-button').click()
   await expect(page.locator('.view.is-top')).toHaveCount(0)
 
+  // a linha do início vira a tela (zoom): só dá para puxar da borda depois que ela ocupa tudo
   await page.locator('.home-market').click()
   await expect(page.locator('.mrow')).toHaveCount(4)
+  await expect(page.locator('.view.is-top.is-zoom')).toHaveCSS('clip-path', 'inset(0px)')
+  await edgeSwipe(page, 280)
+  await expect(page.locator('.view.is-top')).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('pela barra o módulo desliza, e volta arrastando da borda', async ({ page }) => {
+  await open(page)
+  await page.locator('.app-dock button', { hasText: 'mercado' }).click()
+  await expect(page.locator('.view.is-top')).not.toHaveClass(/is-zoom/)
   // a borda anda junto com a tela: só dá para puxar depois que ela chega
   await expect(page.locator('.view.is-top')).toHaveCSS('transform', 'none')
   await edgeSwipe(page, 280)
   await expect(page.locator('.view.is-top')).toHaveCount(0)
-  expect(errors).toEqual([])
+})
+
+test('entre módulos, o novo entra do lado da aba dele', async ({ page }) => {
+  await open(page, '&lista=1')
+  await page.locator('.app-dock button', { hasText: 'desejos' }).click()
+  // desejos fica à direita de mercado: entra vindo da direita
+  const entering = page.locator('.module-surface').last()
+  const x = await entering.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m41)
+  expect(x).toBeGreaterThan(0)
+  await expect(page.locator('.wish')).toHaveCount(5)
+  await expect(page.locator('.module-surface')).toHaveCount(1)
+})
+
+test('abrir o menu empurra o app para trás, como as folhas do iOS', async ({ page }) => {
+  await open(page)
+  await page.getByRole('button', { name: 'Abrir menu' }).first().click()
+  await expect(page.locator('.stage')).toHaveClass(/is-receded/)
+  await expect.poll(() => page.locator('.stage-card').evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a)).toBeLessThan(0.95)
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.stage')).not.toHaveClass(/is-receded/)
 })
 
 test('menu troca de módulo', async ({ page }) => {

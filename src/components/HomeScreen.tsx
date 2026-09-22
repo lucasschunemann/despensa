@@ -15,6 +15,7 @@ import { forecast, sortWishes, whenLabel } from '../lib/wishes'
 import { AppHeader } from './AppHeader'
 import { Colophon } from './Colophon'
 import { Shrimp } from './Shrimp'
+import { zoomFrom } from './Stage'
 import { Avatar } from './Avatar'
 import type { View } from './MenuSheet'
 
@@ -81,9 +82,11 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
   const parsedMoney = mode !== 'lista' ? parseExpenseEntry(entry) : null
   const canSubmit = mode === 'lista' ? Boolean(parsedMarket && items.ready) : Boolean(parsedMoney && (mode === 'contas' ? expenses.ready : wishes.ready))
 
-  const open = (view: View) => {
+  // a linha tocada vira a tela do módulo (zoom do iOS); sem elemento, o módulo vem deslizando
+  const open = (view: View, from?: Element | null) => {
     haptic('light')
     sound.tick()
+    zoomFrom(from ?? null)
     onOpen(view)
   }
 
@@ -192,11 +195,11 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
 
         <motion.section className="home-flow" {...reveal(2)}>
           <div className="home-dashboard">
-            <HomeRow className="home-market" label="mercado" value={pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'} detail={cartItems.length ? `${cartItems.length} no carrinho` : ''} onClick={() => open('lista')} icon={<BasketIcon />} index={0} />
-            <HomeRow className="home-bills" label="contas" value={month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'} detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : ''} onClick={() => open('contas')} icon={<BillIcon />} index={1} />
-            <HomeRow className="home-wishes" label="desejos" value={queue.length ? `${queue.length} ${queue.length === 1 ? 'plano' : 'planos'}` : 'nenhum plano'} detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen}` : ''}` : ''} onClick={() => open('desejos')} icon={<HeartIcon />} index={2} />
+            <HomeRow className="home-market" label="mercado" value={pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'} detail={cartItems.length ? `${cartItems.length} no carrinho` : ''} onClick={(el) => open('lista', el)} icon={<BasketIcon />} index={0} />
+            <HomeRow className="home-bills" label="contas" value={month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'} detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : ''} onClick={(el) => open('contas', el)} icon={<BillIcon />} index={1} />
+            <HomeRow className="home-wishes" label="desejos" value={queue.length ? `${queue.length} ${queue.length === 1 ? 'plano' : 'planos'}` : 'nenhum plano'} detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen}` : ''}` : ''} onClick={(el) => open('desejos', el)} icon={<HeartIcon />} index={2} />
           </div>
-          {month.debt && <motion.button className="home-balance-note" onClick={() => open('contas')} whileTap={{ scale: .985 }}><Avatar person={month.debt.from} size={22} /><span>{month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}</span><Chevron /></motion.button>}
+          {month.debt && <motion.button className="home-balance-note" onClick={(event) => open('contas', event.currentTarget)} whileTap={{ scale: .985 }}><Avatar person={month.debt.from} size={22} /><span>{month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}</span><Chevron /></motion.button>}
         </motion.section>
 
         <Colophon />
@@ -222,11 +225,11 @@ function Letters({ text, reduced }: { text: string; reduced: boolean }) {
     </Fragment>
   ))}</>
 }
-function HomeRow({ className, label, value, detail, icon, onClick, index }: { className: string; label: string; value: string; detail: string; icon: ReactNode; onClick: () => void; index: number }) {
+function HomeRow({ className, label, value, detail, icon, onClick, index }: { className: string; label: string; value: string; detail: string; icon: ReactNode; onClick: (element: HTMLElement) => void; index: number }) {
   return (
     <motion.button
       className={`home-module-row ${className}`}
-      onClick={onClick}
+      onClick={(event) => onClick(event.currentTarget)}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 360, damping: 31, delay: .18 + index * .05 }}

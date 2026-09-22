@@ -15,7 +15,7 @@ export function Overture({ label }: { label: string }) {
   return (
     <div className="overture" role="status" aria-label={label}>
       <div className="overture-inner">
-        <h1 className="overture-word" aria-hidden>
+        <motion.h1 className="overture-word" layoutId="marca" transition={{ type: 'spring', stiffness: 260, damping: 32 }} aria-hidden>
           {WORD.split('').map((letter, index) => (
             <motion.span
               key={index}
@@ -26,7 +26,7 @@ export function Overture({ label }: { label: string }) {
               {letter}
             </motion.span>
           ))}
-        </h1>
+        </motion.h1>
         <motion.span
           className="overture-rule"
           initial={{ scaleX: 0 }}

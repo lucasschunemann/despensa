@@ -233,13 +233,18 @@ tablet/computador, faixa de chips no celular.
 
 ## A peça (22/09/2026)
 Pedido do Lucas: o app como obra de arte, mantendo marca, nome, fonte e preto e branco. Detalhes em
-DESIGN.md ("A peça"). Resumo: **luz da casa** por cima de tudo (sombra de janela que anda com o sol;
-de noite, bordas escuras; só escurece, nunca pega toque), **grão de papel**, **letreiro de abertura**
-no lugar do "carregando", saudação letra por letra, **camarão que toca sax** quando alguém toca nele
-no início, **colofão** no fim do início (edição do dia + fase da lua) e **créditos da compra** ao
-finalizar o mercado, antes de perguntar o valor. Estilos em `src/art.css`; contas puras em
-`src/lib/atmosphere.ts`; percursos em `e2e/obra.e2e.ts`. O camarão agora toca em três lugares
-(apresentação, início, fim da compra); o resto do som continua seco.
+DESIGN.md ("A peça"). Ficou: **grão de papel**, **letreiro de abertura** no lugar do "carregando",
+saudação letra por letra, **camarão que toca sax** quando alguém toca nele no início, **colofão** no
+fim do início (edição do dia + fase da lua) e **créditos da compra** ao finalizar o mercado, antes de
+perguntar o valor. A sombra de janela que andava com o sol **foi rejeitada** (distraía). Nada de nome
+fixo (Lucas, Bela) na apresentação nem no colofão: o app serve para qualquer casa. Estilos em
+`src/art.css`; percursos em `e2e/obra.e2e.ts`.
+
+## Navegação (22/09/2026)
+Detalhes em DESIGN.md ("Navegação e transições"). Linha do início abre o módulo com **zoom do iOS 18**
+(encolhe de volta, inclusive arrastando da borda); barra e menu **empurram**; entre módulos o novo
+**entra do lado da aba**; menu e configurações **empurram o app para trás** como folha do iOS; a mola
+herda a velocidade do dedo; a marca **voa do letreiro para o cabeçalho**. Tudo em `Stage.tsx`.
 
 ## Revisão de UX e push (17/09/2026)
 

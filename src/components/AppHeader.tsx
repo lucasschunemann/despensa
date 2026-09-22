@@ -23,6 +23,8 @@ export function AppHeader({ title, presence, onOpenMenu, onHome, accessory, scro
   const titleEl = (
     <motion.h1
       className="wordmark"
+      // no início, a marca é a mesma peça do letreiro de abertura: ela voa de lá para cá
+      layoutId={!onHome && title === 'despensa' ? 'marca' : undefined}
       animate={{ scale: scrolled && !reduced ? 0.86 : 1 }}
       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
     >

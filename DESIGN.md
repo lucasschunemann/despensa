@@ -132,13 +132,7 @@ nem no preto e branco. A ideia que amarra tudo: **o app é um lugar com luz, pap
 cada uso é uma pequena apresentação — com abertura, com fim e com assinatura. Nada disso
 acrescenta toque ou espera às ações frequentes. Estilos em `src/art.css`, separado de propósito.
 
-- **A luz da casa** (`Atmosphere`, `src/lib/atmosphere.ts`): de dia, a sombra dos caixilhos de
-  uma janela cai sobre o app inteiro e anda com o sol — entra pela esquerda de manhã, fica curta
-  e fraca ao meio-dia, sai comprida pela direita no fim da tarde. Folhas passam devagar pela luz.
-  De noite a janela some e as bordas escurecem, como um quarto de abajur. **Só escurece, nunca
-  clareia**: a tinta preta continua preta e o contraste só aumenta. Não pega toque, some com
-  `prefers-reduced-transparency`, para de mexer com `prefers-reduced-motion`.
-  `?demo=1&hora=7` mostra a luz das 7h.
+- **A luz da casa** (sombra de janela que andava com o sol) foi testada e **saiu a pedido do Lucas** em 22/09/2026: distraía. Ficou só o grão do papel.
 - **Grão de papel**: ruído fixo, quase invisível, rasterizado uma vez. É o que tira o "digital
   demais" do branco.
 - **Letreiro de abertura** (`Overture`): ocupa exatamente a espera que já existia (sessão, perfil,
@@ -149,9 +143,9 @@ acrescenta toque ou espera às ações frequentes. Estilos em `src/art.css`, sep
 - **O camarão toca** (`Shrimp`): tocar no camarão do início toca um lick curto no sax (o mesmo trio
   da apresentação, `jazz.riff()`), com colcheias pretas saindo da campana. Os licks se alternam, então
   quem toca de novo ouve a continuação. Não se anuncia: é para ser descoberto.
-- **Colofão** (`Colophon`): o início termina como um livro — "despensa · nº 265 · 22.09.2026", a
-  fase da lua daquela noite (calculada, desenhada em SVG) e "feita por bela e lucas". Cada dia é
-  uma edição.
+- **Colofão** (`Colophon`): o início termina como um livro — "despensa · nº 265 · 22.09.2026" e a
+  fase da lua daquela noite (calculada, desenhada em SVG). Cada dia é
+  uma edição. Sem nome de ninguém: o app é para qualquer casa.
 - **Créditos da compra** (`Credits`): segurar para finalizar agora termina como filme. "despensa
   apresenta / a compra de terça", cada item pego com o emoji e quem lembrou dele, os gatos de quem
   participou, quanto tempo a compra levou e "fim.". O camarão toca a resolução quando o fim chega.
@@ -160,6 +154,30 @@ acrescenta toque ou espera às ações frequentes. Estilos em `src/art.css`, sep
 - **Onde o camarão toca** mudou: antes era só a apresentação. Agora são três lugares, todos de
   celebração ou descoberta (apresentação, camarão do início, fim da compra). O som das ações
   frequentes continua seco e mecânico, em `sound.ts`.
+
+## Navegação e transições (22/09/2026)
+Pedido do Lucas: foco em transições de tela e fluxos, no padrão Apple. Tudo em `Stage.tsx`.
+
+- **Zoom do iOS 18** (`zoomFrom`): tocar numa linha do início (mercado, contas, desejos, "te deve")
+  faz a própria linha crescer até virar a tela do módulo — recorte que abre do retângulo da linha até
+  a tela, canto arredondando no caminho, conteúdo crescendo do centro da linha e só aparecendo quando
+  já há espaço. O início esmaece e recua 4%. Voltar encolhe de volta para a linha e o cartão se
+  dissolve nela no fim. **Arrastar da borda esquerda encolhe seguindo o dedo**, e a tela vai junto.
+- **Empurrar** continua para o que vem da barra ou do menu, onde não há elemento de origem: desliza
+  da direita, o início recua 28% com o mesmo deslocamento.
+- **A mola de saída herda a velocidade do dedo**: soltar rápido continua no mesmo embalo, em vez de
+  recomeçar do zero.
+- **Entre módulos, o novo entra do lado da aba dele** (ordem da barra): de mercado para desejos, vem
+  da direita; de desejos para mercado, da esquerda. Os dois se cruzam por um instante.
+- **Folhas empurram o app para trás**: com o menu ou as configurações abertos, o app inteiro vira um
+  cartão que recua (escala 0,92, cantos arredondados, logo abaixo do relógio), com preto atrás, como
+  as folhas do iOS fazem com a tela de baixo. Por isso o Stage tem um `.stage-card` por dentro.
+- **A marca voa do letreiro para o cabeçalho**: "despensa" do `Overture` e do cabeçalho do início são
+  a mesma peça (`layoutId="marca"`), então ao terminar de carregar a palavra sobe do meio da tela para
+  o topo enquanto o início aparece. `?demo=1&abrindo=1` mostra.
+- Com Reduzir Movimento, tudo troca na hora.
+- Percursos em `e2e/navegacao.e2e.ts`. O zoom só aceita o arrasto da borda depois de ocupar a tela
+  inteira: enquanto cresce, a borda ainda não existe ali.
 
 ## Redesign mobile (19/09/2026)
 - **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).

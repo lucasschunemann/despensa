@@ -1,5 +1,4 @@
 import { editionNumber, moonName, moonPath, moonPhase } from '../lib/atmosphere'
-import { PEOPLE } from '../lib/types'
 
 const DATE = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
@@ -23,7 +22,6 @@ export function Colophon({ date = new Date() }: { date?: Date }) {
         <Moon phase={phase} />
         <span>{moonName(phase)}</span>
       </p>
-      <p className="colophon-names">feita por {PEOPLE.map((p) => p.toLowerCase()).join(' e ')}</p>
     </footer>
   )
 }
