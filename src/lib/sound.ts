@@ -12,6 +12,14 @@ interface AudioSession {
 }
 type NavigatorWithSession = Navigator & { audioSession?: AudioSession }
 
+/**
+ * O contexto é um só no app inteiro. O iPhone limita quantos existem e destravar
+ * um não destrava os outros, então o trio da apresentação usa este mesmo.
+ */
+export function audioContext(): AudioContext | null {
+  return context()
+}
+
 function context(): AudioContext | null {
   type WithWebkit = typeof window & { webkitAudioContext?: typeof AudioContext }
   const Ctor = window.AudioContext ?? (window as WithWebkit).webkitAudioContext

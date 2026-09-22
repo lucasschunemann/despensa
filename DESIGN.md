@@ -109,6 +109,16 @@ cartões, a pessoa faz os gestos de verdade do app.**
   contas, névoa lilás/menta/pêssego nos desejos. Cada cena entra e sai com uma transição
   própria, em vez do mesmo deslize.
 - **Tocar em qualquer lugar solta notas musicais** do dedo.
+- **O camarão toca de verdade** (`src/lib/jazz.ts`): saxofone sintetizado, contrabaixo
+  caminhando e vassourinha, em fá, a 96 bpm com a colcheia atrasada. O sax é feito de duas
+  serras desafinadas, dois filtros estreitos nas formantes do instrumento, sopro de ruído no
+  ataque e vibrato que entra depois. **Cada gesto da pessoa acrescenta a próxima nota de um
+  lick de blues** — a apresentação vai sendo tocada por quem usa. Pagar a conta ganha uma nota
+  escorregada; quando os dois querem o mesmo desejo, tocam duas notas juntas.
+  Fica fora de `sound.ts` de propósito: o som do app é seco e mecânico por decisão de design,
+  e este é o único lugar onde o camarão toca. O `AudioContext` é o mesmo do app (o iPhone
+  limita quantos existem e destravar um não destrava os outros), e a chavinha de som desliga
+  o trio junto.
 - **O fim é a barra de verdade**, com os mesmos ícones preenchidos e a lente de vidro na aba
   atual, para a última tela já ser o app.
 - **Aqui `prefers-reduced-motion` é ignorado de propósito**, a pedido do Lucas: a apresentação

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { haptic } from '../lib/haptics'
+import { jazz } from '../lib/jazz'
 import { sound } from '../lib/sound'
 import { Avatar, Mascot } from './Avatar'
 import { CloseIcon } from './ControlIcons'
@@ -42,6 +43,7 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
     requestAnimationFrame(() => dialog.current?.focus())
     return () => {
       if (palco) palco.inert = false
+      jazz.terminar()
       anterior?.focus()
     }
   }, [open])
@@ -50,7 +52,7 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
     setPasso((atual) => {
       if (atual >= CENAS.length - 1) return atual
       haptic('medium')
-      sound.open()
+      jazz.frase('virada')
       return atual + 1
     })
   }, [])
@@ -79,7 +81,9 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
 
   // Tocar em qualquer lugar espalha notas: o app inteiro responde ao dedo.
   function soltarNotas(event: React.PointerEvent<HTMLDivElement>) {
+    // O iPhone só libera áudio dentro de um gesto: o trio nasce no primeiro toque.
     sound.unlock()
+    jazz.comecar()
     setFaisca({ id: Date.now(), x: event.clientX, y: event.clientY })
   }
 
@@ -286,7 +290,7 @@ function Abertura({ nome, replay, onPronto }: { nome: string; replay: boolean; o
       </motion.p>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.35 }}>
-        <Botao onClick={onPronto}>bora</Botao>
+        <Botao onClick={() => { jazz.frase('abertura'); onPronto() }}>bora</Botao>
       </motion.div>
     </motion.section>
   )
@@ -308,11 +312,11 @@ function Escrever({ onPronto }: { onPronto: () => void }) {
 
   function enviar(ex: (typeof EXEMPLOS)[number]) {
     if (enviados.includes(ex.indice) || voando) return
-    sound.unlock(); sound.add(); haptic('medium')
+    sound.unlock(); jazz.comecar(); jazz.nota(); haptic('medium')
     setVoando(ex)
     setTimeout(() => {
       setAceso(ex.indice)
-      sound.drop(); haptic('light')
+      haptic('light')
       setVoando(null)
       setEnviados((antes) => [...antes, ex.indice])
       setTimeout(() => setAceso(null), 700)
@@ -405,7 +409,7 @@ function Pegar({ onPronto }: { onPronto: () => void }) {
 
   function pegar(nome: string) {
     if (pegos.includes(nome)) return
-    sound.unlock(); sound.pick(); haptic('medium')
+    sound.unlock(); jazz.comecar(); jazz.nota(); haptic('medium')
     setPegos((antes) => [...antes, nome])
     carrinho.start({ scale: [1, 1.3, 1], rotate: [0, -8, 6, 0], transition: { duration: .5 } })
   }
@@ -414,7 +418,7 @@ function Pegar({ onPronto }: { onPronto: () => void }) {
 
   useEffect(() => {
     if (!tudo) return
-    sound.complete(); haptic('success')
+    jazz.frase('virada'); haptic('success')
   }, [tudo])
 
   return (
@@ -535,11 +539,11 @@ function Pagar({ onPronto }: { onPronto: () => void }) {
 
   function pagar() {
     if (fase !== 'parado') return
-    sound.unlock(); sound.scan(); haptic('light')
+    sound.unlock(); jazz.comecar(); sound.scan(); haptic('light')
     setFase('lendo')
     setTimeout(() => {
       setFase('pago')
-      sound.stamp(); haptic('success')
+      sound.stamp(); jazz.bend(); haptic('success')
       setTimeout(() => sound.tear(), 320)
       setTimeout(() => sound.cash(), 460)
       // o botão só entra quando o canhoto já caiu, senão atropela a animação
@@ -637,7 +641,10 @@ function Desejar({ onPronto }: { onPronto: () => void }) {
   function querer() {
     const proximo = quem.length === 0 ? ['Lucas'] : ['Lucas', 'Bela']
     if (quem.length >= 2) return
-    sound.unlock(); sound.shimmer(); haptic(quem.length === 1 ? 'success' : 'light')
+    sound.unlock(); jazz.comecar()
+    if (quem.length === 1) jazz.dupla()
+    else jazz.nota()
+    haptic(quem.length === 1 ? 'success' : 'light')
     setQuem(proximo)
   }
 
@@ -699,7 +706,7 @@ function Desejar({ onPronto }: { onPronto: () => void }) {
 
 function Fim({ replay, onPronto }: { replay: boolean; onPronto: () => void }) {
   useEffect(() => {
-    const t = setTimeout(() => { sound.complete(); haptic('success') }, 500)
+    const t = setTimeout(() => { jazz.frase('final'); haptic('success') }, 500)
     return () => clearTimeout(t)
   }, [])
 
