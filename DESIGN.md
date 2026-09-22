@@ -126,6 +126,41 @@ cartões, a pessoa faz os gestos de verdade do app.**
 - O encanamento do GPT foi preservado inteiro: `src/lib/onboarding.ts` (cópia local + metadado
   da conta), o gatilho na primeira entrada e o "reassistir" nas configurações.
 
+## A peça (22/09/2026)
+Pedido do Lucas: tratar a experiência como obra, não como SaaS, sem mexer em marca, nome, fonte
+nem no preto e branco. A ideia que amarra tudo: **o app é um lugar com luz, papel e música**, e
+cada uso é uma pequena apresentação — com abertura, com fim e com assinatura. Nada disso
+acrescenta toque ou espera às ações frequentes. Estilos em `src/art.css`, separado de propósito.
+
+- **A luz da casa** (`Atmosphere`, `src/lib/atmosphere.ts`): de dia, a sombra dos caixilhos de
+  uma janela cai sobre o app inteiro e anda com o sol — entra pela esquerda de manhã, fica curta
+  e fraca ao meio-dia, sai comprida pela direita no fim da tarde. Folhas passam devagar pela luz.
+  De noite a janela some e as bordas escurecem, como um quarto de abajur. **Só escurece, nunca
+  clareia**: a tinta preta continua preta e o contraste só aumenta. Não pega toque, some com
+  `prefers-reduced-transparency`, para de mexer com `prefers-reduced-motion`.
+  `?demo=1&hora=7` mostra a luz das 7h.
+- **Grão de papel**: ruído fixo, quase invisível, rasterizado uma vez. É o que tira o "digital
+  demais" do branco.
+- **Letreiro de abertura** (`Overture`): ocupa exatamente a espera que já existia (sessão, perfil,
+  casa), no lugar do texto piscando. As letras de "despensa" sobem uma a uma, uma régua risca por
+  baixo e a legenda traz o que está acontecendo e o número da edição do dia. `?demo=1&abertura=1`.
+- **Saudação composta à mão**: no início, "boa tarde, Lucas." entra letra por letra, agrupada por
+  palavra para a quebra de linha nunca cortar palavra.
+- **O camarão toca** (`Shrimp`): tocar no camarão do início toca um lick curto no sax (o mesmo trio
+  da apresentação, `jazz.riff()`), com colcheias pretas saindo da campana. Os licks se alternam, então
+  quem toca de novo ouve a continuação. Não se anuncia: é para ser descoberto.
+- **Colofão** (`Colophon`): o início termina como um livro — "despensa · nº 265 · 22.09.2026", a
+  fase da lua daquela noite (calculada, desenhada em SVG) e "feita por bela e lucas". Cada dia é
+  uma edição.
+- **Créditos da compra** (`Credits`): segurar para finalizar agora termina como filme. "despensa
+  apresenta / a compra de terça", cada item pego com o emoji e quem lembrou dele, os gatos de quem
+  participou, quanto tempo a compra levou e "fim.". O camarão toca a resolução quando o fim chega.
+  Tocar em qualquer lugar pula; depois vem a pergunta do valor, como antes. Com Reduzir Movimento,
+  os créditos não rodam. Fica num portal no corpo da página, para cobrir a barra de navegação.
+- **Onde o camarão toca** mudou: antes era só a apresentação. Agora são três lugares, todos de
+  celebração ou descoberta (apresentação, camarão do início, fim da compra). O som das ações
+  frequentes continua seco e mecânico, em `sound.ts`.
+
 ## Redesign mobile (19/09/2026)
 - **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).
 - **Cabeçalho**: voltar e menu são botões redondos de vidro; ao rolar, o cabeçalho vira vidro com régua fina.

@@ -1,6 +1,6 @@
 // Só existe em desenvolvimento (?demo=1): roda a interface com dados de mentira,
 // sem Supabase e sem tocar na lista real.
-// Variações: &vazio=1, &quem=1, &digitando=1, &contas=1
+// Variações: &vazio=1, &quem=1, &digitando=1, &contas=1, &abertura=1 (letreiro de abertura), &hora=7 (luz das 7h)
 import { useCallback, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { PersonPicker } from '../App'
@@ -10,6 +10,7 @@ import { HomeScreen } from '../components/HomeScreen'
 import { ListScreen } from '../components/ListScreen'
 import { MenuSheet, type View } from '../components/MenuSheet'
 import { Onboarding } from '../components/Onboarding'
+import { Overture } from '../components/Overture'
 import { ReactionBurst } from '../components/ReactionBurst'
 import { Stage } from '../components/Stage'
 import { UserSettingsSheet } from '../components/UserSettingsSheet'
@@ -339,6 +340,8 @@ export default function DemoApp() {
     notifyTyping: () => {},
     sendReaction: (emoji, about) => setReaction({ id: Date.now(), person: 'Lucas', emoji, about }),
   }
+
+  if (params.has('abertura')) return <Overture label="abrindo sua casa…" />
 
   if (params.has('quem')) {
     return (

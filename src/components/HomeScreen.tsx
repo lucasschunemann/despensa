@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Fragment, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Presence } from '../hooks/usePresence'
@@ -13,7 +13,9 @@ import { sound } from '../lib/sound'
 import { PEOPLE } from '../lib/types'
 import { forecast, sortWishes, whenLabel } from '../lib/wishes'
 import { AppHeader } from './AppHeader'
-import { Avatar, Mascot } from './Avatar'
+import { Colophon } from './Colophon'
+import { Shrimp } from './Shrimp'
+import { Avatar } from './Avatar'
 import type { View } from './MenuSheet'
 
 type CaptureMode = 'lista' | 'contas' | 'desejos'
@@ -137,7 +139,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
         <motion.section className="home-hello" {...reveal(0)}>
           <div className="home-hello-text">
             <span className="home-kicker">{TODAY.format(new Date())}</span>
-            <h2>{greeting()}, {me}.</h2>
+            <h2 aria-label={`${greeting()}, ${me}.`}><Letters text={`${greeting()}, ${me}.`} reduced={Boolean(reduced)} /></h2>
             <AnimatePresence initial={false}>
               {note && <motion.p key={note} className="home-hello-note" initial={reduced ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: .22 }}>{note}</motion.p>}
             </AnimatePresence>
@@ -148,7 +150,7 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
             animate={{ opacity: 1, scale: 1, y: reduced ? 0 : [0, -5, 0], rotate: reduced ? 0 : [0, -1.6, 1, 0] }}
             transition={{ opacity: { duration: .4 }, scale: { type: 'spring', stiffness: 260, damping: 22 }, y: { duration: 4.6, repeat: Infinity, ease: 'easeInOut' }, rotate: { duration: 6.4, repeat: Infinity, ease: 'easeInOut' } }}
           >
-            <Mascot size={78} />
+            <Shrimp size={78} />
           </motion.div>
         </motion.section>
 
@@ -196,11 +198,30 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
           </div>
           {month.debt && <motion.button className="home-balance-note" onClick={() => open('contas')} whileTap={{ scale: .985 }}><Avatar person={month.debt.from} size={22} /><span>{month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}</span><Chevron /></motion.button>}
         </motion.section>
+
+        <Colophon />
       </div>
     </div>
   )
 }
 
+/** A saudação entra letra por letra, como tipo sendo composto; só na primeira vez.
+    As letras ficam agrupadas por palavra, para a quebra de linha nunca cortar uma palavra. */
+function Letters({ text, reduced }: { text: string; reduced: boolean }) {
+  if (reduced) return <>{text}</>
+  let index = 0
+  return <>{text.split(' ').map((word, w) => (
+    <Fragment key={w}>
+      {w > 0 && ' '}
+      <span aria-hidden style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+        {word.split('').map((letter) => {
+          const delay = .12 + index++ * .022
+          return <motion.span key={index} style={{ display: 'inline-block' }} initial={{ opacity: 0, y: 10, rotate: 4 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 26, delay }}>{letter}</motion.span>
+        })}
+      </span>
+    </Fragment>
+  ))}</>
+}
 function HomeRow({ className, label, value, detail, icon, onClick, index }: { className: string; label: string; value: string; detail: string; icon: ReactNode; onClick: () => void; index: number }) {
   return (
     <motion.button

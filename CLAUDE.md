@@ -231,6 +231,16 @@ escala de texto do iPhone em tokens (`--t-*`) e margem única (`--gutter`); sons
 A estrutura das contas muda com a largura (`useMediaQuery('(min-width: 760px)')`): barra lateral no
 tablet/computador, faixa de chips no celular.
 
+## A peça (22/09/2026)
+Pedido do Lucas: o app como obra de arte, mantendo marca, nome, fonte e preto e branco. Detalhes em
+DESIGN.md ("A peça"). Resumo: **luz da casa** por cima de tudo (sombra de janela que anda com o sol;
+de noite, bordas escuras; só escurece, nunca pega toque), **grão de papel**, **letreiro de abertura**
+no lugar do "carregando", saudação letra por letra, **camarão que toca sax** quando alguém toca nele
+no início, **colofão** no fim do início (edição do dia + fase da lua) e **créditos da compra** ao
+finalizar o mercado, antes de perguntar o valor. Estilos em `src/art.css`; contas puras em
+`src/lib/atmosphere.ts`; percursos em `e2e/obra.e2e.ts`. O camarão agora toca em três lugares
+(apresentação, início, fim da compra); o resto do som continua seco.
+
 ## Revisão de UX e push (17/09/2026)
 
 Direção em PRODUCT.md e DESIGN.md. Início tem entrada rápida, lista tem busca e progresso; menu tem preview e teste de avisos, foco contido e fundo inert. A base de bilhetes e desejos foi preservada. A nova migration de push foi aplicada diretamente no banco existente, cujas migrations antigas também haviam sido aplicadas manualmente. Não rode db push cegamente nesse banco: o histórico remoto não reflete as migrations anteriores.

@@ -53,6 +53,11 @@ test('editar item pelo toque longo', async ({ page }) => {
 
 test('finalizar: o carrinho vai embora e pergunta quanto deu', async ({ page }) => {
   await hold(page, page.locator('.button-hold'), 760)
+  // antes de perguntar, a compra rola os créditos; tocar pula
+  const credits = page.getByRole('dialog', { name: 'Compra finalizada' })
+  await expect(credits).toBeVisible({ timeout: 3000 })
+  await expect(credits).toContainText('tomate')
+  await credits.getByRole('button', { name: 'pular' }).click()
   await expect(page.locator('.market-bill')).toBeVisible({ timeout: 3000 })
   await expect(page.locator('.cart')).toHaveCount(0)
 })

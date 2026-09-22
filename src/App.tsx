@@ -9,6 +9,7 @@ import { HomeScreen } from './components/HomeScreen'
 import { ListScreen } from './components/ListScreen'
 import { MenuSheet, type View } from './components/MenuSheet'
 import { Onboarding } from './components/Onboarding'
+import { Overture } from './components/Overture'
 import { ReactionBurst } from './components/ReactionBurst'
 import { Stage } from './components/Stage'
 import { UserSettingsSheet } from './components/UserSettingsSheet'
@@ -188,7 +189,8 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   </>
 }
 
-function Loading({ label }: { label: string }) { return <Gate title="despensa"><motion.p className="gate-text" animate={{ opacity: [.35, 1, .35] }} transition={{ duration: 1.6, repeat: Infinity }}>{label}</motion.p></Gate> }
+// A espera de abrir a casa vira o letreiro de abertura (ver Overture).
+function Loading({ label }: { label: string }) { return <Overture label={label} /> }
 
 // Mantido no modo de demonstração para revisar a tela histórica de escolha de pessoa.
 export function PersonPicker({ onPick }: { onPick: (person: string) => void }) {

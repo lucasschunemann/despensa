@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Presence } from '../hooks/usePresence'
 import { useViewportFit } from '../hooks/useViewportFit'
@@ -15,6 +16,7 @@ import { AppHeader } from './AppHeader'
 import { Avatar } from './Avatar'
 import { CompleteOverlay } from './CompleteOverlay'
 import { Composer } from './Composer'
+import { Credits } from './Credits'
 import { CloseIcon } from './ControlIcons'
 import { EditCard } from './EditCard'
 import { CartIcon, CartSection, MarketRow, ProductMark } from './Market'
@@ -57,6 +59,7 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
   const [flights, setFlights] = useState<Flight[]>([])
   const [cartBump, setCartBump] = useState(0)
   const [rolling, setRolling] = useState(false)
+  const [credits, setCredits] = useState<Item[] | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
 
   const scroller = useRef<HTMLDivElement>(null)
@@ -167,15 +170,18 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
   }
 
   // finalizar: o carrinho vai embora rodando e a compra fecha
+  // depois do carrinho, rolam os créditos da compra; só então pergunta quanto deu
   const handleFinish = () => {
     haptic('success')
     setRolling(true)
+    const picked = items.filter((item) => item.status === 'pegado')
     setTimeout(
       () => {
         sound.complete()
         finishShopping()
         setRolling(false)
-        if (onRegisterMarket) setAskAmount(true)
+        if (picked.length && !reduced) setCredits(picked)
+        else if (onRegisterMarket) setAskAmount(true)
       },
       reduced ? 0 : 950,
     )
@@ -482,6 +488,13 @@ export function ListScreen({ store, me, presence, onOpenMenu, onHome, onRegister
         {egg && <Toss key={egg.id} emoji={egg.emoji} onDone={() => setEgg(null)} />}
       </AnimatePresence>
       <CompleteOverlay show={celebrating} label="tudo no carrinho" />
+      {/* no corpo da página: dentro do módulo, a barra de navegação ficaria por cima do filme */}
+      {createPortal(
+        <AnimatePresence>
+          {credits && <Credits key="creditos" items={credits} onDone={() => { setCredits(null); if (onRegisterMarket) setAskAmount(true) }} />}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   )
 }

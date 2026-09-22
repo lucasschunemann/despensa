@@ -1,0 +1,337 @@
+/* ─── A peça ────────────────────────────────────────────────────────────────
+   Camada que trata o app como uma obra, não como painel: a luz da casa cai sobre o papel,
+   o papel tem grão, a abertura é um letreiro, a compra termina com créditos e o camarão
+   toca quando alguém toca nele. Tudo monocromático; a cor segue sendo só da marca. */
+
+:root {
+  --shade: rgb(20 18 14 / 0.036);
+  --shade-soft: rgb(20 18 14 / 0.022);
+  --grain-opacity: 0.05;
+  --vignette: rgb(20 18 14 / 0.075);
+}
+
+:root[data-theme='dark'] {
+  --shade: rgb(0 0 0 / 0.22);
+  --shade-soft: rgb(0 0 0 / 0.12);
+  --grain-opacity: 0.07;
+  --vignette: rgb(0 0 0 / 0.34);
+}
+
+/* ─── Luz da casa ───────────────────────────────────────────────────────── */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+
+/* A janela: o retângulo é a luz que entra; a sombra enorme em volta é o resto da parede.
+   Os caixilhos são gradientes de borda macia, e o giro/inclinação vem da hora. */
+.atmosphere-window {
+  position: absolute;
+  top: 44%;
+  width: min(82vw, 520px);
+  height: 64vh;
+  border-radius: 2px;
+  box-shadow: 0 0 90px 220vmax var(--shade);
+  background:
+    linear-gradient(90deg, transparent calc(50% - 16px), var(--shade) calc(50% - 5px), var(--shade) calc(50% + 5px), transparent calc(50% + 16px)),
+    linear-gradient(180deg, transparent calc(46% - 16px), var(--shade) calc(46% - 5px), var(--shade) calc(46% + 5px), transparent calc(46% + 16px));
+  transition: left 4s var(--ease-glass), opacity 4s ease, transform 4s var(--ease-glass);
+  will-change: transform;
+}
+
+/* Folhas do lado de fora da janela: manchas que passam devagar pela luz. */
+.atmosphere-leaves {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(28% 18% at 22% 30%, var(--shade-soft), transparent 70%),
+    radial-gradient(22% 26% at 70% 20%, var(--shade-soft), transparent 70%),
+    radial-gradient(30% 16% at 60% 76%, var(--shade-soft), transparent 70%),
+    radial-gradient(16% 20% at 30% 82%, var(--shade-soft), transparent 70%);
+  animation: leaves 26s ease-in-out infinite alternate;
+}
+
+@keyframes leaves {
+  0% { transform: translate3d(-3%, -2%, 0) rotate(-2deg); opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { transform: translate3d(4%, 3%, 0) rotate(2deg); opacity: 0.8; }
+}
+
+/* De noite não entra janela: as bordas escurecem, como um quarto com abajur. */
+.atmosphere.is-noite {
+  background: radial-gradient(120% 90% at 50% 38%, transparent 52%, var(--vignette));
+}
+
+/* Grão de papel de gravura: fixo, rasterizado uma vez, quase invisível. */
+.atmosphere-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.6 -.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+:root[data-theme='dark'] .atmosphere-grain { filter: invert(1); mix-blend-mode: normal; }
+
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere-leaves { animation: none; }
+  .atmosphere-window { transition: none; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .atmosphere { display: none; }
+}
+
+/* ─── Abertura: o letreiro ──────────────────────────────────────────────── */
+.overture {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--text);
+  padding: 24px;
+}
+
+.overture-inner {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.overture-word {
+  display: flex;
+  margin: 0;
+  font-size: clamp(54px, 17vw, 96px);
+  font-weight: 640;
+  letter-spacing: -0.055em;
+  line-height: 0.9;
+}
+
+.overture-word span { display: inline-block; }
+
+.overture-rule {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: var(--ink);
+  transform-origin: left center;
+}
+
+.overture-caption {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  font-family: var(--font-numeric);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.overture-mark {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 36px);
+  left: 50%;
+  translate: -50% 0;
+}
+
+/* ─── Início: o camarão toca ────────────────────────────────────────────── */
+.home-brand { position: relative; }
+
+.shrimp-button {
+  display: block;
+  line-height: 0;
+  border-radius: 50%;
+  touch-action: manipulation;
+}
+
+.shrimp-note {
+  position: absolute;
+  top: 18%;
+  right: 10%;
+  width: 16px;
+  height: 20px;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.shrimp-note svg { width: 100%; height: 100%; fill: currentColor; }
+
+/* ─── Colofão: cada dia é uma edição ────────────────────────────────────── */
+.colophon {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 56px auto 0;
+  padding: 0 var(--gutter, 20px) calc(var(--dock-h) + var(--dock-gap) + 36px);
+  color: var(--text-3);
+  text-align: center;
+}
+
+.colophon-rule {
+  width: 28px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.colophon-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-numeric);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.colophon-names {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: -0.005em;
+  color: var(--text-3);
+}
+
+.moon {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.moon circle { fill: none; stroke: currentColor; stroke-width: 1.2; opacity: 0.55; }
+.moon path { fill: currentColor; }
+
+/* ─── Créditos da compra ────────────────────────────────────────────────── */
+.credits {
+  position: fixed;
+  inset: 0;
+  /* acima da barra de navegação: o filme ocupa a tela inteira */
+  z-index: 200;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(22px) saturate(0.6);
+  -webkit-backdrop-filter: blur(22px) saturate(0.6);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.credits::before,
+.credits::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 22%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.credits::before { top: 0; background: linear-gradient(var(--bg), transparent); }
+.credits::after { bottom: 0; background: linear-gradient(transparent, var(--bg)); }
+
+.credits-roll {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: min(100% - 2 * var(--gutter, 20px), 360px);
+  translate: -50% 0;
+  display: grid;
+  justify-items: center;
+  gap: 28px;
+  text-align: center;
+}
+
+.credits-kicker {
+  margin: 0;
+  font-family: var(--font-numeric);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--text-2);
+}
+
+.credits-title {
+  margin: -16px 0 0;
+  font-size: 34px;
+  font-weight: 640;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.credits-list {
+  display: grid;
+  width: 100%;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credits-list li {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.credits-role {
+  justify-self: end;
+  font-size: 15px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  text-align: right;
+}
+
+.credits-emoji { font-size: 15px; }
+
+.credits-name {
+  justify-self: start;
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.credits-rule { width: 28px; height: 1px; background: var(--ink); opacity: 0.4; }
+
+.credits-cast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.credits-end {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding-bottom: 38vh;
+}
+
+.credits-end strong {
+  font-size: 44px;
+  font-weight: 640;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.credits-skip {
+  position: absolute;
+  right: var(--gutter, 20px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  z-index: 2;
+  font-size: 13px;
+  color: var(--text-2);
+}

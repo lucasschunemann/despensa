@@ -218,6 +218,15 @@ function parar() {
   if (relogio !== null) { clearInterval(relogio); relogio = null }
 }
 
+/** [nota, atraso, duração, escorrega?] — todos na escala de blues em fá, como o lick da apresentação. */
+const RIFFS: Array<Array<[number, number, number, boolean?]>> = [
+  [[65, 0, 0.16], [68, 0.14, 0.16], [70, 0.28, 0.16], [72, 0.42, 0.5, true]],
+  [[77, 0, 0.18], [75, 0.16, 0.14], [72, 0.3, 0.14], [70, 0.44, 0.14], [68, 0.58, 0.55, true]],
+  [[71, 0, 0.12, true], [72, 0.12, 0.22], [70, 0.34, 0.14], [65, 0.5, 0.6]],
+  [[72, 0, 0.14], [72, 0.2, 0.14], [75, 0.36, 0.3, true], [72, 0.7, 0.5]],
+]
+let proximoRiff = 0
+
 export const jazz = {
   /** Começa o trio. Só pode ser chamado de dentro de um gesto (regra do iPhone). */
   comecar() {
@@ -267,6 +276,22 @@ export const jazz = {
     if (!c) return
     sax(c, c.currentTime, 65, 0.6, { ganho: 0.1 })
     sax(c, c.currentTime + 0.01, 72, 0.6, { ganho: 0.09 })
+  },
+
+  /**
+   * Um lick curto, a cada toque no camarão do início. Vão se alternando, para quem
+   * toca de novo ouvir a continuação e não a mesma frase.
+   */
+  riff() {
+    if (!prefs.soundOn()) return
+    const c = contexto()
+    if (!c) return
+    const linha = RIFFS[proximoRiff % RIFFS.length]
+    proximoRiff += 1
+    const agora = c.currentTime
+    for (const [nota, atraso, duracao, escorrega] of linha) {
+      sax(c, agora + atraso, nota, duracao, { ganho: 0.12, escorrega: Boolean(escorrega) })
+    }
   },
 
   /** Frases curtas: abertura, virada entre cenas e a resolução do fim. */
