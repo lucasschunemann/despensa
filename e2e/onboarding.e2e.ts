@@ -20,10 +20,26 @@ test('apresentação explica o produto e entrega o usuário no início', async (
   }
 
   await expect(progress).toHaveAttribute('aria-valuenow', '5')
-  await dialog.getByRole('button', { name: 'abrir minha despensa' }).click()
+  await dialog.getByRole('button', { name: 'começar a usar' }).click()
   await expect(dialog).toHaveCount(0)
   await expect(page.locator('.home-hello')).toBeVisible()
   expect(errors).toEqual([])
+})
+
+test('rodapé permanece alinhado no menor iPhone suportado', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await open(page, '&onboarding=1')
+  const dialog = page.locator('.onboarding')
+
+  await dialog.getByRole('button', { name: 'começar' }).click()
+  for (let step = 0; step < 3; step++) await dialog.getByRole('button', { name: 'continuar' }).click()
+
+  const count = await page.locator('.onboarding-count').boundingBox()
+  const back = await dialog.getByRole('button', { name: 'Voltar uma etapa' }).boundingBox()
+  const next = await dialog.getByRole('button', { name: 'começar a usar' }).boundingBox()
+  expect(count?.height).toBeLessThan(24)
+  expect(back && next && back.x + back.width < next.x).toBe(true)
+  expect(next && next.x + next.width <= 320).toBe(true)
 })
 
 test('configurações permite reassistir à apresentação', async ({ page }) => {

@@ -24,7 +24,6 @@ const EASE = [0.16, 1, 0.3, 1] as const
 export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
   const reduced = useReducedMotion()
   const dialog = useRef<HTMLDivElement>(null)
-  const primary = useRef<HTMLButtonElement>(null)
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)
   const scenes: Scene[] = [
@@ -67,7 +66,7 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
     const previous = document.activeElement as HTMLElement | null
     const stage = document.querySelector<HTMLElement>('.stage')
     if (stage) stage.inert = true
-    requestAnimationFrame(() => primary.current?.focus())
+    requestAnimationFrame(() => dialog.current?.focus())
     return () => {
       if (stage) stage.inert = false
       previous?.focus()
@@ -78,6 +77,7 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
     if (next < 0 || next >= scenes.length) return
     setDirection(next > step ? 1 : -1)
     setStep(next)
+    requestAnimationFrame(() => dialog.current?.focus({ preventScroll: true }))
     haptic('light')
     sound.tick()
   }
@@ -113,6 +113,7 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
           <motion.div
             ref={dialog}
             className="onboarding"
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="onboarding-title"
@@ -166,9 +167,9 @@ export function Onboarding({ open, name, replay = false, onDismiss }: Props) {
             <footer className="onboarding-footer">
               <div className="onboarding-count"><strong>{String(step + 1).padStart(2, '0')}</strong><span>/ {String(scenes.length).padStart(2, '0')}</span></div>
               <div className="onboarding-actions">
-                <AnimatePresence initial={false}>{step > 0 && <motion.button type="button" className="onboarding-back" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} onClick={() => move(step - 1)}>voltar</motion.button>}</AnimatePresence>
-                <motion.button ref={primary} type="button" className="onboarding-next" whileTap={{ scale: .97 }} onClick={next}>
-                  <span>{step === scenes.length - 1 ? (replay ? 'voltar ao app' : 'abrir minha despensa') : step === 0 ? 'começar' : 'continuar'}</span>
+                <AnimatePresence initial={false}>{step > 0 && <motion.button type="button" className="onboarding-back" aria-label="Voltar uma etapa" initial={{ opacity: 0, scale: .9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: .9 }} whileTap={{ scale: .94 }} onClick={() => move(step - 1)}><BackIcon /></motion.button>}</AnimatePresence>
+                <motion.button type="button" className="onboarding-next" whileTap={{ scale: .97 }} onClick={next}>
+                  <span>{step === scenes.length - 1 ? (replay ? 'voltar ao app' : 'começar a usar') : step === 0 ? 'começar' : 'continuar'}</span>
                   <ArrowIcon done={step === scenes.length - 1} />
                 </motion.button>
               </div>
@@ -217,7 +218,7 @@ function OrganizeArt({ reduced }: { reduced: boolean | null }) {
   const folders = [{ name: 'casa', total: 'R$ 2.167', progress: 72 }, { name: 'pessoal', total: 'R$ 179', progress: 35 }]
   return <div className="organize-demo">
     <div className="folder-tabs">{folders.map((item, index) => <button type="button" tabIndex={-1} key={item.name} className={folder === index ? 'is-active' : ''} onClick={() => setFolder(index)}>{folder === index && <motion.i layoutId="onboarding-folder" transition={{ duration: reduced ? 0 : .3, ease: EASE }} />}<span>{item.name}</span></button>)}</div>
-    <AnimatePresence mode="wait"><motion.div className="folder-summary" key={folder} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><span>falta pagar</span><strong>{folders[folder].total}</strong><div className="folder-meter"><motion.i initial={{ scaleX: 0 }} animate={{ scaleX: folders[folder].progress / 100 }} transition={{ duration: reduced ? 0 : .7, ease: EASE }} /></div><small>{folders[folder].progress}% organizado este mês</small></motion.div></AnimatePresence>
+    <AnimatePresence mode="wait"><motion.div className="folder-summary" key={folder} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}><span>falta pagar</span><strong>{folders[folder].total}</strong><div className="folder-meter"><motion.i initial={{ scaleX: 0 }} animate={{ scaleX: folders[folder].progress / 100 }} transition={{ duration: reduced ? 0 : .7, ease: EASE }} /></div><small>{folders[folder].progress}% organizado</small></motion.div></AnimatePresence>
     <div className="receipt-stack">{(folder === 0 ? ['aluguel', 'luz', 'internet'] : ['academia', 'telefone']).map((name, index) => <motion.span layout key={name} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: reduced ? 0 : index * .07 }}><i>{index + 1}</i>{name}<b>{index === 2 || folder === 1 ? 'pago' : 'pendente'}</b></motion.span>)}</div>
   </div>
 }
@@ -226,9 +227,16 @@ function ReadyArt({ reduced }: { reduced: boolean | null }) {
   return <div className="ready-demo">
     <motion.div className="ready-ring" initial={{ scale: .7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: reduced ? 0 : .6, ease: EASE }}><Mascot size={118} /><motion.svg viewBox="0 0 100 100" animate={reduced ? undefined : { rotate: 360 }} transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}><circle cx="50" cy="50" r="47" /></motion.svg></motion.div>
     <motion.div className="push-bubble" initial={{ opacity: 0, y: 18, scale: .96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: reduced ? 0 : .28, duration: .44, ease: EASE }}><span className="push-logo"><Mascot size={36} /></span><span><strong>conta paga</strong><small>Bela pagou a internet</small></span><time>agora</time></motion.div>
-    <div className="ready-dock">{['⌂', '▣', '▤', '♡'].map((icon, index) => <motion.i key={icon} className={index === 0 ? 'is-active' : ''} animate={index === 0 && !reduced ? { scale: [1, 1.12, 1] } : undefined} transition={{ duration: 2, repeat: Infinity }}>{icon}</motion.i>)}</div>
+    <div className="ready-dock">{(['home', 'market', 'bills', 'wishes'] as const).map((icon, index) => <motion.i key={icon} className={index === 0 ? 'is-active' : ''} animate={index === 0 && !reduced ? { scale: [1, 1.1, 1] } : undefined} transition={{ duration: 2, repeat: Infinity }}><MiniNavIcon name={icon} /></motion.i>)}</div>
   </div>
 }
 
 function ArrowIcon({ done }: { done: boolean }) { return <motion.svg viewBox="0 0 24 24" aria-hidden animate={{ rotate: done ? -45 : 0 }}><path d="M5 12h13M14 7l5 5-5 5" /></motion.svg> }
+function BackIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="m14.5 6-6 6 6 6" /></svg> }
 function BagIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M5 8h14l-1 12H6Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg> }
+function MiniNavIcon({ name }: { name: 'home' | 'market' | 'bills' | 'wishes' }) {
+  if (name === 'home') return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 11 12 4l8 7v9h-5.8v-5.6H9.8V20H4Z" /></svg>
+  if (name === 'market') return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 9h16l-1.4 11H5.4Z"/><path className="mini-nav-stroke" d="M8.5 9a3.5 3.5 0 0 1 7 0"/></svg>
+  if (name === 'bills') return <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8Z"/><path className="mini-nav-cut" d="M9 8h6M9 12h6"/></svg>
+  return <svg viewBox="0 0 24 24" aria-hidden><path d="m12 20-7.2-7.1a4.5 4.5 0 0 1 6.4-6.4l.8.8.8-.8a4.5 4.5 0 0 1 6.4 6.4Z" /></svg>
+}
