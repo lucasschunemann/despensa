@@ -92,6 +92,30 @@ Fonte: <https://developer.apple.com/design/human-interface-guidelines/tab-bars>.
 - Texto: fragmento curto e concreto, sem ponto final e sem frase de efeito. Onde não há o que dizer, não entra linha nenhuma. A linha abaixo do campo devolve o que o app entendeu do que está escrito.
 - O cabeçalho mostra só a marca escrita. A ilustração não entra em barra de navegação: ela aparece grande no início.
 
+## Apresentação (22/09/2026)
+Refeita na parte visual. A anterior era o padrão de mercado — cartão, barra de progresso,
+arte, título, "continuar" — e foi trocada por uma ideia diferente: **em vez de ler cinco
+cartões, a pessoa faz os gestos de verdade do app.**
+
+- **Seis cenas, quatro delas interativas.** Escrever manda um exemplo para o destino certo;
+  pegar é arrastar a linha para a direita; pagar é o canhoto do bilhete, com laser, carimbo e
+  o canhoto caindo; desejar é o coração até os dois quererem. O gesto ensinado é o mesmo do
+  módulo, então a apresentação treina em vez de narrar.
+- **O botão de avançar nasce depois do gesto**, nunca antes. Quem não faz, não avança — e quem
+  não quer usa "pular", sempre visível.
+- **Progresso é uma pauta musical** com o camarão pulando de nota em nota (`layoutId`), no lugar
+  dos pontinhos.
+- **O fundo troca de língua junto com a cena**: papel liso, grade de papel milimetrado nas
+  contas, névoa lilás/menta/pêssego nos desejos. Cada cena entra e sai com uma transição
+  própria, em vez do mesmo deslize.
+- **Tocar em qualquer lugar solta notas musicais** do dedo.
+- **O fim é a barra de verdade**, com os mesmos ícones preenchidos e a lente de vidro na aba
+  atual, para a última tela já ser o app.
+- **Aqui `prefers-reduced-motion` é ignorado de propósito**, a pedido do Lucas: a apresentação
+  É a animação. O resto do app continua respeitando.
+- O encanamento do GPT foi preservado inteiro: `src/lib/onboarding.ts` (cópia local + metadado
+  da conta), o gatilho na primeira entrada e o "reassistir" nas configurações.
+
 ## Redesign mobile (19/09/2026)
 - **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).
 - **Cabeçalho**: voltar e menu são botões redondos de vidro; ao rolar, o cabeçalho vira vidro com régua fina.
