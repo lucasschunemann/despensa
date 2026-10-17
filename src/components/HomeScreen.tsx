@@ -1,8 +1,6 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Fragment, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useRef, useState } from 'react'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
-import type { Presence } from '../hooks/usePresence'
 import type { WishesStore } from '../hooks/useWishes'
 import { useViewportFit } from '../hooks/useViewportFit'
 import { summarize } from '../lib/balance'
@@ -12,24 +10,18 @@ import { parseEntry } from '../lib/parse'
 import { sound } from '../lib/sound'
 import { PEOPLE } from '../lib/types'
 import { forecast, sortWishes, whenLabel } from '../lib/wishes'
-import { AppHeader } from './AppHeader'
-import { Colophon } from './Colophon'
-import { Shrimp } from './Shrimp'
-import { zoomFrom } from './Stage'
 import { Avatar } from './Avatar'
-import type { View } from './MenuSheet'
+import type { View } from './TabBar'
+import { Composer, Group, Icon, Row, Screen, Segmented } from './ui'
 
 type CaptureMode = 'lista' | 'contas' | 'desejos'
 
 interface Props {
   me: string
-  presence: Presence
   items: ItemsStore
   expenses: ExpensesStore
   wishes: WishesStore
   onOpen: (view: View) => void
-  onOpenMenu: () => void
-  onOpenSettings: () => void
 }
 
 const TODAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -42,20 +34,18 @@ function greeting(date = new Date()) {
   return 'boa noite'
 }
 
-const CAPTURE: Record<CaptureMode, { label: string; aria: string; placeholder: string; action: string }> = {
-  lista: { label: 'mercado', aria: 'Adicionar ao mercado', placeholder: 'ex.: 2 leites', action: 'Adicionar à lista' },
-  contas: { label: 'conta', aria: 'Adicionar conta', placeholder: 'ex.: internet 129,90 dia 15', action: 'Adicionar conta' },
-  desejos: { label: 'desejo', aria: 'Adicionar desejo', placeholder: 'ex.: poltrona 1.490', action: 'Adicionar desejo' },
+const CAPTURE: Record<CaptureMode, { aria: string; placeholder: string; action: string; where: string }> = {
+  lista: { aria: 'Adicionar ao mercado', placeholder: '2 leites', action: 'Adicionar à lista', where: 'na lista' },
+  contas: { aria: 'Adicionar conta', placeholder: 'internet 129,90 dia 15', action: 'Adicionar conta', where: 'nas contas' },
+  desejos: { aria: 'Adicionar desejo', placeholder: 'poltrona 1.490', action: 'Adicionar desejo', where: 'nos desejos' },
 }
 
-export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOpenMenu, onOpenSettings }: Props) {
-  const reduced = useReducedMotion()
+export function HomeScreen({ me, items, expenses, wishes, onOpen }: Props) {
+  useViewportFit()
   const input = useRef<HTMLInputElement>(null)
-  const [scrolled, setScrolled] = useState(false)
   const [mode, setMode] = useState<CaptureMode>('lista')
   const [entry, setEntry] = useState('')
   const [feedback, setFeedback] = useState('')
-  useViewportFit()
 
   const pendingItems = items.items.filter((item) => item.status === 'pendente')
   const cartItems = items.items.filter((item) => item.status === 'pegado')
@@ -69,182 +59,123 @@ export function HomeScreen({ me, presence, items, expenses, wishes, onOpen, onOp
   const nextWhen = nextWish ? whenLabel(plan.get(nextWish.id)?.monthsAway ?? null) : null
   const ready = items.ready && expenses.ready && wishes.ready
 
-  // A linha só existe quando tem o que dizer. Sem pendência, o lugar dela vira respiro.
-  const note = !ready
-    ? 'sincronizando'
-    : overdue
-      ? `${overdue} ${overdue === 1 ? 'conta atrasada' : 'contas atrasadas'}`
-      : pendingItems.length + pendingBills.length === 0
-        ? 'tudo em dia'
-        : null
-
   const parsedMarket = mode === 'lista' ? parseEntry(entry) : null
   const parsedMoney = mode !== 'lista' ? parseExpenseEntry(entry) : null
   const canSubmit = mode === 'lista' ? Boolean(parsedMarket && items.ready) : Boolean(parsedMoney && (mode === 'contas' ? expenses.ready : wishes.ready))
 
-  // a linha tocada vira a tela do módulo (zoom do iOS); sem elemento, o módulo vem deslizando
-  const open = (view: View, from?: Element | null) => {
-    haptic('light')
-    sound.tick()
-    zoomFrom(from ?? null)
-    onOpen(view)
-  }
-
   const selectMode = (next: CaptureMode) => {
     setMode(next)
     setFeedback('')
-    haptic('light')
-    sound.tick()
     requestAnimationFrame(() => input.current?.focus())
   }
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
+  const submit = () => {
     if (!canSubmit) return
     if (mode === 'lista' && parsedMarket) {
       items.add(parsedMarket.name, parsedMarket.quantity)
-      setFeedback(`${parsedMarket.name} na lista`)
+      setFeedback(`${parsedMarket.name} ${CAPTURE.lista.where}`)
     } else if (mode === 'contas' && parsedMoney) {
       expenses.add(parsedMoney, {})
-      setFeedback(`${parsedMoney.title} nas contas`)
+      setFeedback(`${parsedMoney.title} ${CAPTURE.contas.where}`)
     } else if (mode === 'desejos' && parsedMoney) {
       wishes.add(parsedMoney.title, parsedMoney.amountCents)
-      setFeedback(`${parsedMoney.title} nos desejos`)
+      setFeedback(`${parsedMoney.title} ${CAPTURE.desejos.where}`)
     }
-    sound.unlock(); sound.add(); haptic('success'); setEntry('')
+    sound.unlock()
+    sound.add()
+    haptic('success')
+    setEntry('')
   }
 
-  // Em vez de uma frase fixa, a linha devolve o que o app entendeu do que está escrito.
-  const parsed = parsedMoney
+  // o campo devolve o que o app entendeu do que está escrito
+  const understood = parsedMoney
     ? `${parsedMoney.title}${parsedMoney.amountCents ? ` · ${formatBRL(parsedMoney.amountCents)}` : ''}${parsedMoney.dueDay ? ` · dia ${parsedMoney.dueDay}` : ''}`
     : parsedMarket
       ? `${parsedMarket.name}${parsedMarket.quantity ? ` · ${parsedMarket.quantity}` : ''}`
       : ''
-  const hint = feedback || (entry ? parsed : '')
+  const hint = entry ? understood : feedback
 
-  const reveal = (index: number) => ({
-    initial: reduced ? false : { opacity: 0, y: 14, filter: 'blur(4px)' },
-    animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
-    transition: { type: 'spring' as const, stiffness: 330, damping: 30, delay: index * .06 },
-  })
+  const open = (view: View) => {
+    haptic('light')
+    onOpen(view)
+  }
 
   return (
-    <div className="app home home-v3">
-      <AppHeader
-        title="despensa"
-        presence={presence}
-        onOpenMenu={onOpenMenu}
-        scrolled={scrolled}
-        accessory={<button className="home-profile" onClick={onOpenSettings} aria-label="Abrir configurações"><Avatar person={me} size={28} /></button>}
-      />
+    <Screen title={`${greeting()}, ${me}`} subtitle={TODAY.format(new Date())}>
+      <Group title="adicionar" className="capture">
+        <div className="capture-body">
+          <Segmented
+            label="Onde adicionar"
+            value={mode}
+            onChange={selectMode}
+            options={[
+              { value: 'lista', label: 'mercado' },
+              { value: 'contas', label: 'conta' },
+              { value: 'desejos', label: 'desejo' },
+            ]}
+          />
+          <Composer
+            inputRef={input}
+            value={entry}
+            onChange={(value) => { setEntry(value); setFeedback('') }}
+            onSubmit={submit}
+            canSubmit={canSubmit}
+            placeholder={CAPTURE[mode].placeholder}
+            label={CAPTURE[mode].aria}
+            sendLabel={CAPTURE[mode].action}
+          />
+          <p className="capture-hint" role="status">{hint}</p>
+        </div>
+      </Group>
 
-      <div className="scroll" onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 6)}>
-        <motion.section className="home-hello" {...reveal(0)}>
-          <div className="home-hello-text">
-            <span className="home-kicker">{TODAY.format(new Date())}</span>
-            <h2 aria-label={`${greeting()}, ${me}.`}><Letters text={`${greeting()}, ${me}.`} reduced={Boolean(reduced)} /></h2>
-            <AnimatePresence initial={false}>
-              {note && <motion.p key={note} className="home-hello-note" initial={reduced ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: .22 }}>{note}</motion.p>}
-            </AnimatePresence>
-          </div>
-          <motion.div
-            className="home-brand"
-            initial={reduced ? false : { opacity: 0, scale: .88 }}
-            animate={{ opacity: 1, scale: 1, y: reduced ? 0 : [0, -5, 0], rotate: reduced ? 0 : [0, -1.6, 1, 0] }}
-            transition={{ opacity: { duration: .4 }, scale: { type: 'spring', stiffness: 260, damping: 22 }, y: { duration: 4.6, repeat: Infinity, ease: 'easeInOut' }, rotate: { duration: 6.4, repeat: Infinity, ease: 'easeInOut' } }}
-          >
-            <Shrimp size={78} />
-          </motion.div>
-        </motion.section>
+      <Group title="resumo">
+        <Row
+          icon={<Icon name="basket" size={20} />}
+          title="mercado"
+          detail={cartItems.length ? `${cartItems.length} no carrinho` : undefined}
+          value={!ready ? '' : pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'}
+          chevron
+          onClick={() => open('lista')}
+        />
+        <Row
+          icon={<Icon name="receipt" size={20} />}
+          title="contas"
+          detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : undefined}
+          value={!ready ? '' : month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'}
+          chevron
+          onClick={() => open('contas')}
+        />
+        <Row
+          icon={<Icon name="heart" size={20} />}
+          title="desejos"
+          detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen === 'já dá' ? nextWhen : `dá em ${nextWhen}`}` : ''}` : undefined}
+          value={!ready ? '' : queue.length ? `${queue.length} ${queue.length === 1 ? 'desejo' : 'desejos'}` : 'nenhum'}
+          chevron
+          onClick={() => open('desejos')}
+        />
+      </Group>
 
-        <motion.section className="home-capture" {...reveal(1)}>
-          <div className="capture-modes" role="radiogroup" aria-label="Onde adicionar">
-            {(Object.keys(CAPTURE) as CaptureMode[]).map((value) => (
-              <button key={value} type="button" role="radio" aria-checked={mode === value} onClick={() => selectMode(value)}>
-                <span>{CAPTURE[value].label}</span>
-                {mode === value && <motion.span className="capture-selection" layoutId="capture-selection" transition={{ type: 'spring', stiffness: 520, damping: 40 }} />}
-              </button>
-            ))}
-          </div>
-          <form className="capture-form" onSubmit={submit}>
-            <CaptureIcon mode={mode} />
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.input key={mode} ref={input} aria-label={CAPTURE[mode].aria} placeholder={CAPTURE[mode].placeholder} value={entry} onChange={(event) => { setEntry(event.target.value); setFeedback('') }} maxLength={160} enterKeyHint="send" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} transition={{ duration: .16 }} />
-            </AnimatePresence>
-            {/* O botão só existe quando há o que adicionar: girar o "+" para virar "×"
-                parecia um botão de limpar. */}
-            <AnimatePresence>
-              {canSubmit && (
-                <motion.button
-                  key="enviar"
-                  type="submit"
-                  aria-label={CAPTURE[mode].action}
-                  initial={reduced ? false : { opacity: 0, scale: .6 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: .6 }}
-                  transition={{ type: 'spring', stiffness: 560, damping: 32 }}
-                  whileTap={{ scale: .86 }}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </form>
-          <p className="capture-feedback" role="status">{hint}</p>
-        </motion.section>
-
-        <motion.section className="home-flow" {...reveal(2)}>
-          <div className="home-dashboard">
-            <HomeRow className="home-market" label="mercado" value={pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'} detail={cartItems.length ? `${cartItems.length} no carrinho` : ''} onClick={(el) => open('lista', el)} icon={<BasketIcon />} index={0} />
-            <HomeRow className="home-bills" label="contas" value={month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'} detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : ''} onClick={(el) => open('contas', el)} icon={<BillIcon />} index={1} />
-            <HomeRow className="home-wishes" label="desejos" value={queue.length ? `${queue.length} ${queue.length === 1 ? 'plano' : 'planos'}` : 'nenhum plano'} detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen}` : ''}` : ''} onClick={(el) => open('desejos', el)} icon={<HeartIcon />} index={2} />
-          </div>
-          {month.debt && <motion.button className="home-balance-note" onClick={(event) => open('contas', event.currentTarget)} whileTap={{ scale: .985 }}><Avatar person={month.debt.from} size={22} /><span>{month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}</span><Chevron /></motion.button>}
-        </motion.section>
-
-        <Colophon />
-      </div>
-    </div>
+      {(overdue > 0 || month.debt) && (
+        <Group title="atenção">
+          {overdue > 0 && (
+            <Row
+              icon={<Icon name="bell" size={20} />}
+              title={`${overdue} ${overdue === 1 ? 'conta atrasada' : 'contas atrasadas'}`}
+              danger
+              chevron
+              onClick={() => open('contas')}
+            />
+          )}
+          {month.debt && (
+            <Row
+              icon={<Avatar person={month.debt.from} size={26} />}
+              title={month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}
+              chevron
+              onClick={() => open('contas')}
+            />
+          )}
+        </Group>
+      )}
+    </Screen>
   )
 }
-
-/** A saudação entra letra por letra, como tipo sendo composto; só na primeira vez.
-    As letras ficam agrupadas por palavra, para a quebra de linha nunca cortar uma palavra. */
-function Letters({ text, reduced }: { text: string; reduced: boolean }) {
-  if (reduced) return <>{text}</>
-  let index = 0
-  return <>{text.split(' ').map((word, w) => (
-    <Fragment key={w}>
-      {w > 0 && ' '}
-      <span aria-hidden style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
-        {word.split('').map((letter) => {
-          const delay = .12 + index++ * .022
-          return <motion.span key={index} style={{ display: 'inline-block' }} initial={{ opacity: 0, y: 10, rotate: 4 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 26, delay }}>{letter}</motion.span>
-        })}
-      </span>
-    </Fragment>
-  ))}</>
-}
-function HomeRow({ className, label, value, detail, icon, onClick, index }: { className: string; label: string; value: string; detail: string; icon: ReactNode; onClick: (element: HTMLElement) => void; index: number }) {
-  return (
-    <motion.button
-      className={`home-module-row ${className}`}
-      onClick={(event) => onClick(event.currentTarget)}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 360, damping: 31, delay: .18 + index * .05 }}
-      whileTap={{ scale: .99 }}
-    >
-      <span className="home-module-icon" aria-hidden>{icon}</span>
-      <span className="home-module-copy"><strong>{label}</strong>{detail && <em>{detail}</em>}</span>
-      <span className="home-module-value">{value}</span>
-      <Chevron />
-    </motion.button>
-  )
-}
-
-function CaptureIcon({ mode }: { mode: CaptureMode }) { return <span className="capture-icon" aria-hidden>{mode === 'lista' ? <BasketIcon /> : mode === 'contas' ? <BillIcon /> : <HeartIcon />}</span> }
-function BasketIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 8h16l-1.4 11H5.4Z"/><path d="M8.5 8A3.5 3.5 0 0 1 12 4.5 3.5 3.5 0 0 1 15.5 8"/></svg> }
-function BillIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6M9 12h6"/></svg> }
-function HeartIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M12 20 4.8 13a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7A4.6 4.6 0 0 1 19.2 13Z"/></svg> }
-function Chevron() { return <svg className="home-chevron" viewBox="0 0 24 24" aria-hidden><path d="m9 5 7 7-7 7" /></svg> }

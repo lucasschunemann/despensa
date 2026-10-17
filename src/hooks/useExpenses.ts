@@ -24,6 +24,7 @@ export interface ExpensesStore {
   add: (entry: NewExpense, options: { recurring?: boolean; paid?: boolean; folderId?: string | null }) => void
   togglePaid: (expense: Expense) => void
   cycleSplit: (expense: Expense) => void
+  setSplit: (expense: Expense, split: string) => void
   /** muda nome, valor e vencimento; em conta que se repete, "futuro" vale para os próximos meses */
   edit: (expense: Expense, changes: NewExpense, scope: EditScope) => void
   remove: (expense: Expense) => void
@@ -240,6 +241,8 @@ export function useExpenses(roomId: string, me: string, month: string): Expenses
     [update, me],
   )
 
+  const setSplit = useCallback((expense: Expense, split: string) => update(expense, { split }), [update])
+
   const edit = useCallback(
     (expense: Expense, changes: NewExpense, scope: EditScope) => {
       const values = { title: changes.title, amount_cents: changes.amountCents, due_day: changes.dueDay }
@@ -340,6 +343,7 @@ export function useExpenses(roomId: string, me: string, month: string): Expenses
     add,
     togglePaid,
     cycleSplit,
+    setSplit,
     edit,
     remove,
     stopRecurring,

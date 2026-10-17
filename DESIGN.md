@@ -1,189 +1,32 @@
-# Despensa: sistema visual
+# despensa: sistema visual (redesign de 17/10/2026)
 
-Interface monocromática para consultas rápidas no iPhone em casa e no mercado, com luz ambiente variável. A base usa preto, branco e cinzas neutros, tipografia firme e espaço suficiente para o polegar.
+Referência: estrutura e gestos do iOS, limpeza do Notion. Um sistema só para os três módulos.
 
 ## Fundação
-- Tema automático por padrão, seguindo o sistema, com escolhas persistentes de claro e escuro nas configurações. `--bg`, `--paper`, `--field` separam níveis sem excesso de contornos.
-- A cor não separa módulos nem decora superfícies. Ela aparece somente quando comunica erro, perigo ou uma escolha de cor feita pelo usuário.
-- Plus Jakarta Sans preserva a identidade; Inter para números tabulares.
-- Títulos com tracking negativo. Corpo e controles em escala fixa; inputs com 16px para evitar zoom no Safari.
-- No iPhone, os fluxos preservam leitura em uma coluna e safe areas. A partir de 760px, a área chega a 1180px e reorganiza conteúdo em painéis próprios para tablet e desktop.
+- Tokens em `src/index.css`: `--bg`, `--surface`, `--fill`, `--text`, `--text-2`, `--text-3`, `--line`, `--accent` (azul), `--good` (verde de concluir), `--danger`. Tema claro e escuro, automático, com escolha nas configurações.
+- Fonte do sistema (SF Pro no iPhone e no Mac). Inter hospedada só como alternativa onde não há SF. Números com `tabular-nums`.
+- Escala: título grande 34/700, corpo 17, apoio 15, legenda 13. Margem única `--gutter` (16px, 24px no tablet).
+- Cor de ação: uma só. Verde só para concluir (pegar, pagar), vermelho só para apagar e atraso.
 
-## Componentes
-- Início: saudação, captura unificada e uma lista de réguas finas para os três módulos. Sem cartão, sem barra de progresso e sem número agregado: o conteúdo fica direto no papel e o respiro faz a separação. A linha de estado só aparece quando tem o que dizer. A barra Liquid Glass mantém os quatro destinos ao alcance do polegar em todas as telas.
-- Mercado: linhas com emoji, progresso, busca sem acentos, carrinho recolhível e entrada fixa embaixo.
-- Contas: bilhetes com picote e código de barras. Pastas coloridas filtram a lista e aceitam movimentação em lote; no iPhone aparecem como uma faixa horizontal e em telas maiores como uma sidebar persistente.
-- Desejos: cartões sólidos, imagens e reações expressivas dentro da mesma escala monocromática.
-- Menu: sheet com conta separada e destinos em lista; o destino atual recebe seleção invertida e animada. Preferências vivem no painel de usuário.
-- Avisos: três exemplos navegáveis, status do aparelho, ação explícita para permissão, teste real pelo servidor e erros contextuais.
-- Onboarding: cinco cenas curtas e interativas apresentam captura, sincronização, organização e avisos. O progresso é sempre visível, cada cena aceita gesto horizontal e a saída devolve diretamente ao início. No primeiro acesso, a conclusão é salva na conta e no aparelho; depois, a apresentação fica em configurações.
-- O rodapé do onboarding usa contador fixo, voltar circular e ação curta para não quebrar até 320 px. Os ícones da demonstração são os mesmos vetores da navegação real, sem glifos dependentes da fonte do aparelho.
+## Estrutura
+- `Screen` (`ui.tsx`): barra de navegação sobre o conteúdo, título grande que vira título compacto ao rolar, com desfoque de material.
+- Barra de abas inferior no celular (início, mercado, contas, desejos); vira barra lateral a partir de 900px. Some com o teclado aberto.
+- Folhas (`Sheet`) para qualquer edição ou pergunta: editar item, conta ou desejo, finalizar compra, pasta, configurações. Arrastam para fechar.
+- Listas planas com régua fina (`SwipeRow`) nos módulos; listas agrupadas (`Group`, `Row`) em início e configurações.
+
+## Gestos (iguais nos três módulos)
+- Direita: pegar, pagar, realizar. Esquerda: apagar, sempre com desfazer.
+- Tocar no círculo conclui; tocar na linha abre a edição.
+- Arrastar nunca vira toque no que estava embaixo do dedo.
+
+## Entrada
+Um campo só, fixo acima da barra de abas (`Composer`): "2 leite", "luz 180 dia 10", "abajur 320". O campo mostra o que entendeu. Edição usa a mesma gramática.
 
 ## Movimento
-Entrada curta e resposta tátil visual no toque. Trocas de módulo têm transição; seleção de exemplo desliza e o conteúdo faz crossfade. Elementos persistentes continuam montados. MotionConfig respeita o sistema; CSS decorativo também tem alternativa de movimento reduzido.
+Molas curtas, resposta ao toque, sem decoração parada. Três momentos de feedback: adicionar, concluir e lista ou mês completo (`Done`). Reduzir movimento do sistema é respeitado.
 
-O onboarding concentra a animação mais expressiva do produto: a marca entra em órbita, exemplos são interpretados, uma compra viaja entre moradores, contas se reorganizam e um aviso fecha a história. A navegação continua imediata, sem avanço automático, com transições direcionais de 340–460 ms e controles sempre disponíveis.
-
-O material translúcido fica nas camadas de navegação e ação — sidebar, composer e trays. Cartões de conteúdo permanecem sólidos para preservar contraste e evitar uma pilha de “vidros”. Seleção, criação de pasta e mudança de destino usam spring curto, escalas pequenas e feedback háptico.
+## Marca
+Provisória: wordmark "despensa" em caixa baixa e um "d" geométrico (`Mark` em `Avatar.tsx`, `public/brand/mark.svg`). Os ícones saem de `node scripts/icons.mjs`. Trocar o logo é editar esses dois arquivos.
 
 ## Acessibilidade
-Foco visível, fundo inert sob o menu, retorno de foco ao gatilho, Escape e navegação de tabs por setas. Progresso com valores acessíveis; mensagens de sucesso e erro com status/alert.
-
-## Identidade camarão saxofonista (21/09/2026)
-- A marca fornecida combina um camarão coral e um saxofone dourado. Ela aparece no cabeçalho, no favicon e no ícone instalado do PWA. Os ícones saem da própria arte por `node scripts/icons.mjs`, que recorta a margem transparente e centraliza.
-- A ilustração completa aparece somente em momentos de orientação, como início e acesso. Ela não compete com ações frequentes nem substitui os avatares dos moradores.
-- A interface continua monocromática: preto, branco e cinzas mudam de papel entre os temas claro e escuro. A marca é a exceção deliberada, com o coral do camarão e o dourado do saxofone; cores de pasta permanecem uma escolha funcional do usuário.
-- A tela inicial começa pelo estado da casa, oferece captura direta para os três módulos e termina em uma fila curta de ações. Em tablet e desktop, o resumo fica ao lado das ações; no iPhone, forma uma sequência única para o polegar.
-- O menu separa claramente perfil e navegação. Os destinos formam uma lista, com seleção invertida que desliza entre eles.
-- A navegação principal é persistente e usa material Liquid Glass: cápsula flutuante, desfoque do conteúdo, reflexo preso à borda de cima, brilho interno e uma lente de vidro que desliza até o destino atual.
-
-### Até onde o Liquid Glass chega na web
-O material de verdade é nativo: `glassEffect(_:in:)` no SwiftUI e `UIGlassEffect` no UIKit.
-Página web nenhuma consegue chamar isso. A propriedade `-apple-visual-effect` existe, mas é
-privada e só responde dentro de WKWebView com um ajuste interno ligado — não no Safari nem em
-PWA. E a técnica que a web usa para imitar (refração por `feDisplacementMap` dentro de
-`backdrop-filter: url(#…)`) **só funciona em Chromium**: o WebKit ignora e cai em desfoque
-simples, então no iPhone do Lucas seria código morto.
-
-O que dá para fazer é cumprir a especificação do material com o que o WebKit suporta, que é o
-que o app faz, seguindo <https://developer.apple.com/design/human-interface-guidelines/materials>:
-
-- **Variante `regular`**, que é a que a Apple usa na maioria dos componentes: além de desfocar,
-  ela **ajusta a luminosidade** do que está atrás. Daí o `brightness()` no `backdrop-filter` —
-  clareia no tema claro (`1.08`) e escurece no escuro (`.72`). A variante `clear` não se aplica:
-  ela é para componentes sobre foto e vídeo.
-- **Camada funcional, nunca camada de conteúdo.** O vidro fica na barra e nas folhas que sobem.
-  Fundo de tela e cartão usam material comum.
-- **Efeito de borda de rolagem**: o conteúdo perde opacidade antes de passar por baixo da barra.
-- **Responde às preferências do sistema**, como a especificação manda: `prefers-reduced-transparency`
-  deixa o vidro sólido, `prefers-contrast: more` encorpa borda e fundo.
-- Todo o material sai de tokens (`--lg-*`), definidos por tema, para claro e escuro não
-  divergirem de novo.
-
-### O que as HIG de tab bars mandam, e como o app cumpre
-Fonte: <https://developer.apple.com/design/human-interface-guidelines/tab-bars>.
-
-- **Navegação, nunca ação.** As quatro abas são só destinos. Ação de tela fica na barra do módulo.
-- **Sempre visível.** A barra acompanha os quatro módulos. A única exceção prevista é folha modal por cima: o menu e as configurações ficam acima dela e a cobrem.
-- **Rótulo de uma palavra.** início, mercado, contas, desejos.
-- **Ícone preenchido**, que é o que a plataforma usa. Só a alça da cesta é traço, porque preenchida vira borrão.
-- **Ícone acima do rótulo em vista compacta, ao lado em vista normal.** No celular fica empilhado; a partir de 760px a aba deita e a cápsula encolhe para caber no conteúdo.
-- **Nunca desabilitar nem esconder aba**, mesmo sem conteúdo. Lista vazia continua abrindo e explica que está vazia.
-- **Sem aba de excesso.** São quatro, cabem em qualquer largura.
-- **Selo só para informação crítica.** Conta vencida vira oval vermelho com número branco na aba de contas; acima de nove vira `!`. Item de mercado e desejo não ganham selo, para o selo não perder o sentido.
-- **Cor.** A barra é monocromática, como as HIG pedem quando o conteúdo já tem cor própria. O vermelho do selo é o mesmo do apagar.
-- **Encolher ao descer a leitura** e sair do estado encolhido **só de dois jeitos: tocar numa aba ou voltar ao topo da tela.** Rolar um pouco para cima não devolve a barra. A cápsula se contrai até sobrar a aba atual, em pílula com ícone e nome lado a lado, com a largura animada por layout.
-- Ressalva honesta: as HIG descrevem o encolhimento para barra **com acessório acoplado** (o MiniPlayer do Music). A despensa não tem acessório, então o comportamento foi mantido por pedido do Lucas, não porque a Apple o prescreva neste caso.
-
-- A cápsula invade parte da área do indicador da tela, como a do iOS, em vez de ficar inteira acima dela: `--dock-gap` é `max(10px, safe-area-bottom - 15px)`, e `--dock-h` dá o respiro dos compositores dos módulos.
-- **Cor que pinta fundo e cor que pinta texto são tokens separados.** No escuro o vermelho de
-  texto precisa clarear e o de fundo precisa fechar — o mesmo valor não serve para os dois. Daí
-  `--danger` (texto e ícone) e o par `--danger-surface` / `--danger-on` (arrastar para apagar,
-  selo da barra). Vale a mesma regra do `--ink`: se o token aparece em `background` e em `color`,
-  ele está fazendo dois trabalhos.
-- **Superfície invertida usa `--solid` e `--solid-text`, nunca `--ink` com branco fixo.** `--ink` é
-  cor de texto e inverte com o tema: como fundo de item selecionado ela fica quase branca no escuro,
-  e o texto branco por cima some. Foi o que aconteceu com a pasta selecionada das contas. Percurso
-  em `e2e/tema.e2e.ts` mede o contraste e barra a volta do problema.
-- Os avatares são WebP **com alfa**: o fundo branco do meme é recortado por preenchimento a partir
-  da borda em `scripts/avatars.mjs`, que anda só por branco vizinho para não furar o pelo claro do
-  gato, encolhe a silhueta em um pixel para não sobrar franja acesa no escuro, e esfuma a borda.
-  `node scripts/avatars.mjs` sem argumento refaz o recorte dos arquivos que já estão no projeto.
-- Texto: fragmento curto e concreto, sem ponto final e sem frase de efeito. Onde não há o que dizer, não entra linha nenhuma. A linha abaixo do campo devolve o que o app entendeu do que está escrito.
-- O cabeçalho mostra só a marca escrita. A ilustração não entra em barra de navegação: ela aparece grande no início.
-
-## Apresentação (22/09/2026)
-Refeita na parte visual. A anterior era o padrão de mercado — cartão, barra de progresso,
-arte, título, "continuar" — e foi trocada por uma ideia diferente: **em vez de ler cinco
-cartões, a pessoa faz os gestos de verdade do app.**
-
-- **Seis cenas, quatro delas interativas.** Escrever manda um exemplo para o destino certo;
-  pegar é arrastar a linha para a direita; pagar é o canhoto do bilhete, com laser, carimbo e
-  o canhoto caindo; desejar é o coração até os dois quererem. O gesto ensinado é o mesmo do
-  módulo, então a apresentação treina em vez de narrar.
-- **O botão de avançar nasce depois do gesto**, nunca antes. Quem não faz, não avança — e quem
-  não quer usa "pular", sempre visível.
-- **Progresso é uma pauta musical** com o camarão pulando de nota em nota (`layoutId`), no lugar
-  dos pontinhos.
-- **O fundo troca de língua junto com a cena**: papel liso, grade de papel milimetrado nas
-  contas, névoa lilás/menta/pêssego nos desejos. Cada cena entra e sai com uma transição
-  própria, em vez do mesmo deslize.
-- **Tocar em qualquer lugar solta notas musicais** do dedo.
-- **O camarão toca de verdade** (`src/lib/jazz.ts`): saxofone sintetizado, contrabaixo
-  caminhando e vassourinha, em fá, a 96 bpm com a colcheia atrasada. O sax é feito de duas
-  serras desafinadas, dois filtros estreitos nas formantes do instrumento, sopro de ruído no
-  ataque e vibrato que entra depois. **Cada gesto da pessoa acrescenta a próxima nota de um
-  lick de blues** — a apresentação vai sendo tocada por quem usa. Pagar a conta ganha uma nota
-  escorregada; quando os dois querem o mesmo desejo, tocam duas notas juntas.
-  Fica fora de `sound.ts` de propósito: o som do app é seco e mecânico por decisão de design,
-  e este é o único lugar onde o camarão toca. O `AudioContext` é o mesmo do app (o iPhone
-  limita quantos existem e destravar um não destrava os outros), e a chavinha de som desliga
-  o trio junto.
-- **O fim é a barra de verdade**, com os mesmos ícones preenchidos e a lente de vidro na aba
-  atual, para a última tela já ser o app.
-- **Aqui `prefers-reduced-motion` é ignorado de propósito**, a pedido do Lucas: a apresentação
-  É a animação. O resto do app continua respeitando.
-- O encanamento do GPT foi preservado inteiro: `src/lib/onboarding.ts` (cópia local + metadado
-  da conta), o gatilho na primeira entrada e o "reassistir" nas configurações.
-
-## A peça (22/09/2026)
-Pedido do Lucas: tratar a experiência como obra, não como SaaS, sem mexer em marca, nome, fonte
-nem no preto e branco. A ideia que amarra tudo: **o app é um lugar com luz, papel e música**, e
-cada uso é uma pequena apresentação — com abertura, com fim e com assinatura. Nada disso
-acrescenta toque ou espera às ações frequentes. Estilos em `src/art.css`, separado de propósito.
-
-- **A luz da casa** (sombra de janela que andava com o sol) foi testada e **saiu a pedido do Lucas** em 22/09/2026: distraía. Ficou só o grão do papel.
-- **Grão de papel**: ruído fixo, quase invisível, rasterizado uma vez. É o que tira o "digital
-  demais" do branco.
-- **Letreiro de abertura** (`Overture`): ocupa exatamente a espera que já existia (sessão, perfil,
-  casa), no lugar do texto piscando. As letras de "despensa" sobem uma a uma, uma régua risca por
-  baixo e a legenda traz o que está acontecendo e o número da edição do dia. `?demo=1&abertura=1`.
-- **Saudação composta à mão**: no início, "boa tarde, Lucas." entra letra por letra, agrupada por
-  palavra para a quebra de linha nunca cortar palavra.
-- **O camarão toca** (`Shrimp`): tocar no camarão do início toca um lick curto no sax (o mesmo trio
-  da apresentação, `jazz.riff()`), com colcheias pretas saindo da campana. Os licks se alternam, então
-  quem toca de novo ouve a continuação. Não se anuncia: é para ser descoberto.
-- **Colofão** (`Colophon`): o início termina como um livro — "despensa · nº 265 · 22.09.2026" e a
-  fase da lua daquela noite (calculada, desenhada em SVG). Cada dia é
-  uma edição. Sem nome de ninguém: o app é para qualquer casa.
-- **Créditos da compra** (`Credits`): segurar para finalizar agora termina como filme. "despensa
-  apresenta / a compra de terça", cada item pego com o emoji e quem lembrou dele, os gatos de quem
-  participou, quanto tempo a compra levou e "fim.". O camarão toca a resolução quando o fim chega.
-  Tocar em qualquer lugar pula; depois vem a pergunta do valor, como antes. Com Reduzir Movimento,
-  os créditos não rodam. Fica num portal no corpo da página, para cobrir a barra de navegação.
-- **Onde o camarão toca** mudou: antes era só a apresentação. Agora são três lugares, todos de
-  celebração ou descoberta (apresentação, camarão do início, fim da compra). O som das ações
-  frequentes continua seco e mecânico, em `sound.ts`.
-
-## Navegação e transições (22/09/2026)
-Pedido do Lucas: foco em transições de tela e fluxos, no padrão Apple. Tudo em `Stage.tsx`.
-
-- **Zoom do iOS 18** (`zoomFrom`): tocar numa linha do início (mercado, contas, desejos, "te deve")
-  faz a própria linha crescer até virar a tela do módulo — recorte que abre do retângulo da linha até
-  a tela, canto arredondando no caminho, conteúdo crescendo do centro da linha e só aparecendo quando
-  já há espaço. O início esmaece e recua 4%. Voltar encolhe de volta para a linha e o cartão se
-  dissolve nela no fim. **Arrastar da borda esquerda encolhe seguindo o dedo**, e a tela vai junto.
-- **Empurrar** continua para o que vem da barra ou do menu, onde não há elemento de origem: desliza
-  da direita, o início recua 28% com o mesmo deslocamento.
-- **A mola de saída herda a velocidade do dedo**: soltar rápido continua no mesmo embalo, em vez de
-  recomeçar do zero.
-- **Entre módulos, o novo entra do lado da aba dele** (ordem da barra): de mercado para desejos, vem
-  da direita; de desejos para mercado, da esquerda. Os dois se cruzam por um instante.
-- **Folhas empurram o app para trás**: com o menu ou as configurações abertos, o app inteiro vira um
-  cartão que recua (escala 0,92, cantos arredondados, logo abaixo do relógio), com preto atrás, como
-  as folhas do iOS fazem com a tela de baixo. Por isso o Stage tem um `.stage-card` por dentro.
-- **A marca voa do letreiro para o cabeçalho**: "despensa" do `Overture` e do cabeçalho do início são
-  a mesma peça (`layoutId="marca"`), então ao terminar de carregar a palavra sobe do meio da tela para
-  o topo enquanto o início aparece. `?demo=1&abrindo=1` mostra.
-- Com Reduzir Movimento, tudo troca na hora.
-- Percursos em `e2e/navegacao.e2e.ts`. O zoom só aceita o arrasto da borda depois de ocupar a tela
-  inteira: enquanto cresce, a borda ainda não existe ali.
-
-## Redesign mobile (19/09/2026)
-- **Escala de texto do iPhone** em tokens (`--t-large` 34, `--t-title` 22, `--t-headline` 17, `--t-body` 16, `--t-sub` 15, `--t-foot` 13, `--t-caption` 12). Nada abaixo de 12px. Margem lateral única, `--gutter` (20px no celular, 28px a partir de 760px).
-- **Cabeçalho**: voltar e menu são botões redondos de vidro; ao rolar, o cabeçalho vira vidro com régua fina.
-- **Rodapé**: o campo fica sobre uma borda esmaecida da lista (sem régua); ao focar, o campo clareia e ganha sombra.
-- **Contas no celular**: pastas (chips com o "+" no fim) e mês rolam junto com as contas, para os bilhetes aparecerem na primeira tela. A pasta ativa é uma pílula preta que desliza entre os chips; os "…" só aparecem na pasta ativa. No tablet e no computador, a barra lateral continua. O cupom começa pelo "falta pagar"; total e pago viram detalhe. "Selecionar" mora no título da seção "a pagar". "Todo mês" é um chip dentro do campo, que encolhe para o ícone enquanto se digita.
-- **Mercado** abre no começo da lista. **Desejos** mostram o nome inteiro (até duas linhas) com o preço embaixo.
-- **Sons novos**: `tick` (seleção: pasta, mês, menu, "todo mês", nível de vontade), `open` e `close` (entrar e sair de um módulo).
-- Todo texto de interface em caixa baixa, inclusive placeholders e "desfazer".
+Foco visível, fundo inert sob folhas, Escape fecha, retorno do foco ao gatilho, `prefers-reduced-motion` e `prefers-reduced-transparency`.

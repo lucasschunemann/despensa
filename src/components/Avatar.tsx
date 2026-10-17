@@ -35,12 +35,17 @@ export function Avatar({ person, size = 24, variant = 'face' }: Props) {
   )
 }
 
+/**
+ * Marca provisória: um "d" geométrico em traço único, na cor do texto.
+ * Quando o logo definitivo existir, é aqui (e em public/brand/mark.svg) que ele entra.
+ */
 export function Mark({ size = 20 }: { size?: number }) {
-  return <img className="brand-mark" src="/brand/logo.png" width={size} height={size} alt="" aria-hidden draggable={false} />
-}
-
-export function Mascot({ size = 120, className = '' }: { size?: number; className?: string }) {
-  return <img className={`brand-mascot ${className}`.trim()} src="/brand/logo.png" width={size} height={size} alt="camarão saxofonista da despensa" draggable={false} />
+  return (
+    <svg className="brand-mark" width={size} height={size} viewBox="0 0 32 32" aria-hidden fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
+      <circle cx="13" cy="19" r="8" />
+      <path d="M21 5v22" />
+    </svg>
+  )
 }
 
 // Tomate do easter egg (quem diria que ia ter um tomate no design system).

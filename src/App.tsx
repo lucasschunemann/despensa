@@ -2,16 +2,14 @@ import type { User } from '@supabase/supabase-js'
 import { motion } from 'motion/react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { AuthScreen, PasswordSetup } from './components/AuthScreen'
-import { AppDock } from './components/AppDock'
-import { Avatar, Mark } from './components/Avatar'
+import { Mark } from './components/Avatar'
 import { FinanceScreen } from './components/FinanceScreen'
 import { HomeScreen } from './components/HomeScreen'
 import { ListScreen } from './components/ListScreen'
-import { MenuSheet, type View } from './components/MenuSheet'
 import { Onboarding } from './components/Onboarding'
-import { Overture } from './components/Overture'
 import { ReactionBurst } from './components/ReactionBurst'
-import { Stage } from './components/Stage'
+import { TabBar, type View } from './components/TabBar'
+import { Shell } from './components/ui'
 import { UserSettingsSheet } from './components/UserSettingsSheet'
 import { WishesScreen } from './components/WishesScreen'
 import { useAuth } from './hooks/useAuth'
@@ -22,15 +20,12 @@ import { useViewportFit } from './hooks/useViewportFit'
 import { useWishes } from './hooks/useWishes'
 import type { Profile } from './lib/auth'
 import { friendlyAuthError } from './lib/auth'
-import { haptic } from './lib/haptics'
 import { monthKey } from './lib/month'
 import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding'
 import { reconcilePush } from './lib/push'
 import { createRoom, getMyRoom, joinRoom } from './lib/room'
 import { load, save } from './lib/storage'
-import { sound } from './lib/sound'
 import { isConfigured } from './lib/supabase'
-import { PEOPLE } from './lib/types'
 
 const ROOM_KEY = 'despensa:sala'
 const PERSON_KEY = 'despensa:quem'
@@ -82,7 +77,7 @@ export default function App() {
   }, [auth.ready, auth.user?.id, auth.user?.is_anonymous, auth.profile?.id, code])
 
   if (!isConfigured) return <Gate title="despensa"><p className="gate-text">Supabase não configurado. Preencha o arquivo <code>.env</code>.</p></Gate>
-  if (!auth.ready) return <Loading label="abrindo sua casa…" />
+  if (!auth.ready) return <Loading label="abrindo…" />
   if (!auth.session || !auth.user) return <AuthScreen />
   if (auth.user.is_anonymous) return <AuthScreen legacy initialUsername={load(PERSON_KEY) ?? ''} />
 
@@ -94,7 +89,7 @@ export default function App() {
   }} />
 
   if (!auth.profile) return <Loading label="preparando seu perfil…" />
-  if (roomBusy) return <Loading label="sincronizando sua casa…" />
+  if (roomBusy) return <Loading label="sincronizando…" />
   if (!roomId) return <RoomGate error={roomError} onJoin={(value) => { rememberRoom(value); setCode(value) }} onCreate={async () => {
     const room = await createRoom(); rememberRoom(room.code); setCode(room.code); setRoomId(room.id)
   }} />
@@ -119,7 +114,7 @@ function RoomGate({ error, onJoin, onCreate }: { error: string | null; onJoin: (
     const value = new FormData(event.currentTarget).get('code')?.toString().trim()
     if (value) onJoin(value)
   }
-  return <Gate title="sua casa"><p className="gate-text">Crie um espaço novo ou entre com o código de uma casa que já existe.</p><div className="room-choice"><button className="button-primary" disabled={busy} onClick={() => { setBusy(true); setLocalError(null); void onCreate().catch((cause) => setLocalError(friendlyAuthError(cause))).finally(() => setBusy(false)) }}>{busy ? 'criando…' : 'criar uma casa'}</button><span>ou</span><form className="gate-form" onSubmit={submit}><input name="code" placeholder="código da casa" autoComplete="off" aria-label="Código da casa" /><button type="submit" className="button-secondary">entrar</button></form></div>{(error || localError) && <p className="auth-message is-error">{error ?? localError}</p>}</Gate>
+  return <Gate title="sua casa"><p className="gate-text">Crie um espaço novo ou entre com o código de uma casa que já existe.</p><div className="room-choice"><button className="btn btn-primary" disabled={busy} onClick={() => { setBusy(true); setLocalError(null); void onCreate().catch((cause) => setLocalError(friendlyAuthError(cause))).finally(() => setBusy(false)) }}>{busy ? 'criando…' : 'criar uma casa'}</button><span>ou</span><form className="gate-form" onSubmit={submit}><input name="code" placeholder="código da casa" autoComplete="off" aria-label="Código da casa" /><button type="submit" className="btn btn-secondary">entrar</button></form></div>{(error || localError) && <p className="form-error" role="alert">{error ?? localError}</p>}</Gate>
 }
 
 function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: string; user: User; profile: Profile; onProfileChange: (profile: Profile) => void; onSignOut: () => void }) {
@@ -131,13 +126,11 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
     return target === 'contas' || target === 'desejos' || target === 'lista' ? target : 'inicio'
   })
   const [month, setMonth] = useState(monthKey)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(() => !hasCompletedOnboarding(user))
   const [onboardingReplay, setOnboardingReplay] = useState(false)
   const [onboardingPending, setOnboardingPending] = useState(false)
-  const goHome = () => { setMonth(monthKey()); setView('inicio') }
-  const changeView = (next: View) => next === 'inicio' ? goHome() : setView(next)
+  const changeView = (next: View) => { if (next === 'inicio') setMonth(monthKey()); setView(next) }
 
   const items = useItems(roomId, person)
   const expenses = useExpenses(roomId, person, month)
@@ -157,7 +150,7 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
       if (event.data?.type !== 'OPEN_MODULE') return
       const next = event.data.view
       if (next === 'inicio' || next === 'lista' || next === 'contas' || next === 'desejos') {
-        setMonth(monthKey()); setView(next); setMenuOpen(false); setSettingsOpen(false)
+        setMonth(monthKey()); setView(next); setSettingsOpen(false)
         event.ports[0]?.postMessage('opened')
       }
     }
@@ -167,36 +160,47 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
 
   useEffect(() => { if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`) }, [])
 
-  return <>
-    <Stage view={view} home="inicio" onBack={goHome} receded={menuOpen || settingsOpen} dock={<AppDock view={view} onChange={changeView} badges={{ contas: overdueBills }} />} renderHome={() => <HomeScreen me={person} presence={presence} items={items} expenses={expenses} wishes={wishes} onOpen={setView} onOpenMenu={() => setMenuOpen(true)} onOpenSettings={() => setSettingsOpen(true)} />} renderModule={(current) => {
-      if (current === 'lista') return <ListScreen store={items} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterMarket={(amountCents) => expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })} />
-      if (current === 'contas') return <FinanceScreen store={expenses} me={person} month={month} presence={presence} onMonthChange={setMonth} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} />
-      return <WishesScreen store={wishes} me={person} presence={presence} onOpenMenu={() => setMenuOpen(true)} onHome={goHome} onRegisterExpense={(title, amountCents) => expenses.add({ title, amountCents, dueDay: null }, { paid: true })} />
-    }} />
-    <ReactionBurst reaction={presence.reaction} me={person} />
-    <MenuSheet open={menuOpen} view={view} me={person} onClose={() => setMenuOpen(false)} onChangeView={changeView} onOpenSettings={() => setSettingsOpen(true)} />
-    <UserSettingsSheet open={settingsOpen} user={user} profile={profile} roomId={roomId} onClose={() => setSettingsOpen(false)} onProfileChange={onProfileChange} onSignOut={onSignOut} onReplayOnboarding={() => { setOnboardingPending(true); setSettingsOpen(false) }} onClosed={() => {
-      if (!onboardingPending) return
-      setOnboardingPending(false)
-      setOnboardingReplay(true)
-      setOnboardingOpen(true)
-    }} />
-    <Onboarding open={onboardingOpen} name={profile.username} replay={onboardingReplay} onDismiss={() => {
-      setOnboardingOpen(false)
-      setOnboardingReplay(false)
-      void completeOnboarding(user.id).catch(() => {})
-    }} />
-  </>
+  return (
+    <Shell.Provider value={{ me: person, presence, openSettings: () => setSettingsOpen(true) }}>
+      <div className="shell">
+        <main className="view">
+          <motion.div key={view} className="view-inner" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
+            {view === 'inicio' && <HomeScreen me={person} items={items} expenses={expenses} wishes={wishes} onOpen={changeView} />}
+            {view === 'lista' && <ListScreen store={items} me={person} onRegisterMarket={(amountCents) => expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })} />}
+            {view === 'contas' && <FinanceScreen store={expenses} me={person} month={month} onMonthChange={setMonth} />}
+            {view === 'desejos' && <WishesScreen store={wishes} me={person} presence={presence} onRegisterExpense={(title, amountCents) => expenses.add({ title, amountCents, dueDay: null }, { paid: true })} />}
+          </motion.div>
+        </main>
+        <TabBar view={view} onChange={changeView} badges={{ contas: overdueBills }} />
+      </div>
+      <ReactionBurst reaction={presence.reaction} me={person} />
+      <UserSettingsSheet open={settingsOpen} user={user} profile={profile} roomId={roomId} onClose={() => setSettingsOpen(false)} onProfileChange={onProfileChange} onSignOut={onSignOut} onReplayOnboarding={() => { setOnboardingPending(true); setSettingsOpen(false) }} onClosed={() => {
+        if (!onboardingPending) return
+        setOnboardingPending(false)
+        setOnboardingReplay(true)
+        setOnboardingOpen(true)
+      }} />
+      <Onboarding open={onboardingOpen} name={profile.username} replay={onboardingReplay} onDismiss={() => {
+        setOnboardingOpen(false)
+        setOnboardingReplay(false)
+        void completeOnboarding(user.id).catch(() => {})
+      }} />
+    </Shell.Provider>
+  )
 }
 
-// A espera de abrir a casa vira o letreiro de abertura (ver Overture).
-function Loading({ label }: { label: string }) { return <Overture label={label} /> }
-
-// Mantido no modo de demonstração para revisar a tela histórica de escolha de pessoa.
-export function PersonPicker({ onPick }: { onPick: (person: string) => void }) {
-  return <div className="people">{PEOPLE.map((person, index) => <motion.button key={person} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .06 * index, type: 'spring', stiffness: 380, damping: 30 }} whileTap={{ scale: .97 }} onClick={() => { sound.unlock(); haptic('light'); onPick(person) }}><Avatar person={person} size={104} variant="full" />{person}</motion.button>)}</div>
+function Loading({ label }: { label: string }) {
+  return (
+    <div className="gate" role="status" aria-live="polite">
+      <div className="gate-inner"><Mark size={34} /><p className="gate-text">{label}</p></div>
+    </div>
+  )
 }
 
 function Gate({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="app gate"><motion.div className="gate-inner" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 32 }}><p className="gate-mark" aria-hidden><Mark size={30} /></p><h1>{title}</h1>{children}</motion.div></div>
+  return (
+    <div className="gate">
+      <div className="gate-inner"><Mark size={34} /><h1>{title}</h1>{children}</div>
+    </div>
+  )
 }

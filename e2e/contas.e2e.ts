@@ -1,109 +1,111 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { open, swipe, tapCenter } from './helpers'
 
 test.beforeEach(async ({ page }) => {
   await open(page, '&contas=1')
 })
 
-test('pagar pelo canhoto: lê, carimba, rasga e vai para pagas', async ({ page }) => {
-  await page.locator('.ticket-stub').first().click()
-  await expect(page.locator('.stamp')).toBeVisible()
-  await expect(page.locator('.ticket-wrap')).toHaveCount(2, { timeout: 3000 })
-  await expect(page.locator('.paid')).toHaveCount(3)
+const row = (page: Page, name: string) => page.locator('.swipe', { hasText: name })
+
+test('pagar pelo círculo move a conta para as pagas', async ({ page }) => {
+  await expect(page.locator('.section-head', { hasText: 'a pagar' })).toBeVisible()
+  await page.getByRole('checkbox', { name: 'Pagar Academia' }).click()
+  await expect(page.getByRole('checkbox', { name: 'Desmarcar Academia' })).toBeVisible()
+  await expect(page.locator('.section-head', { hasText: 'pagas' })).toContainText('3')
 })
 
-test('arrastar para apagar começando no canhoto não paga a conta', async ({ page }) => {
-  // bug real: soltar o dedo depois do arrasto contava como toque no canhoto
-  await swipe(page, page.locator('.ticket').first(), -120)
-  await tapCenter(page, page.locator('.ticket-behind.is-delete').first())
-  await expect(page.locator('.ticket-wrap')).toHaveCount(2)
-  await expect(page.locator('.paid')).toHaveCount(2)
+test('pagar arrastando para a direita', async ({ page }) => {
+  await swipe(page, row(page, 'Luz').locator('.swipe-face'), 120)
+  await expect(page.getByRole('checkbox', { name: 'Desmarcar Luz' })).toBeVisible()
+})
+
+test('arrastar para apagar começando no círculo não paga a conta', async ({ page }) => {
+  // bug real: soltar o dedo depois do arrasto contava como toque no círculo
+  await swipe(page, row(page, 'Academia').locator('.swipe-face'), -120)
+  await tapCenter(page, row(page, 'Academia').locator('.swipe-trail'))
+  await expect(row(page, 'Academia')).toHaveCount(0)
+  await expect(page.locator('.section-head', { hasText: 'pagas' })).toContainText('2')
 })
 
 test('apagar conta que se repete pergunta o alcance', async ({ page }) => {
-  const aluguel = page.locator('.ticket-wrap', { hasText: 'Aluguel' })
-  await swipe(page, aluguel.locator('.ticket'), -120)
-  await tapCenter(page, aluguel.locator('.ticket-behind.is-delete'))
-  await expect(page.locator('.choice')).toContainText('Essa conta se repete')
-  await page.locator('.choice-option.is-danger').click()
-  await expect(aluguel).toHaveCount(0)
+  await swipe(page, row(page, 'Aluguel').locator('.swipe-face'), -120)
+  await tapCenter(page, row(page, 'Aluguel').locator('.swipe-trail'))
+  const dialog = page.getByRole('dialog', { name: /apagar Aluguel/ })
+  await expect(dialog).toContainText('se repete todo mês')
+  await dialog.getByRole('button', { name: /em diante/ }).click()
+  await expect(row(page, 'Aluguel')).toHaveCount(0)
 })
 
 test('editar conta que se repete oferece só deste mês ou em diante', async ({ page }) => {
-  await page.locator('.ticket-wrap', { hasText: 'Luz' }).locator('.ticket-title').click()
-  const input = page.locator('.edit-card input')
+  await row(page, 'Luz').locator('.item-name').click()
+  const input = page.getByRole('textbox', { name: 'Editar conta' })
   await expect(input).toHaveValue(/Luz 187,40 dia 20/)
   await input.fill('Luz 213,50 dia 22')
-  await expect(page.locator('.edit-preview')).toContainText('213,50')
-  await expect(page.locator('.edit-card .choice-option')).toHaveCount(2)
-  await page.locator('.edit-card .choice-option').first().click()
-  await expect(page.locator('.ticket-wrap', { hasText: 'Luz' })).toContainText('213,50')
+  const dialog = page.getByRole('dialog', { name: 'editar conta' })
+  await expect(dialog.locator('.field-hint').first()).toContainText('213,50')
+  await expect(dialog.getByRole('button', { name: /^só de/ })).toBeVisible()
+  await dialog.getByRole('button', { name: /em diante/ }).click()
+  await expect(row(page, 'Luz')).toContainText('213,50')
 })
 
-test('acertamos destaca o cupom', async ({ page }) => {
-  await page.locator('.coupon-cut').click()
-  await expect(page.locator('.coupon')).toHaveCount(0)
-  await expect(page.locator('.coupon-clear')).toBeVisible()
+test('mudar a divisão pela edição', async ({ page }) => {
+  await row(page, 'Luz').locator('.item-name').click()
+  await page.getByRole('radio', { name: /só Bela/ }).click()
+  await page.keyboard.press('Escape')
+  await expect(row(page, 'Luz')).toContainText('só Bela')
+})
+
+test('acertamos zera a dívida', async ({ page }) => {
+  await page.getByRole('button', { name: 'acertamos' }).click()
+  await expect(page.locator('.debt')).toHaveCount(0)
+  await expect(page.locator('.quits')).toBeVisible()
 })
 
 test('cria pasta e move várias contas de uma vez', async ({ page }) => {
   await page.getByRole('button', { name: 'Nova pasta' }).click()
-  await page.getByPlaceholder('ex.: casa').fill('serviços')
-  await page.getByRole('button', { name: 'Cor mint' }).click()
+  await page.getByRole('textbox', { name: 'Nome da pasta' }).fill('serviços')
+  await page.getByRole('radio', { name: 'Cor mint' }).click()
   await page.getByRole('button', { name: 'criar pasta' }).click()
-  await expect(page.locator('.folder-row', { hasText: 'serviços' })).toBeVisible()
+  await expect(page.locator('.chip', { hasText: 'serviços' })).toBeVisible()
 
   await page.getByRole('button', { name: 'selecionar' }).click()
-  await page.locator('.ticket-wrap', { hasText: 'Aluguel' }).locator('.ticket-main').click()
-  await page.locator('.ticket-wrap', { hasText: 'Luz' }).locator('.ticket-main').click()
+  await row(page, 'Aluguel').locator('.item-name').click()
+  await row(page, 'Luz').locator('.item-name').click()
   await expect(page.locator('.selection-bar')).toContainText('2 selecionadas')
   await page.getByRole('button', { name: 'mover' }).click()
-  await page.locator('.move-destinations button', { hasText: 'serviços' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'serviços' }).click()
 
-  await page.locator('.folder-row', { hasText: 'serviços' }).click()
-  await expect(page.locator('.ticket-wrap')).toHaveCount(2)
-  await expect(page.locator('.ticket-wrap')).toContainText(['Aluguel', 'Luz'])
+  await page.locator('.chip', { hasText: 'serviços' }).click()
+  await expect(page.locator('.swipe')).toHaveCount(2)
+  await expect(page.locator('.swipe')).toContainText(['Aluguel', 'Luz'])
 })
 
-test('centraliza controles e mantém nova pasta acima do teclado', async ({ page }) => {
-  const add = page.getByRole('button', { name: 'Nova pasta' })
-  const addBox = await add.boundingBox()
-  const addIconBox = await add.locator('svg').boundingBox()
-  expect(addBox).not.toBeNull()
-  expect(addIconBox).not.toBeNull()
-  expect(Math.abs((addBox!.x + addBox!.width / 2) - (addIconBox!.x + addIconBox!.width / 2))).toBeLessThan(1)
-  expect(Math.abs((addBox!.y + addBox!.height / 2) - (addIconBox!.y + addIconBox!.height / 2))).toBeLessThan(1)
+test('"todo mês" liga dentro do campo e some o rótulo enquanto digita', async ({ page }) => {
+  const repeat = page.getByRole('switch', { name: 'todo mês' })
+  await repeat.click()
+  await expect(repeat).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('textbox', { name: 'Nova conta' }).fill('luz 180 dia 10')
+  await expect(repeat.locator('span')).toHaveCount(0)
+  await expect(page.locator('.composer-chip')).toContainText('180,00')
+})
 
-  await add.click()
-  await expect(page.getByPlaceholder('ex.: casa')).toBeFocused()
-  // É o mesmo valor que useViewportFit escreve quando a visualViewport encolhe
-  // com o teclado do iOS aberto.
+test('mostra conta já na primeira tela e mantém o campo acima da barra', async ({ page }) => {
+  const first = await page.locator('.swipe').first().boundingBox()
+  const composer = await page.locator('.composer').boundingBox()
+  const tabs = await page.getByRole('navigation', { name: 'Navegação principal' }).boundingBox()
+  expect(first!.y).toBeLessThan(composer!.y)
+  expect(composer!.y + composer!.height).toBeLessThanOrEqual(tabs!.y + 1)
+})
+
+test('sheet cabe acima do teclado', async ({ page }) => {
+  await page.getByRole('button', { name: 'Nova pasta' }).click()
+  await expect(page.getByRole('textbox', { name: 'Nome da pasta' })).toBeFocused()
+  // é o mesmo valor que useViewportFit escreve quando a visualViewport encolhe com o teclado
   await page.evaluate(() => document.documentElement.style.setProperty('--app-height', '430px'))
-  await expect(page.locator('.finance-app')).toHaveCSS('height', '430px')
-
-  const editor = page.locator('.folder-editor')
-  await expect(editor).toBeVisible()
-  await expect(editor).toHaveCSS('transform', 'none')
-  const editorBox = await editor.boundingBox()
-  expect(editorBox).not.toBeNull()
-  expect(editorBox!.y).toBeGreaterThanOrEqual(0)
-  expect(editorBox!.y + editorBox!.height).toBeLessThanOrEqual(430)
-
-  const close = page.getByRole('button', { name: 'Fechar' })
-  const closeBox = await close.boundingBox()
-  const closeIconBox = await close.locator('svg').boundingBox()
-  expect(Math.abs((closeBox!.x + closeBox!.width / 2) - (closeIconBox!.x + closeIconBox!.width / 2))).toBeLessThan(1)
-  expect(Math.abs((closeBox!.y + closeBox!.height / 2) - (closeIconBox!.y + closeIconBox!.height / 2))).toBeLessThan(1)
-})
-
-test('adapta navegação e painel inicial ao desktop', async ({ page }) => {
-  await page.setViewportSize({ width: 1100, height: 800 })
-  await page.reload()
-  await expect(page.locator('.finance-folders')).toHaveCSS('width', '292px')
-  await expect(page.locator('.folder-select-mode')).toBeVisible()
-
-  await page.goto('/?demo=1')
-  await expect(page.locator('.home-dashboard')).toHaveCSS('display', 'grid')
-  await expect(page.locator('.home-market')).toBeVisible()
-  await expect(page.locator('.home-wishes')).toBeVisible()
+  const sheet = page.locator('.sheet')
+  await expect(sheet).toBeVisible()
+  // espera a mola assentar
+  await expect.poll(async () => { const b = await sheet.boundingBox(); return b ? Math.round(b.y + b.height) : 0 }).toBeLessThanOrEqual(431)
+  const box = await sheet.boundingBox()
+  expect(box!.y).toBeGreaterThanOrEqual(0)
 })

@@ -3,6 +3,8 @@ import { useEffect } from 'react'
 // O teclado do celular não "empurra" mais a tela: o app passa a ter exatamente a altura
 // da área visível, então o campo de digitar encosta no topo do teclado e a lista continua
 // inteira acima dele. Também desfaz a rolagem que o Safari faz sozinho ao abrir o teclado.
+let baseline = 0
+
 export function useViewportFit(onResize?: () => void) {
   useEffect(() => {
     const vv = window.visualViewport
@@ -11,6 +13,9 @@ export function useViewportFit(onResize?: () => void) {
     const apply = () => {
       const height = Math.round(vv?.height ?? window.innerHeight)
       root.style.setProperty('--app-height', `${height}px`)
+      // teclado aberto: a barra de abas some para o campo encostar no teclado
+      baseline = Math.max(baseline, height)
+      root.dataset.keyboard = height < baseline - 120 ? 'open' : 'closed'
       if (window.scrollY !== 0) window.scrollTo(0, 0)
       onResize?.()
     }

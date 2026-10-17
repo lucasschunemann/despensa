@@ -17,6 +17,7 @@ export interface WishesStore {
   add: (title: string, priceCents: number) => void
   toggleWant: (wish: Wish) => void
   cycleLevel: (wish: Wish) => void
+  setLevel: (wish: Wish, level: number) => void
   setPrice: (wish: Wish, priceCents: number) => void
   rename: (wish: Wish, title: string) => void
   setImage: (wish: Wish, file: File) => void
@@ -170,6 +171,7 @@ export function useWishes(roomId: string, me: string): WishesStore {
   )
 
   const cycleLevel = useCallback((wish: Wish) => update(wish, { want_level: (wish.want_level % 3) + 1 }), [update])
+  const setLevel = useCallback((wish: Wish, level: number) => update(wish, { want_level: level }), [update])
   const setPrice = useCallback((wish: Wish, priceCents: number) => update(wish, { price_cents: priceCents }), [update])
   const rename = useCallback((wish: Wish, title: string) => update(wish, { title }), [update])
 
@@ -231,6 +233,7 @@ export function useWishes(roomId: string, me: string): WishesStore {
     add,
     toggleWant,
     cycleLevel,
+    setLevel,
     setPrice,
     rename,
     setImage,

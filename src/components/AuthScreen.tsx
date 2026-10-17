@@ -1,15 +1,14 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { continueWith, friendlyAuthError, getSocialProviders, sendPasswordReset, setAccountPassword, signIn, signUp, upgradeAnonymous } from '../lib/auth'
 import { haptic } from '../lib/haptics'
-import { Mark, Mascot } from './Avatar'
+import { Mark } from './Avatar'
 import { AvatarPicker } from './UserAvatar'
+import { Segmented } from './ui'
 import { supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'signup' | 'forgot'
 
 export function AuthScreen({ legacy = false, initialUsername = '' }: { legacy?: boolean; initialUsername?: string }) {
-  const reduced = useReducedMotion()
   const [mode, setMode] = useState<Mode>(legacy ? 'signup' : 'signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -49,88 +48,68 @@ export function AuthScreen({ legacy = false, initialUsername = '' }: { legacy?: 
     } finally { setBusy(false) }
   }
 
-  const title = legacy ? 'proteja sua casa' : mode === 'signin' ? 'que bom te ver' : mode === 'signup' ? 'crie sua casa' : 'recupere o acesso'
+  const title = legacy ? 'proteja o acesso da casa' : mode === 'signin' ? 'entrar' : mode === 'signup' ? 'criar conta' : 'recuperar acesso'
   const subtitle = legacy
-    ? 'Transforme este acesso em uma conta sem perder uma única conta, desejo ou item de Lucas e Bela.'
-    : mode === 'signin' ? 'Sua rotina compartilhada, exatamente onde você deixou.'
-      : mode === 'signup' ? 'Um espaço privado para organizar a vida de quem mora com você.'
-        : 'Vamos enviar um link de uso único para o seu e-mail.'
+    ? 'Crie uma conta com e-mail e senha. Os itens, contas e desejos que já estão aqui continuam.'
+    : mode === 'signin' ? 'Use o e-mail e a senha da sua conta.'
+      : mode === 'signup' ? 'Um espaço privado para quem divide a casa.'
+        : 'Enviamos um link de uso único para o seu e-mail.'
 
   return (
-    <main className="auth-shell">
-      <motion.aside className="auth-story" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="auth-orb auth-orb-one" /><div className="auth-orb auth-orb-two" />
-        <div className="auth-brand"><Mark size={34} /><span>despensa</span></div>
-        <div className="auth-story-copy">
-          <span className="auth-kicker">uma casa em sintonia</span>
-          <h2>Menos coisas<br />na cabeça.</h2>
-          <p>Contas, mercado e planos vivendo juntos em um lugar calmo.</p>
-        </div>
-        <motion.div className="auth-mascot" initial={reduced ? false : { opacity: 0, y: 20, rotate: -4 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ type: 'spring', stiffness: 250, damping: 24, delay: .2 }}><Mascot size={230} /></motion.div>
-        <div className="auth-preview" aria-hidden>
-          <span>hoje</span><strong>tudo em ordem</strong>
-          <div><i /><i /><i /></div>
-        </div>
-      </motion.aside>
+    <main className="auth">
+      <div className="auth-card">
+        <div className="auth-brand"><Mark size={30} /><span>despensa</span></div>
+        <div className="auth-heading"><h1>{title}</h1><p>{subtitle}</p></div>
 
-      <section className="auth-panel">
-        <div className="auth-mobile-brand"><Mark size={30} /><span>despensa</span></div>
-        <motion.div className="auth-card" layout transition={{ type: 'spring', stiffness: 360, damping: 32 }}>
-          <div className="auth-heading"><h1>{title}</h1><p>{subtitle}</p></div>
+        {!legacy && mode !== 'forgot' && (
+          <Segmented<'signin' | 'signup'>
+            label="Acesso"
+            value={mode}
+            onChange={(next) => { setMode(next); setError(null); setNotice(null) }}
+            options={[{ value: 'signin', label: 'entrar' }, { value: 'signup', label: 'criar conta' }]}
+          />
+        )}
 
-          {!legacy && mode !== 'forgot' && (
-            <div className="auth-tabs" role="tablist">
-              {(['signin', 'signup'] as const).map((tab) => (
-                <button key={tab} type="button" role="tab" aria-selected={mode === tab} onClick={() => { setMode(tab); setError(null); setNotice(null) }}>
-                  {mode === tab && <motion.span layoutId="auth-tab" className="auth-tab-pill" transition={{ type: 'spring', stiffness: 440, damping: 36 }} />}
-                  <span>{tab === 'signin' ? 'entrar' : 'criar conta'}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.form
-              key={`${mode}-${legacy}`}
-              className="auth-form"
-              onSubmit={submit}
-              initial={{ opacity: 0, x: reduced ? 0 : 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: reduced ? 0 : -10 }}
-              transition={{ duration: reduced ? 0 : .2 }}
-            >
-              {(mode === 'signup' || legacy) && (
-                <>
-                  <label className="auth-field"><span>nome de usuário</span><input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" maxLength={32} placeholder="como devemos te chamar?" required /></label>
-                  <div className="auth-avatar-field"><span>seu avatar</span><AvatarPicker value={avatar} onChange={setAvatar} /></div>
-                </>
-              )}
-              <label className="auth-field"><span>e-mail</span><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="voce@exemplo.com" required /></label>
-              {mode !== 'forgot' && !legacy && (
-                <label className="auth-field"><span>senha</span><div className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} placeholder="mínimo de 8 caracteres" required minLength={8} /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? 'ocultar' : 'mostrar'}</button></div>{mode === 'signup' && <span className={`password-strength s${strength}`}><i /><i /><i /><i /><small>{['muito curta', 'fraca', 'boa', 'forte', 'excelente'][strength]}</small></span>}</label>
-              )}
-              <AnimatePresence>{(error || notice) && <motion.p className={error ? 'auth-message is-error' : 'auth-message is-success'} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}>{error ?? notice}</motion.p>}</AnimatePresence>
-              <motion.button className="auth-submit" type="submit" disabled={busy} whileTap={{ scale: .985 }}>
-                {busy ? <span className="auth-spinner" /> : mode === 'signin' ? 'entrar' : mode === 'forgot' ? 'enviar link' : legacy ? 'proteger minha casa' : 'criar minha conta'}
-              </motion.button>
-              {mode === 'signin' && <button className="auth-link" type="button" onClick={() => setMode('forgot')}>esqueci minha senha</button>}
-              {mode === 'forgot' && <button className="auth-link" type="button" onClick={() => setMode('signin')}>voltar para entrar</button>}
-            </motion.form>
-          </AnimatePresence>
-
-          {mode !== 'forgot' && (
+        <form className="auth-form" onSubmit={submit} key={`${mode}-${legacy}`}>
+          {(mode === 'signup' || legacy) && (
             <>
-              <div className="auth-divider"><span>ou continue com</span></div>
-              <div className="social-buttons">
-                <button type="button" disabled={!providers.apple} title={!providers.apple ? 'Disponível após configurar o provedor Apple' : undefined} onClick={() => void social('apple', legacy, setBusy, setError)}><AppleIcon /><span>Apple{!providers.apple && <small>em breve</small>}</span></button>
-                <button type="button" disabled={!providers.google} title={!providers.google ? 'Disponível após configurar o provedor Google' : undefined} onClick={() => void social('google', legacy, setBusy, setError)}><GoogleIcon /><span>Google{!providers.google && <small>em breve</small>}</span></button>
-              </div>
+              <label className="field-label" htmlFor="auth-name">nome de usuário</label>
+              <input id="auth-name" className="field" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" maxLength={32} placeholder="como devemos te chamar?" required />
+              <span className="field-label">avatar</span>
+              <AvatarPicker value={avatar} onChange={setAvatar} />
             </>
           )}
-          {legacy && <button className="auth-link legacy-login" type="button" onClick={() => void supabase.auth.signOut()}>já tenho uma conta</button>}
-          <p className="auth-legal">Ao continuar, você concorda em manter os dados da sua casa protegidos neste aparelho.</p>
-        </motion.div>
-      </section>
+          <label className="field-label" htmlFor="auth-email">e-mail</label>
+          <input id="auth-email" className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="voce@exemplo.com" required />
+          {mode !== 'forgot' && !legacy && (
+            <>
+              <label className="field-label" htmlFor="auth-password">senha</label>
+              <div className="field-password">
+                <input id="auth-password" className="field" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} placeholder="mínimo de 8 caracteres" required minLength={8} />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? 'ocultar' : 'mostrar'}</button>
+              </div>
+              {mode === 'signup' && <span className={`password-strength s${strength}`}><i /><i /><i /><i /><small>{['muito curta', 'fraca', 'boa', 'forte', 'excelente'][strength]}</small></span>}
+            </>
+          )}
+          {(error || notice) && <p className={error ? 'form-error' : 'form-notice'} role={error ? 'alert' : 'status'}>{error ?? notice}</p>}
+          <button className="btn btn-primary" type="submit" disabled={busy}>
+            {busy ? 'um instante…' : mode === 'signin' ? 'entrar' : mode === 'forgot' ? 'enviar link' : legacy ? 'criar conta' : 'criar minha conta'}
+          </button>
+          {mode === 'signin' && <button className="btn btn-plain" type="button" onClick={() => setMode('forgot')}>esqueci minha senha</button>}
+          {mode === 'forgot' && <button className="btn btn-plain" type="button" onClick={() => setMode('signin')}>voltar para entrar</button>}
+        </form>
+
+        {mode !== 'forgot' && (
+          <>
+            <p className="auth-divider"><span>ou continue com</span></p>
+            <div className="social-buttons">
+              <button type="button" className="btn btn-secondary" disabled={!providers.apple} title={!providers.apple ? 'Disponível após configurar o provedor Apple' : undefined} onClick={() => void social('apple', legacy, setBusy, setError)}><AppleIcon /><span>Apple{!providers.apple && <small> em breve</small>}</span></button>
+              <button type="button" className="btn btn-secondary" disabled={!providers.google} title={!providers.google ? 'Disponível após configurar o provedor Google' : undefined} onClick={() => void social('google', legacy, setBusy, setError)}><GoogleIcon /><span>Google{!providers.google && <small> em breve</small>}</span></button>
+            </div>
+          </>
+        )}
+        {legacy && <button className="btn btn-plain" type="button" onClick={() => void supabase.auth.signOut()}>já tenho uma conta</button>}
+      </div>
     </main>
   )
 }
@@ -147,7 +126,22 @@ export function PasswordSetup({ recovery = false, onDone }: { recovery?: boolean
     setBusy(true); setError(null)
     try { await setAccountPassword(password); onDone() } catch (cause) { setError(friendlyAuthError(cause)) } finally { setBusy(false) }
   }
-  return <main className="auth-shell auth-compact"><section className="auth-panel"><div className="auth-card"><div className="auth-mobile-brand always"><Mark size={30} /><span>despensa</span></div><div className="auth-heading"><span className="auth-kicker">último passo</span><h1>{recovery ? 'nova senha' : 'crie sua senha'}</h1><p>{recovery ? 'Escolha uma senha nova para recuperar sua conta.' : 'Seu e-mail foi confirmado. Agora escolha a chave da sua casa.'}</p></div><form className="auth-form" onSubmit={submit}><label className="auth-field"><span>senha</span><input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label><label className="auth-field"><span>confirme a senha</span><input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required /></label>{error && <p className="auth-message is-error">{error}</p>}<button className="auth-submit" disabled={busy}>{busy ? <span className="auth-spinner" /> : 'salvar e continuar'}</button></form></div></section></main>
+  return (
+    <main className="auth">
+      <div className="auth-card">
+        <div className="auth-brand"><Mark size={30} /><span>despensa</span></div>
+        <div className="auth-heading"><h1>{recovery ? 'nova senha' : 'crie sua senha'}</h1><p>{recovery ? 'Escolha uma senha nova para recuperar a conta.' : 'O e-mail foi confirmado. Falta escolher a senha.'}</p></div>
+        <form className="auth-form" onSubmit={submit}>
+          <label className="field-label" htmlFor="setup-password">senha</label>
+          <input id="setup-password" className="field" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <label className="field-label" htmlFor="setup-confirm">confirme a senha</label>
+          <input id="setup-confirm" className="field" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button className="btn btn-primary" disabled={busy}>{busy ? 'salvando…' : 'salvar e continuar'}</button>
+        </form>
+      </div>
+    </main>
+  )
 }
 
 async function social(provider: 'apple' | 'google', linking: boolean, setBusy: (v: boolean) => void, setError: (v: string | null) => void) {

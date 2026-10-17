@@ -2,6 +2,17 @@
 
 Nome escolhido: **Despensa** — joga com o duplo sentido "despensa" (onde se guarda mantimento) e "des-pensa" (não precisa pensar, é rápido). Reforça a proposta central do produto: tirar o atrito de pensar demais para adicionar um item.
 
+## Redesign completo (17/10/2026)
+Pedido do Lucas: experiência acima de tudo, UI como se fosse Notion + Apple. **Substitui** as seções
+"Linguagem visual por módulo", "A peça", "Navegação", "Redesign mobile" e as regras de marca/tipografia/
+avatares acima, no que conflitarem. Detalhes em DESIGN.md. Resumo:
+- Sistema único: título grande, barra de abas (lateral no desktop), folhas, listas com gesto (`src/components/ui.tsx`). Bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola e jazz saíram.
+- Tema claro e escuro; fonte do sistema; uma cor de ação (azul).
+- **Logo em aberto**: o camarão saiu. Marca provisória é o "d" geométrico (`Mark`, `public/brand/mark.svg`). Não escolher logo sem o Lucas.
+- Mercado: finalizar compra é uma folha (valor opcional), sem segurar nem créditos.
+- Fila offline, sync, push, hooks e lógica ficaram intactos. Hooks ganharam `setSplit` e `setLevel`.
+- Testes e2e reescritos em `e2e/` (mercado, contas, desejos, geral).
+
 ## Contexto
 App privado, uso restrito a duas pessoas (Lucas e Bela), que moram juntos. Objetivo: resolver a lista de compras de mercado compartilhada entre os dois, com uma experiência de uso muito acima do que Notion, WhatsApp ou apps de lista genéricos oferecem hoje. Não é um produto público, não terá onboarding nem marketing. É validação de uma hipótese de design (tensão entre rapidez e experiência satisfatória) através de um caso real de uso diário.
 

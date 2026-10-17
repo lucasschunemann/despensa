@@ -1,23 +1,21 @@
 // Só existe em desenvolvimento (?demo=1): roda a interface com dados de mentira,
 // sem Supabase e sem tocar na lista real.
-// Variações: &vazio=1, &quem=1, &digitando=1, &contas=1, &abertura=1 (letreiro de abertura), &abrindo=1 (letreiro que vira o app)
-import { useCallback, useEffect, useMemo, useState } from 'react'
+// Variações: &vazio=1, &digitando=1, &contas=1, &desejos=1, &lista=1, &settings=1, &onboarding=1
+import { useCallback, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { PersonPicker } from '../App'
-import { AppDock } from '../components/AppDock'
 import { FinanceScreen } from '../components/FinanceScreen'
 import { HomeScreen } from '../components/HomeScreen'
 import { ListScreen } from '../components/ListScreen'
-import { MenuSheet, type View } from '../components/MenuSheet'
 import { Onboarding } from '../components/Onboarding'
-import { Overture } from '../components/Overture'
 import { ReactionBurst } from '../components/ReactionBurst'
-import { Stage } from '../components/Stage'
+import { TabBar, type View } from '../components/TabBar'
+import { Shell } from '../components/ui'
 import { UserSettingsSheet } from '../components/UserSettingsSheet'
 import { WishesScreen } from '../components/WishesScreen'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
 import type { Presence, Reaction } from '../hooks/usePresence'
+import type { WishesStore } from '../hooks/useWishes'
 import { monthKey } from '../lib/month'
 import type { Profile } from '../lib/auth'
 import type { Expense, ExpenseFolder, Item, Wish } from '../lib/types'
@@ -79,12 +77,8 @@ export default function DemoApp() {
   const [view, setView] = useState<View>(
     params.has('contas') ? 'contas' : params.has('desejos') ? 'desejos' : params.has('lista') ? 'lista' : 'inicio',
   )
-  const [menuOpen, setMenuOpen] = useState(params.has('menu'))
   const [settingsOpen, setSettingsOpen] = useState(params.has('settings'))
   const [onboardingOpen, setOnboardingOpen] = useState(params.has('onboarding'))
-  // &abrindo=1: o letreiro fica 1,8s e dá lugar ao app, para ver a marca voar até o cabeçalho
-  const [opening, setOpening] = useState(params.has('abrindo'))
-  useEffect(() => { if (!opening) return; const t = setTimeout(() => setOpening(false), 1800); return () => clearTimeout(t) }, [opening])
   const [onboardingReplay, setOnboardingReplay] = useState(false)
   const [onboardingPending, setOnboardingPending] = useState(false)
   const [profile, setProfile] = useState<Profile>({ id: '00000000-0000-0000-0000-000000000001', username: 'Lucas', avatar_type: 'preset', avatar_value: 'cat', role: 'admin', created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
@@ -219,6 +213,7 @@ export default function DemoApp() {
               : e,
           ),
         ),
+      setSplit: (expense, split) => setExpenses((prev) => prev.map((e) => (e.id === expense.id ? { ...e, split } : e))),
       cycleSplit: (expense) =>
         setExpenses((prev) =>
           prev.map((e) =>
@@ -288,7 +283,7 @@ export default function DemoApp() {
   const patchWish = (id: string, changes: Partial<Wish>) =>
     setWishes((prev) => prev.map((w) => (w.id === id ? { ...w, ...changes } : w)))
 
-  const wishesStore = {
+  const wishesStore: WishesStore = {
     wishes,
     savingsCents,
     ready: true,
@@ -320,6 +315,7 @@ export default function DemoApp() {
           ? wish.wanted_by.filter((p) => p !== 'Lucas')
           : [...wish.wanted_by, 'Lucas'],
       }),
+    setLevel: (wish: Wish, want_level: number) => patchWish(wish.id, { want_level }),
     cycleLevel: (wish: Wish) => patchWish(wish.id, { want_level: (wish.want_level % 3) + 1 }),
     setPrice: (wish: Wish, price_cents: number) => patchWish(wish.id, { price_cents }),
     rename: (wish: Wish, title: string) => patchWish(wish.id, { title }),
@@ -344,86 +340,22 @@ export default function DemoApp() {
     sendReaction: (emoji, about) => setReaction({ id: Date.now(), person: 'Lucas', emoji, about }),
   }
 
-  if (params.has('abertura') || opening) return <Overture label="abrindo sua casa…" />
-
-  if (params.has('quem')) {
-    return (
-      <div className="app gate">
-        <div className="gate-inner">
-          <h1>quem é você?</h1>
-          <PersonPicker onPick={() => {}} />
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <>
-      <Stage
-        view={view}
-        home="inicio"
-        onBack={() => changeView('inicio')}
-        receded={menuOpen || settingsOpen}
-        dock={<AppDock view={view} onChange={changeView} badges={{ contas: overdueBills }} />}
-        renderHome={() => (
-          <HomeScreen
-            me="Lucas"
-            presence={presence}
-            items={itemsStore}
-            expenses={expensesStore}
-            wishes={wishesStore}
-            onOpen={changeView}
-            onOpenMenu={() => setMenuOpen(true)}
-            onOpenSettings={() => setSettingsOpen(true)}
-          />
-        )}
-        renderModule={(current) =>
-          current === 'desejos' ? (
-            <WishesScreen
-              store={wishesStore}
-              me="Lucas"
-              presence={presence}
-              onOpenMenu={() => setMenuOpen(true)}
-              onHome={() => changeView('inicio')}
-              onRegisterExpense={(title, amountCents) =>
-                expensesStore.add({ title, amountCents, dueDay: null }, { paid: true })
-              }
-            />
-          ) : current === 'lista' ? (
-            <ListScreen
-              store={itemsStore}
-              me="Lucas"
-              presence={presence}
-              onOpenMenu={() => setMenuOpen(true)}
-              onHome={() => changeView('inicio')}
-              onRegisterMarket={(amountCents) =>
-                expensesStore.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })
-              }
-            />
-          ) : (
-            <FinanceScreen
-              store={expensesStore}
-              me="Lucas"
-              month={month}
-              presence={presence}
-              onMonthChange={setMonth}
-              onOpenMenu={() => setMenuOpen(true)}
-              onHome={() => changeView('inicio')}
-            />
-          )
-        }
-      />
+    <Shell.Provider value={{ me: 'Lucas', presence, openSettings: () => setSettingsOpen(true) }}>
+      <div className="shell">
+        <main className="view">
+          <div className="view-inner" key={view}>
+            {view === 'inicio' && <HomeScreen me="Lucas" items={itemsStore} expenses={expensesStore} wishes={wishesStore} onOpen={changeView} />}
+            {view === 'lista' && <ListScreen store={itemsStore} me="Lucas" onRegisterMarket={(amountCents) => expensesStore.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })} />}
+            {view === 'contas' && <FinanceScreen store={expensesStore} me="Lucas" month={month} onMonthChange={setMonth} />}
+            {view === 'desejos' && <WishesScreen store={wishesStore} me="Lucas" presence={presence} onRegisterExpense={(title, amountCents) => expensesStore.add({ title, amountCents, dueDay: null }, { paid: true })} />}
+          </div>
+        </main>
+        <TabBar view={view} onChange={changeView} badges={{ contas: overdueBills }} />
+      </div>
 
       <ReactionBurst reaction={reaction} me="Lucas" />
 
-      <MenuSheet
-        open={menuOpen}
-        view={view}
-        me="Lucas"
-        onClose={() => setMenuOpen(false)}
-        onChangeView={changeView}
-        onOpenSettings={() => setSettingsOpen(true)}
-      />
       <UserSettingsSheet
         open={settingsOpen}
         user={{ id: profile.id, email: 'lucas@despensa.app', identities: [{ provider: 'email' }] } as unknown as User}
@@ -440,6 +372,6 @@ export default function DemoApp() {
         }}
       />
       <Onboarding open={onboardingOpen} name={profile.username} replay={onboardingReplay} onDismiss={() => { setOnboardingOpen(false); setOnboardingReplay(false) }} />
-    </>
+    </Shell.Provider>
   )
 }

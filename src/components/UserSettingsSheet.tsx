@@ -1,13 +1,13 @@
 import type { User } from '@supabase/supabase-js'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { friendlyAuthError, setAccountPassword, signIn, type Profile, updateProfile, uploadProfileAvatar } from '../lib/auth'
 import { haptic } from '../lib/haptics'
 import { prefs, useSoundOn, useThemePreference, type ThemePreference } from '../lib/prefs'
 import { supabase } from '../lib/supabase'
-import { CloseIcon } from './ControlIcons'
 import { PushSettings } from './PushSettings'
 import { AvatarPicker, UserAvatar } from './UserAvatar'
+import { Group, Icon, Row, Segmented, Sheet, Switch } from './ui'
 
 interface Props {
   open: boolean
@@ -22,8 +22,6 @@ interface Props {
 }
 
 export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProfileChange, onSignOut, onReplayOnboarding, onClosed }: Props) {
-  const reduced = useReducedMotion()
-  const panel = useRef<HTMLDivElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const [username, setUsername] = useState(profile.username)
   const [avatar, setAvatar] = useState(profile.avatar_value)
@@ -34,14 +32,7 @@ export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProf
   const theme = useThemePreference()
 
   useEffect(() => { setUsername(profile.username); setAvatar(profile.avatar_value) }, [profile])
-  useEffect(() => {
-    if (!open) return
-    const previous = document.activeElement as HTMLElement | null
-    const stage = document.querySelector<HTMLElement>('.stage')
-    if (stage) stage.inert = true
-    requestAnimationFrame(() => panel.current?.focus())
-    return () => { if (stage) stage.inert = false; previous?.focus() }
-  }, [open])
+  useEffect(() => { if (!open) { setMessage(null); setPasswordOpen(false) } }, [open])
 
   async function saveProfile(nextAvatar = avatar, avatarType: Profile['avatar_type'] = 'preset') {
     if (username.trim().length < 2) return setMessage('Escolha um nome com pelo menos 2 caracteres.')
@@ -71,47 +62,66 @@ export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProf
   }
 
   return (
-    <AnimatePresence onExitComplete={onClosed}>
-      {open && <motion.div className="settings-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
-        <motion.div
-          className="settings-panel"
-          ref={panel}
-          tabIndex={-1}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="settings-title"
-          initial={{ opacity: 0, x: reduced ? 0 : 36, scale: reduced ? 1 : .985 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: reduced ? 0 : 36, scale: reduced ? 1 : .985 }}
-          transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 390, damping: 36 }}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        >
-          <header className="settings-header"><div><span className="section-eyebrow">sua conta</span><h2 id="settings-title">configurações</h2></div><button className="round-control settings-close" onClick={onClose} aria-label="Fechar configurações"><CloseIcon size={20} /></button></header>
-
-          <div className="settings-scroll">
-            <section className="settings-profile-card">
-              <div className="settings-avatar-wrap">
-                <motion.div key={`${profile.avatar_type}-${profile.avatar_value}`} initial={{ scale: .82, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}><UserAvatar profile={profile} size={76} /></motion.div>
-                <button type="button" className="avatar-camera" onClick={() => fileInput.current?.click()} aria-label="Enviar foto" disabled={busy === 'avatar'}>{busy === 'avatar' ? <span className="mini-spinner" /> : <CameraIcon />}</button>
-                <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => void chooseFile(e.target.files?.[0])} />
-              </div>
-              <div><strong>{profile.username}</strong><span>{user.email}</span><small>{profile.role === 'admin' ? 'administrador' : 'membro da casa'}</small></div>
-            </section>
-
-            <section className="settings-group"><div className="settings-group-title"><span>perfil</span><small>como você aparece na casa</small></div><label className="settings-field"><span>nome de usuário</span><input value={username} maxLength={32} onChange={(e) => setUsername(e.target.value)} autoComplete="username" /></label><div className="settings-avatar-choice"><span>ícone</span><AvatarPicker value={profile.avatar_type === 'preset' ? avatar : ''} onChange={(value) => { setAvatar(value); void saveProfile(value, 'preset') }} /></div><button className="settings-save" disabled={busy === 'profile' || username.trim() === profile.username} onClick={() => void saveProfile()}>{busy === 'profile' ? <span className="mini-spinner" /> : 'salvar perfil'}</button></section>
-
-            <section className="settings-group"><button className="settings-row" aria-expanded={passwordOpen} onClick={() => setPasswordOpen((value) => !value)}><span className="settings-row-icon"><LockIcon /></span><span><strong>senha e segurança</strong><small>altere sua senha de acesso</small></span><Chevron open={passwordOpen} /></button><AnimatePresence>{passwordOpen && <motion.div className="password-change" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}><PasswordChange user={user} onDone={() => { setPasswordOpen(false); setMessage('Senha alterada com segurança.') }} /></motion.div>}</AnimatePresence></section>
-
-            <section className="settings-group"><div className="settings-group-title"><span>preferências</span><small>neste aparelho</small></div><div className="settings-theme"><div className="settings-theme-copy"><span className="settings-row-icon"><ThemeIcon /></span><span><strong>aparência</strong><small>segue o aparelho ou fica fixa</small></span></div><div className="theme-picker" role="radiogroup" aria-label="Aparência do app">{([['system', 'auto'], ['light', 'claro'], ['dark', 'escuro']] as Array<[ThemePreference, string]>).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={theme === value} onClick={() => { prefs.setTheme(value); haptic('light') }}>{theme === value && <motion.span className="theme-selection" layoutId="theme-selection" transition={{ type: 'spring', stiffness: 460, damping: 38 }} />}<span>{label}</span></button>)}</div></div><button className="settings-row" aria-pressed={soundOn} onClick={() => { prefs.setSoundOn(!soundOn); haptic('light') }}><span className="settings-row-icon"><SoundIcon /></span><span><strong>sons do app</strong><small>som curto ao adicionar, pegar e pagar</small></span><span className={`apple-switch${soundOn ? ' is-on' : ''}`}><i /></span></button><button className="settings-row" onClick={() => { haptic('light'); onReplayOnboarding() }}><span className="settings-row-icon"><PlayIcon /></span><span><strong>reassistir à apresentação</strong><small>reveja como a despensa funciona</small></span><span className="settings-play"><i /></span></button>{roomId && <div className="settings-push"><PushSettings roomId={roomId} me={profile.username} /></div>}</section>
-
-            {message && <motion.p className="settings-message" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}>{message}</motion.p>}
-            <button className="settings-logout" disabled={busy === 'logout'} onClick={() => void logout()}><LogoutIcon />{busy === 'logout' ? 'saindo…' : 'sair desta conta'}</button>
-            <p className="settings-footnote">Seus dados continuam na sua casa e só ficam disponíveis para membros autenticados.</p>
+    <Sheet open={open} onClose={onClose} title="configurações" onClosed={onClosed}>
+      <div className="settings">
+        <div className="profile-card">
+          <div className="profile-avatar">
+            <UserAvatar profile={profile} size={64} />
+            <button type="button" className="profile-camera" onClick={() => fileInput.current?.click()} aria-label="Enviar foto" disabled={busy === 'avatar'}><Icon name="camera" size={14} /></button>
+            <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => void chooseFile(e.target.files?.[0])} />
           </div>
-        </motion.div>
-      </motion.div>}
-    </AnimatePresence>
+          <div>
+            <strong>{profile.username}</strong>
+            <span>{user.email}</span>
+          </div>
+        </div>
+
+        <Group title="perfil">
+          <div className="group-pad">
+            <label className="field-label" htmlFor="settings-name">nome de usuário</label>
+            <input id="settings-name" className="field" value={username} maxLength={32} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+            <span className="field-label">ícone</span>
+            <AvatarPicker value={profile.avatar_type === 'preset' ? avatar : ''} onChange={(value) => { setAvatar(value); void saveProfile(value, 'preset') }} />
+            <button className="btn btn-primary" disabled={busy === 'profile' || username.trim() === profile.username} onClick={() => void saveProfile()}>{busy === 'profile' ? 'salvando…' : 'salvar perfil'}</button>
+          </div>
+        </Group>
+
+        <Group>
+          <Row icon={<Icon name="lock" size={20} />} title="senha e segurança" detail="alterar a senha de acesso" onClick={() => setPasswordOpen((v) => !v)} ariaLabel="Senha e segurança" value={<Icon name="down" size={16} className={`row-chevron${passwordOpen ? ' is-open' : ''}`} />} />
+          <AnimatePresence initial={false}>
+            {passwordOpen && (
+              <motion.div className="group-pad" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
+                <PasswordChange user={user} onDone={() => { setPasswordOpen(false); setMessage('Senha alterada.') }} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Group>
+
+        <Group title="neste aparelho">
+          <div className="group-pad">
+            <span className="field-label">aparência</span>
+            <Segmented<ThemePreference>
+              label="Aparência do app"
+              value={theme}
+              onChange={(value) => prefs.setTheme(value)}
+              options={[{ value: 'system', label: 'auto' }, { value: 'light', label: 'claro' }, { value: 'dark', label: 'escuro' }]}
+            />
+          </div>
+          <Row icon={<Icon name="sound" size={20} />} title="sons do app" detail="um som curto ao adicionar, pegar e pagar">
+            <Switch checked={soundOn} onChange={(value) => prefs.setSoundOn(value)} label="Sons do app" />
+          </Row>
+          <Row icon={<Icon name="play" size={20} />} title="ver a apresentação de novo" chevron onClick={() => { haptic('light'); onReplayOnboarding() }} />
+        </Group>
+
+        {roomId && <PushSettings roomId={roomId} me={profile.username} />}
+
+        {message && <p className="settings-message" role="status">{message}</p>}
+        <Group>
+          <Row icon={<Icon name="logout" size={20} />} title={busy === 'logout' ? 'saindo…' : 'sair desta conta'} danger onClick={() => void logout()} disabled={busy === 'logout'} />
+        </Group>
+        <p className="settings-footnote">Os dados da casa ficam disponíveis só para quem faz parte dela.</p>
+      </div>
+    </Sheet>
   )
 }
 
@@ -133,13 +143,15 @@ function PasswordChange({ user, onDone }: { user: User; onDone: () => void }) {
       setCurrent(''); setPassword(''); setConfirm(''); onDone(); haptic('success')
     } catch (cause) { setError(friendlyAuthError(cause)); haptic('medium') } finally { setBusy(false) }
   }
-  return <form onSubmit={submit}>{hasEmailIdentity && <label className="settings-field"><span>senha atual</span><input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required /></label>}<label className="settings-field"><span>nova senha</span><input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required /></label><label className="settings-field"><span>confirmar nova senha</span><input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} required /></label>{error && <p className="auth-message is-error">{error}</p>}<button className="settings-save" disabled={busy}>{busy ? <span className="mini-spinner" /> : 'alterar senha'}</button></form>
+  return (
+    <form className="sheet-form" onSubmit={submit}>
+      {hasEmailIdentity && <><label className="field-label" htmlFor="pw-current">senha atual</label><input id="pw-current" className="field" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required /></>}
+      <label className="field-label" htmlFor="pw-new">nova senha</label>
+      <input id="pw-new" className="field" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
+      <label className="field-label" htmlFor="pw-confirm">confirmar nova senha</label>
+      <input id="pw-confirm" className="field" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} required />
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button className="btn btn-primary" disabled={busy}>{busy ? 'alterando…' : 'alterar senha'}</button>
+    </form>
+  )
 }
-
-function CameraIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M4 8.5h3l1.3-2h7.4l1.3 2h3v10H4Z"/><circle cx="12" cy="13.5" r="3.2"/></svg> }
-function LockIcon() { return <svg viewBox="0 0 24 24" aria-hidden><rect x="5" y="10" width="14" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> }
-function SoundIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M11 5 6.5 9H3v6h3.5L11 19Z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/></svg> }
-function ThemeIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2Z"/></svg> }
-function PlayIcon() { return <svg viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4Z"/></svg> }
-function LogoutIcon() { return <svg viewBox="0 0 24 24" aria-hidden><path d="M10 5H5v14h5M14 8l4 4-4 4M9 12h9"/></svg> }
-function Chevron({ open }: { open: boolean }) { return <motion.svg className="settings-chevron" viewBox="0 0 24 24" animate={{ rotate: open ? 180 : 0 }} aria-hidden><path d="m7 10 5 5 5-5"/></motion.svg> }

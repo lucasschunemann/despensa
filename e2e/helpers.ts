@@ -36,36 +36,3 @@ export async function tapCenter(page: Page, target: Locator) {
   if (!box) throw new Error('alvo invisível')
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
 }
-
-export async function longPress(page: Page, target: Locator) {
-  await target.scrollIntoViewIfNeeded()
-  const box = await target.boundingBox()
-  if (!box) throw new Error('alvo invisível')
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-  await page.mouse.down()
-  await page.waitForTimeout(650)
-  await page.mouse.up()
-  await page.waitForTimeout(300)
-}
-
-export async function hold(page: Page, target: Locator, ms: number) {
-  await target.scrollIntoViewIfNeeded()
-  const box = await target.boundingBox()
-  if (!box) throw new Error('alvo invisível')
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-  await page.mouse.down()
-  await page.waitForTimeout(ms)
-  await page.mouse.up()
-}
-
-/** Arrasta a partir da borda esquerda da tela, como o gesto de voltar do iPhone. */
-export async function edgeSwipe(page: Page, distance: number) {
-  const y = 420
-  await page.mouse.move(6, y)
-  await page.mouse.down()
-  for (let i = 1; i <= 20; i++) {
-    await page.mouse.move(6 + (distance / 20) * i, y)
-    await page.waitForTimeout(16)
-  }
-  await page.mouse.up()
-}
