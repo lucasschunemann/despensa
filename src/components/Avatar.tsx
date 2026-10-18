@@ -1,3 +1,5 @@
+import { useId } from 'react'
+import { ART, squircle } from '../lib/brand'
 // Os avatares são os dois gatos: Bela joga o tomate, Lucas desvia.
 // Trocar as imagens: substitua os arquivos e rode `node scripts/avatars.mjs <bela> <lucas>`.
 const FILES: Record<string, { full: string; face: string }> = {
@@ -35,15 +37,34 @@ export function Avatar({ person, size = 24, variant = 'face' }: Props) {
   )
 }
 
-/**
- * Marca provisória: um "d" geométrico em traço único, na cor do texto.
- * Quando o logo definitivo existir, é aqui (e em public/brand/mark.svg) que ele entra.
- */
+/** O desenho do ícone (pote com o ponto verde), na cor do texto. Para a marca dentro do app. */
 export function Mark({ size = 20 }: { size?: number }) {
+  const { jar, dot } = ART
+  const top = jar.y - jar.stroke / 2
+  const side = jar.h + jar.stroke
   return (
-    <svg className="brand-mark" width={size} height={size} viewBox="0 0 32 32" aria-hidden fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
-      <circle cx="13" cy="19" r="8" />
-      <path d="M21 5v22" />
+    <svg className="brand-mark" width={size} height={size} viewBox={`${280 - side / 2} ${top} ${side} ${side}`} aria-hidden>
+      <rect x={jar.x} y={jar.y} width={jar.w} height={jar.h} rx={jar.r} fill="none" stroke="currentColor" strokeWidth={jar.stroke} />
+      <circle cx={dot.cx} cy={dot.cy} r={dot.r} fill={ART.green} />
+    </svg>
+  )
+}
+
+const ICON_SHAPE = squircle(560)
+
+/** O ícone do app como aparece na Tela de Início, no formato contínuo da Apple. */
+export function AppIcon({ size = 84 }: { size?: number }) {
+  const id = useId()
+  const { jar, dot } = ART
+  return (
+    <svg className="app-icon" width={size} height={size} viewBox="0 0 560 560" aria-hidden>
+      <defs><clipPath id={id}><path d={ICON_SHAPE} /></clipPath></defs>
+      <g clipPath={`url(#${id})`}>
+        <rect width="560" height="560" fill={ART.paper} />
+        <rect x={jar.x} y={jar.y} width={jar.w} height={jar.h} rx={jar.r} fill="none" stroke={ART.ink} strokeWidth={jar.stroke} />
+        <circle cx={dot.cx} cy={dot.cy} r={dot.r} fill={ART.green} />
+      </g>
+      <path d={ICON_SHAPE} fill="none" stroke="#000" strokeOpacity="0.08" strokeWidth="3" />
     </svg>
   )
 }

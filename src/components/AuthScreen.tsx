@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { continueWith, friendlyAuthError, getSocialProviders, sendPasswordReset, setAccountPassword, signIn, signUp, upgradeAnonymous } from '../lib/auth'
 import { haptic } from '../lib/haptics'
-import { Mark } from './Avatar'
+import { AppIcon } from './Avatar'
 import { AvatarPicker } from './UserAvatar'
 import { Section, Segmented } from './ui'
 import { supabase } from '../lib/supabase'
@@ -58,7 +58,7 @@ export function AuthScreen({ legacy = false, initialUsername = '' }: { legacy?: 
   return (
     <main className="auth">
       <div className="auth-card">
-        <span className="app-icon" aria-hidden><Mark size={44} /></span>
+        <AppIcon size={84} />
         <div className="auth-heading"><h1>{title}</h1><p>{subtitle}</p></div>
 
         {!legacy && mode !== 'forgot' && (
@@ -130,7 +130,7 @@ export function PasswordSetup({ recovery = false, onDone }: { recovery?: boolean
   return (
     <main className="auth">
       <div className="auth-card">
-        <span className="app-icon" aria-hidden><Mark size={44} /></span>
+        <AppIcon size={84} />
         <div className="auth-heading"><h1>{recovery ? 'Nova senha' : 'Crie sua senha'}</h1><p>{recovery ? 'Escolha uma senha nova para recuperar a conta.' : 'O e-mail foi confirmado. Falta escolher a senha.'}</p></div>
         <form onSubmit={submit}>
           <Section footer="Pelo menos 8 caracteres.">

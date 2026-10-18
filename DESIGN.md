@@ -27,8 +27,14 @@ Referência: como se a Apple tivesse feito o app, no iOS 26. Componentes em `src
 ## Gestos (iguais nos três módulos)
 Direita conclui (pegar, pagar, realizar). Esquerda mostra Apagar; arrastar até o fim apaga direto, como no Mail. Sempre com Desfazer. Arrastar nunca vira toque.
 
-## Marca
-Provisória: "d" geométrico (`Mark` em `Avatar.tsx`, `public/brand/mark.svg`). Os ícones saem de `node scripts/icons.mjs`.
+## Ícone
+Desenho do Lucas: um pote visto de frente, contorno preto `#161616` com cantos arredondados e um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. A geometria fica em `src/lib/brand.ts` e em `scripts/icons.mjs` (tela de 560), e `node scripts/icons.mjs` gera tudo, do jeito que a Apple entrega:
+- **iPhone e iPad** (`apple-touch-icon.png`, 180px): quadrado cheio e opaco; o sistema recorta os cantos.
+- **Mac e computador** (`icon-192/512.png`): grade do macOS, corpo de 824 em 1024 no formato contínuo da Apple, com sombra suave.
+- **Android** (`maskable-512.png`, `icon-1024.png`): quadrado cheio; o desenho cabe na zona segura.
+- **Aba do navegador** (`favicon.svg`, 32 e 48px): ícone recortado, com o desenho um pouco maior para ler pequeno.
+- **Safari** (`mask-icon.svg`): só o desenho, em uma cor.
+Dentro do app: `Mark` (o desenho na cor do texto, ponto verde) e `AppIcon` (o ícone recortado, na tela de entrar).
 
 ## Acessibilidade
 Foco visível e contido nas folhas, Escape fecha, foco volta ao gatilho. Respeita Reduzir Movimento, Reduzir Transparência (vidro sólido) e Aumentar Contraste.

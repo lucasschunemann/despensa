@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/apple-touch-icon.png'],
+      includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.svg', 'icons/mask-icon.svg'],
       manifest: {
         id: '/',
         // Vazio mantém a URL de instalação (?sala=...), conforme o manifest spec.
@@ -18,12 +18,13 @@ export default defineConfig({
         description: 'Mercado, contas e planos da sua casa em sintonia',
         lang: 'pt-BR',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#ffffff',
+        background_color: '#FAFAF7',
+        theme_color: '#f2f2f7',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/icon-1024.png', sizes: '1024x1024', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

@@ -10,7 +10,7 @@ marca/tipografia/cor/tema abaixo, no que conflitarem. Detalhes em DESIGN.md. Res
 - Cor por módulo (Mercado verde, Contas azul, Desejos rosa). Tema claro e escuro. Textos em frase normal; só "despensa" em caixa baixa.
 - Mercado no estilo Lembretes (círculo à esquerda, "Mostrar" os pegos); Início com cartões no estilo Saúde; Configurações no estilo Ajustes; apresentação é uma tela única de boas-vindas.
 - Bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola e jazz saíram.
-- **Logo em aberto**: marca provisória é o "d" geométrico (`Mark`, `public/brand/mark.svg`). Não escolher logo sem o Lucas.
+- **Ícone (17/10/2026, desenho do Lucas)**: pote visto de frente (contorno arredondado preto) com um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. Geometria em `src/lib/brand.ts` e `scripts/icons.mjs`; `node scripts/icons.mjs` gera todos os ícones (iPhone, PWA, favicon, Safari). `Mark` é o desenho sozinho; `AppIcon` é o ícone com o recorte da Apple. Não mexer no desenho sem o Lucas.
 - Fila offline, sync, push, hooks e lógica intactos. Hooks ganharam `setSplit` e `setLevel`.
 - Testes e2e em `e2e/` (mercado, contas, desejos, geral). `?demo=1&acesso=1` mostra a tela de entrar.
 

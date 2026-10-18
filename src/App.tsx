@@ -1,7 +1,7 @@
 import type { User } from '@supabase/supabase-js'
 import { useEffect, useState, type FormEvent } from 'react'
 import { AuthScreen, PasswordSetup } from './components/AuthScreen'
-import { Mark } from './components/Avatar'
+import { AppIcon } from './components/Avatar'
 import { FinanceScreen } from './components/FinanceScreen'
 import { HomeScreen } from './components/HomeScreen'
 import { ListScreen } from './components/ListScreen'
@@ -202,7 +202,7 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
 function Loading({ label }: { label: string }) {
   return (
     <div className="gate" role="status" aria-live="polite">
-      <div className="gate-inner"><span className="app-icon" aria-hidden><Mark size={44} /></span><p className="gate-text">{label}</p></div>
+      <div className="gate-inner"><AppIcon size={84} /><p className="gate-text">{label}</p></div>
     </div>
   )
 }
@@ -210,7 +210,7 @@ function Loading({ label }: { label: string }) {
 function Gate({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="gate">
-      <div className="gate-inner"><span className="app-icon" aria-hidden><Mark size={44} /></span><h1>{title}</h1>{children}</div>
+      <div className="gate-inner"><AppIcon size={84} /><h1>{title}</h1>{children}</div>
     </div>
   )
 }
