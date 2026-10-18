@@ -1,31 +1,29 @@
-# despensa: sistema visual (17/10/2026, segunda versão)
+# despensa: caderno da casa (17/10/2026)
 
-Referência: como se a Apple tivesse feito o app, no iOS 26. Componentes em `src/components/ui.tsx`, estilos em `src/index.css`.
+Caminho escolhido pelo Lucas depois de testar o padrão Apple e não gostar: o Notion levado a sério. Cada módulo é uma página, e o conteúdo é feito de blocos. Componentes em `src/components/ui.tsx`, estilos em `src/index.css`.
 
 ## Fundação
-- **Cores do sistema** do iOS, claras e escuras: fundo agrupado `#F2F2F7` (preto puro no escuro), cartões brancos (`#1C1C1E`), rótulos em quatro níveis de cinza, régua fina de 0,5px. Azul do sistema é a cor de ação.
-- **Cor por módulo**, como as categorias do Saúde: Mercado verde, Contas azul, Desejos rosa (`--tint`). Aparece no ícone do cartão, no círculo de concluir e no gesto de arrastar.
-- **Tipografia do sistema**: SF Pro no iPhone e no Mac (Inter onde não houver). Título grande 34/41, corpo 17/22, apoio 15/20, legenda 13/18. Números grandes em SF Pro Rounded, como no Saúde.
-- **Textos em frase normal** ("Mercado", "Salvar"), como a Apple escreve em português. Só a marca "despensa" fica em caixa baixa.
-- **Vidro só na navegação** (barra de abas, campo flutuante, botões da barra, menus, folha de ação). Conteúdo nunca é de vidro.
+- **Paleta do Notion**: texto `#37352F`, cinzas quentes em transparência, régua `rgb(55 53 47 / .09)`, azul `#2383E2` como única cor de ação, barra lateral `#F7F7F5`. Tema claro e escuro (escuro `#191919`).
+- **Etiquetas** nas nove cores das opções de seleção do Notion (cinza, marrom, laranja, amarelo, verde, azul, roxo, rosa, vermelho), com fundo claro e texto escuro.
+- **Fonte do sistema** (a mesma pilha do Notion), Inter onde não houver. Título de página 32px (40px no computador), corpo 16px, propriedades 14px.
+- **Textos em frase normal**, como o Notion escreve em português. Só "despensa" fica em caixa baixa.
 
 ## Estrutura
-- `Screen`: título grande, data acima no Início, avatar na linha do título (como a App Store). Ao rolar, o título vai para a barra com a borda de rolagem desfocada do iOS 26.
-- Barra de abas: cápsula de vidro flutuante com símbolos preenchidos e lente na aba atual. Tocar de novo na aba atual volta ao topo. A partir de 900px vira barra lateral, como no iPad.
-- Campo de adicionar: cápsula de vidro acima da barra de abas (acessório). No Início, um menu escolhe o destino (Mercado, Contas, Desejos).
-- Folhas flutuantes, com × à esquerda e ✓ azul à direita; o conteúdo vem em seções agrupadas.
-- Escolhas com consequência (apagar ou salvar conta que se repete) usam a folha de ação do iOS, como o Calendário.
+- `Page`: barra fina com o caminho ("Casa / 🛒 Mercado", tocar em Casa volta ao início), presença e avatar à direita. Abaixo, ícone grande (emoji da página, ou a marca no início), título e **propriedades** (rótulo cinza com ícone, valor à direita).
+- Celular: barra de abas embaixo, simples. Computador: barra lateral com as páginas, como no Notion.
+- Campo de adicionar fixo embaixo, sempre pronto. A linha "+ Novo" no fim de cada lista leva até ele.
+- Itens abrem como **página numa folha**: título grande (o mesmo jeito de escrever: "2 pão integral", "Luz 213,50 dia 22"), propriedades e ações. Salvar fica no canto direito.
+- Escolha com consequência (apagar ou mudar conta que se repete) usa uma confirmação pequena no centro.
 
-## Telas
-- **Início**: cartões no estilo do Saúde, um por módulo, com o número grande e o que importa (atraso, dívida, próximo desejo).
-- **Mercado**: como o Lembretes. Fundo branco, círculo à esquerda que enche na cor do módulo, linha "2 no carrinho · Finalizar compra · Mostrar".
-- **Contas**: mês com setas, cartão de resumo, acerto como linha com botão, pastas em cápsulas, seções "A pagar" e "Pagas".
-- **Desejos**: cartão do cofre, linha "Guardar por mês" editável como nos Ajustes, fila com foto, preço e previsão.
-- **Configurações**: no formato do Ajustes, com ícones coloridos.
-- **Apresentação**: tela única de boas-vindas, com três novidades e Continuar.
+## Páginas
+- **Início**: data, saudação, o campo com um menu para escolher o destino, callouts quando há atraso ou dívida, e a lista das páginas com o resumo de cada uma.
+- **🛒 Mercado**: lista de tarefas com a caixa quadrada do Notion e o emoji do produto no começo. Propriedades: falta pegar, no carrinho. O que foi pego vai para o bloco recolhível "No carrinho", com "Finalizar compra".
+- **🧾 Contas**: propriedades do mês (mês, falta pagar, pagas, acerto), pastas como abas de visão de um banco de dados, e uma tabela agrupada em "A pagar" e "Pagas", com etiquetas (todo mês, divisão, pasta).
+- **🎁 Desejos**: propriedades do cofre (na fila, poupança por mês, fila completa) e uma galeria de cartões com capa, preço, vontade e previsão.
+- **Apresentação**: uma página de primeiros passos com três tarefas que dá para marcar.
 
 ## Gestos (iguais nos três módulos)
-Direita conclui (pegar, pagar, realizar). Esquerda mostra Apagar; arrastar até o fim apaga direto, como no Mail. Sempre com Desfazer. Arrastar nunca vira toque.
+Direita conclui (pegar, pagar, realizar). Esquerda mostra Apagar; arrastar até o fim apaga direto. Sempre com Desfazer. Arrastar nunca vira toque.
 
 ## Ícone
 Desenho do Lucas: um pote visto de frente, contorno preto `#161616` com cantos arredondados e um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. A geometria fica em `src/lib/brand.ts` e em `scripts/icons.mjs` (tela de 560), e `node scripts/icons.mjs` gera tudo, do jeito que a Apple entrega:

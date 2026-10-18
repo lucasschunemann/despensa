@@ -2,15 +2,15 @@
 
 Nome escolhido: **Despensa** — joga com o duplo sentido "despensa" (onde se guarda mantimento) e "des-pensa" (não precisa pensar, é rápido). Reforça a proposta central do produto: tirar o atrito de pensar demais para adicionar um item.
 
-## Redesign completo (17/10/2026)
-Pedido do Lucas: experiência acima de tudo, "como se a Apple tivesse feito o app". **Substitui** as seções
-"Linguagem visual por módulo", "A peça", "Navegação", "Redesign mobile", "Polimento" e as regras de
-marca/tipografia/cor/tema abaixo, no que conflitarem. Detalhes em DESIGN.md. Resumo:
-- Padrão iOS 26: cores e tipos do sistema, listas agrupadas, título grande, barra de abas de vidro flutuante, campo de adicionar flutuando acima dela, folhas com × e ✓, folha de ação para escolhas com consequência. Componentes em `src/components/ui.tsx`.
-- Cor por módulo (Mercado verde, Contas azul, Desejos rosa). Tema claro e escuro. Textos em frase normal; só "despensa" em caixa baixa.
-- Mercado no estilo Lembretes (círculo à esquerda, "Mostrar" os pegos); Início com cartões no estilo Saúde; Configurações no estilo Ajustes; apresentação é uma tela única de boas-vindas.
-- Bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola e jazz saíram.
-- **Ícone (17/10/2026, desenho do Lucas)**: pote visto de frente (contorno arredondado preto) com um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. Geometria em `src/lib/brand.ts` e `scripts/icons.mjs`; `node scripts/icons.mjs` gera todos os ícones (iPhone, PWA, favicon, Safari). `Mark` é o desenho sozinho; `AppIcon` é o ícone com o recorte da Apple. Não mexer no desenho sem o Lucas.
+## Redesign completo (17/10/2026): caderno da casa
+Pedido do Lucas: experiência acima de tudo. Testamos o padrão Apple (iOS 26) e ele **não gostou**; escolheu o
+caminho "Caderno", o Notion levado a sério. **Substitui** as seções "Linguagem visual por módulo", "A peça",
+"Navegação", "Redesign mobile", "Polimento" e as regras de marca/tipografia/cor/tema abaixo, no que conflitarem.
+Detalhes em DESIGN.md. Resumo:
+- Cada módulo é uma página: caminho no topo, ícone (🛒 🧾 🎁), título, propriedades e blocos. Mercado é lista de tarefas, Contas é tabela com pastas como abas, Desejos é galeria. Itens abrem como página numa folha.
+- Paleta e etiquetas do Notion, uma cor de ação (azul `#2383E2`), tema claro e escuro, textos em frase normal (só "despensa" em caixa baixa).
+- Não voltar ao padrão Apple nem à arte antiga (bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola, jazz).
+- **Ícone (17/10/2026, desenho do Lucas)**: pote visto de frente (contorno arredondado preto) com um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. Geometria em `src/lib/brand.ts` e `scripts/icons.mjs`; `node scripts/icons.mjs` gera todos os ícones. `Mark` é o desenho sozinho; `AppIcon` é o ícone recortado. Não mexer no desenho sem o Lucas.
 - Fila offline, sync, push, hooks e lógica intactos. Hooks ganharam `setSplit` e `setLevel`.
 - Testes e2e em `e2e/` (mercado, contas, desejos, geral). `?demo=1&acesso=1` mostra a tela de entrar.
 

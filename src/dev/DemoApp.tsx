@@ -344,7 +344,7 @@ export default function DemoApp() {
   if (params.has('acesso')) return <AuthScreen />
 
   return (
-    <Shell.Provider value={{ me: 'Lucas', presence, openSettings: () => setSettingsOpen(true) }}>
+    <Shell.Provider value={{ me: 'Lucas', presence, openSettings: () => setSettingsOpen(true), goHome: () => changeView('inicio') }}>
       <div className="shell">
         <main className="view">
           <div className="view-inner" key={view}>
