@@ -13,8 +13,7 @@ export async function open(page: Page, query = '') {
 
 /** Arrasta como um dedo, a partir da borda que faz sentido para a direção. */
 export async function swipe(page: Page, target: Locator, dx: number) {
-  // no meio da tela: embaixo ficam o campo e a barra de abas, que flutuam por cima da lista
-  await target.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await target.scrollIntoViewIfNeeded()
   const box = await target.boundingBox()
   if (!box) throw new Error('alvo invisível')
   const startX = dx < 0 ? box.x + box.width - 40 : box.x + 60
@@ -32,8 +31,7 @@ export async function swipe(page: Page, target: Locator, dx: number) {
 
 /** Toca no centro exato de um elemento, como o dedo faria (sem atalhos do Playwright). */
 export async function tapCenter(page: Page, target: Locator) {
-  // no meio da tela: embaixo ficam o campo e a barra de abas, que flutuam por cima da lista
-  await target.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await target.scrollIntoViewIfNeeded()
   const box = await target.boundingBox()
   if (!box) throw new Error('alvo invisível')
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)

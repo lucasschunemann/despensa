@@ -14,14 +14,14 @@ test('adicionar entende a quantidade e mostra o emoji no campo', async ({ page }
   await expect(row(page, 'Banana')).toContainText('2')
 })
 
-test('pegar tocando no círculo e devolver pelos itens no carrinho', async ({ page }) => {
-  await page.getByRole('checkbox', { name: 'Pegar Leite integral' }).click()
+test('pegar tocando no círculo, devolver do carrinho', async ({ page }) => {
+  await row(page, 'Leite').getByRole('checkbox').click()
   await expect(row(page, 'Leite')).toHaveCount(0)
-  await expect(page.locator('.done-line')).toContainText('3 no carrinho')
+  await expect(page.getByRole('progressbar', { name: 'Itens no carrinho' })).toHaveAttribute('aria-valuenow', '3')
 
-  await page.getByRole('button', { name: 'Mostrar' }).click()
+  await page.locator('.cart-head').click()
   await page.getByRole('checkbox', { name: 'Devolver Leite integral à lista' }).click()
-  await expect(page.getByRole('checkbox', { name: 'Pegar Leite integral' })).toBeVisible()
+  await expect(row(page, 'Leite')).toHaveCount(1)
 })
 
 test('pegar arrastando para a direita', async ({ page }) => {
@@ -30,44 +30,39 @@ test('pegar arrastando para a direita', async ({ page }) => {
 })
 
 test('apagar arrastando para a esquerda e desfazer', async ({ page }) => {
+  // o arrasto começa em cima do círculo: soltar o dedo não pode virar toque nele
   await swipe(page, row(page, 'Queijo').locator('.swipe-face'), -120)
+  await expect(page.getByRole('progressbar', { name: 'Itens no carrinho' })).toHaveAttribute('aria-valuenow', '2')
   await tapCenter(page, row(page, 'Queijo').locator('.swipe-trail'))
   await expect(row(page, 'Queijo')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Desfazer' }).click()
+  await page.locator('.toast button').click()
   await expect(row(page, 'Queijo')).toHaveCount(1)
-})
-
-test('arrastar até o fim apaga direto, como no Mail', async ({ page }) => {
-  await swipe(page, row(page, 'Queijo').locator('.swipe-face'), -300)
-  await expect(row(page, 'Queijo')).toHaveCount(0)
-  await expect(page.locator('.toast')).toContainText('Queijo minas apagado')
 })
 
 test('tocar na linha abre a edição, no mesmo formato de escrever', async ({ page }) => {
   await row(page, 'Pão').locator('.item-name').click()
-  const dialog = page.getByRole('dialog', { name: 'Editar item' })
-  const input = dialog.getByRole('textbox', { name: 'Editar item' })
+  const input = page.getByRole('textbox', { name: 'Editar item' })
   await expect(input).toHaveValue('Pão de forma')
   await input.fill('2 pão integral')
-  await dialog.getByRole('button', { name: 'Salvar' }).click()
+  await page.getByRole('button', { name: 'salvar' }).click()
   await expect(row(page, 'Pão integral')).toContainText('2')
 })
 
 test('a edição também manda reação e apaga', async ({ page }) => {
   await row(page, 'Pão').locator('.item-name').click()
   await page.getByRole('button', { name: 'Enviar ❤️' }).click()
-  await expect(page.locator('.reaction-label')).toContainText('Você mandou')
+  await expect(page.locator('.reaction-label')).toContainText('você mandou')
   await row(page, 'Pão').locator('.item-name').click()
-  await page.getByRole('button', { name: 'Apagar item' }).click()
+  await page.getByRole('button', { name: 'apagar item' }).click()
   await expect(row(page, 'Pão')).toHaveCount(0)
 })
 
 test('finalizar compra tira o carrinho e lança o valor nas contas', async ({ page }) => {
-  await page.getByRole('button', { name: 'Finalizar compra' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Finalizar compra' })
-  await expect(dialog).toContainText('2 itens saem')
+  await page.getByRole('button', { name: 'finalizar compra' }).click()
+  const dialog = page.getByRole('dialog', { name: 'finalizar compra' })
+  await expect(dialog).toContainText('2 itens pegos')
   await dialog.getByRole('textbox', { name: 'Valor' }).fill('123,45')
-  await dialog.getByRole('button', { name: 'Finalizar', exact: true }).click()
-  await expect(page.locator('.done-line')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'finalizar' }).click()
+  await expect(page.locator('.cart')).toHaveCount(0)
   await expect(page.locator('.toast')).toContainText('R$ 123,45')
 })

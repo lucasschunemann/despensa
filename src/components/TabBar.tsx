@@ -2,15 +2,15 @@ import { motion, useReducedMotion } from 'motion/react'
 import { haptic } from '../lib/haptics'
 import { sound } from '../lib/sound'
 import { Mark } from './Avatar'
-import { Glyph, SCROLL_TOP_EVENT, type FilledName } from './ui'
+import { Icon, type IconName } from './ui'
 
 export type View = 'inicio' | 'lista' | 'contas' | 'desejos'
 
-const TABS: Array<{ id: View; label: string; icon: FilledName}> = [
-  { id: 'inicio', label: 'Início', icon: 'house' },
-  { id: 'lista', label: 'Mercado', icon: 'cart' },
-  { id: 'contas', label: 'Contas', icon: 'doc' },
-  { id: 'desejos', label: 'Desejos', icon: 'heart' },
+const TABS: Array<{ id: View; label: string; icon: IconName }> = [
+  { id: 'inicio', label: 'início', icon: 'home' },
+  { id: 'lista', label: 'mercado', icon: 'basket' },
+  { id: 'contas', label: 'contas', icon: 'receipt' },
+  { id: 'desejos', label: 'desejos', icon: 'heart' },
 ]
 
 interface Props {
@@ -20,39 +20,36 @@ interface Props {
   badges?: Partial<Record<View, number>>
 }
 
-/** Barra de abas flutuante de vidro no iPhone; barra lateral no iPad e no computador. */
+/** Barra de abas no celular; vira barra lateral a partir do tablet. */
 export function TabBar({ view, onChange, badges }: Props) {
   const reduced = useReducedMotion()
   return (
     <nav className="tabbar" aria-label="Navegação principal">
-      <div className="tabbar-brand" aria-hidden><Mark size={20} /><span>despensa</span></div>
+      <div className="tabbar-brand" aria-hidden><Mark size={22} /><span>despensa</span></div>
       {TABS.map((tab) => {
         const active = tab.id === view
         const badge = badges?.[tab.id] ?? 0
         return (
-          <button
+          <motion.button
             key={tab.id}
             type="button"
             className="tab"
             aria-current={active ? 'page' : undefined}
             aria-label={badge ? `${tab.label}, ${badge} em atraso` : tab.label}
+            whileTap={reduced ? undefined : { scale: 0.92 }}
             onClick={() => {
+              if (active) return
               haptic('light')
-              if (active) {
-                window.dispatchEvent(new Event(SCROLL_TOP_EVENT))
-                return
-              }
               sound.tick()
               onChange(tab.id)
             }}
           >
-            {active && <motion.span layoutId="tab-lens" className="tab-lens" transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 480, damping: 38 }} aria-hidden />}
             <span className="tab-icon">
-              <Glyph name={tab.icon} size={26} />
+              <Icon name={tab.icon} size={25} />
               {badge > 0 && <span className="tab-badge" aria-hidden>{badge > 9 ? '9+' : badge}</span>}
             </span>
             <span className="tab-label">{tab.label}</span>
-          </button>
+          </motion.button>
         )
       })}
     </nav>

@@ -5,7 +5,7 @@ import { useViewportFit } from '../hooks/useViewportFit'
 import { summarize } from '../lib/balance'
 import { haptic } from '../lib/haptics'
 import { isCurrentMonth, monthKey, monthLabel, shiftMonth } from '../lib/month'
-import { formatAmount, formatBRL, parseExpenseEntry, type ExpenseEntry } from '../lib/money'
+import { formatAmount, formatBRL, parseExpenseEntry } from '../lib/money'
 import { sound } from '../lib/sound'
 import type { Expense } from '../lib/types'
 import { PEOPLE } from '../lib/types'
@@ -13,7 +13,7 @@ import { Avatar } from './Avatar'
 import { FolderChips, FolderSheet, MoveSheet, type FolderFilter } from './FinanceFolders'
 import { Money } from './Money'
 import { Rolling } from './Rolling'
-import { Accessory, ActionSheet, Check, Composer, Done, Empty, Glyph, Icon, Row, Screen, Section, Segmented, Sheet, Skeleton, SwipeRow, Toast } from './ui'
+import { Check, Composer, Dock, Done, Empty, Icon, Screen, Segmented, Sheet, Skeleton, SwipeRow, Toast } from './ui'
 
 interface Props {
   store: ExpensesStore
@@ -22,7 +22,8 @@ interface Props {
   onMonthChange: (month: string) => void
 }
 
-const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+const splitLabel = (expense: Expense, me: string) =>
+  expense.split === 'meio' ? '½' : expense.split === me ? 'só sua' : `só ${expense.split}`
 
 export function FinanceScreen({ store, me, month, onMonthChange }: Props) {
   const {
@@ -61,7 +62,7 @@ export function FinanceScreen({ store, me, month, onMonthChange }: Props) {
   const paid = shown.filter((e) => e.status === 'pago').sort((a, b) => (a.paid_at ?? '').localeCompare(b.paid_at ?? ''))
   const done = expenses.length > 0 && expenses.every((expense) => expense.status === 'pago')
   const activeFolder = folders.find((folder) => folder.id === filter)
-  const filterTitle = filter === 'all' ? 'Todas as contas' : filter === 'unfiled' ? 'Sem pasta' : activeFolder?.name ?? 'Pasta'
+  const filterTitle = filter === 'all' ? 'todas as contas' : filter === 'unfiled' ? 'sem pasta' : activeFolder?.name ?? 'pasta'
   const progress = summary.totalCents > 0 ? summary.paidCents / summary.totalCents : 0
   const entry = parseExpenseEntry(text)
   const today = new Date().getDate()
@@ -72,7 +73,7 @@ export function FinanceScreen({ store, me, month, onMonthChange }: Props) {
     byFolder: Object.fromEntries(folders.map((f) => [f.id, expenses.filter((e) => e.folder_id === f.id).length])),
   }
 
-  // "Mês pago" só na virada, nunca ao abrir um mês que já estava fechado
+  // "mês pago" só na virada, nunca ao abrir um mês que já estava fechado
   const wasDone = useRef<boolean | null>(null)
   useEffect(() => {
     const previous = wasDone.current
@@ -127,58 +128,41 @@ export function FinanceScreen({ store, me, month, onMonthChange }: Props) {
   }
   const finishMove = (folderId: string | null) => {
     moveExpenses(selectedIds, folderId)
-    const destination = folders.find((folder) => folder.id === folderId)?.name ?? 'Sem pasta'
+    const destination = folders.find((folder) => folder.id === folderId)?.name ?? 'sem pasta'
     setNotice(`${selectedIds.length} ${selectedIds.length === 1 ? 'conta movida' : 'contas movidas'} para ${destination}`)
     haptic('success')
     cancelSelection()
   }
 
-  const row = (expense: Expense) => (
-    <SwipeRow
-      key={expense.id}
-      lead={expense.status === 'pendente' ? { label: 'Pagar', onTrigger: () => pay(expense) } : undefined}
-      onRemove={() => handleRemove(expense)}
-      onPress={() => (selecting ? toggleSelection(expense) : setEditing(expense))}
-      disabled={selecting}
-    >
-      <BillRow
-        expense={expense}
-        me={me}
-        selecting={selecting}
-        selected={selectedIds.includes(expense.id)}
-        onToggleSelect={toggleSelection}
-        onPay={pay}
-        overdue={Boolean(expense.status === 'pendente' && expense.due_day && expense.due_day < today && isCurrentMonth(month))}
-      />
-    </SwipeRow>
-  )
+  const rowProps = (expense: Expense) => ({
+    expense, me, selecting,
+    selected: selectedIds.includes(expense.id),
+    onToggleSelect: toggleSelection,
+    onEdit: setEditing,
+    onPay: pay,
+  })
 
   return (
     <Screen
-      title="Contas"
-      tint="blue"
+      title="contas"
       scrollRef={scroller}
       onScroll={(el) => { nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80 }}
-      toolbar={ready && shown.length > 0 && (
-        <button className="glass-button" onClick={() => { sound.tick(); if (selecting) cancelSelection(); else setSelecting(true) }}>
-          {selecting ? 'OK' : 'Selecionar'}
-        </button>
-      )}
-      accessory={
-        <Accessory
+      footer={
+        <Dock
           toasts={<>
             {notice && <Toast key="notice" duration={3500} onDismiss={() => setNotice(null)}>{notice}</Toast>}
             {deleted && (
-              <Toast key="deleted" duration={5000} action={{ label: 'Desfazer', onClick: () => { haptic('light'); restore(deleted); setDeleted(null) } }} onDismiss={() => setDeleted(null)}>
+              <Toast key="deleted" duration={5000} action={{ label: 'desfazer', onClick: () => { haptic('light'); restore(deleted); setDeleted(null) } }} onDismiss={() => setDeleted(null)}>
                 {deleted.title} apagada
               </Toast>
             )}
           </>}
         >
           {selecting ? (
-            <div className="selection-bar glass">
-              <strong>{selectedIds.length ? `${selectedIds.length} ${selectedIds.length === 1 ? 'selecionada' : 'selecionadas'}` : 'Selecione as contas'}</strong>
-              <button className="glass-button is-prominent" disabled={!selectedIds.length} onClick={() => setMoving(true)}>Mover</button>
+            <div className="selection-bar">
+              <button className="btn btn-plain" onClick={cancelSelection}>cancelar</button>
+              <strong>{selectedIds.length ? `${selectedIds.length} ${selectedIds.length === 1 ? 'selecionada' : 'selecionadas'}` : 'selecione as contas'}</strong>
+              <button className="btn btn-tinted" disabled={!selectedIds.length} onClick={() => setMoving(true)}>mover</button>
             </div>
           ) : (
             <Composer
@@ -186,120 +170,132 @@ export function FinanceScreen({ store, me, month, onMonthChange }: Props) {
               onChange={setText}
               onSubmit={handleAdd}
               canSubmit={Boolean(entry)}
-              placeholder="Luz 180 dia 10"
+              placeholder="luz 180 dia 10"
               label="Nova conta"
               sendLabel="Lançar conta"
               onFocus={() => scrollToEnd()}
-              chip={entry && entry.amountCents > 0 ? `${formatBRL(entry.amountCents)}${entry.dueDay ? ` · dia ${entry.dueDay}` : ''}` : null}
+              chip={entry && entry.amountCents > 0 ? <>{formatBRL(entry.amountCents)}{entry.dueDay ? ` · dia ${entry.dueDay}` : ''}</> : null}
               leading={
                 <button
                   type="button"
                   role="switch"
                   aria-checked={recurring}
-                  aria-label="Todo mês"
+                  aria-label="todo mês"
                   className={`repeat${recurring ? ' is-on' : ''}`}
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => { setRecurring((v) => !v); sound.tick(); haptic('light') }}
                 >
-                  <Icon name="repeat" size={16} weight={2.2} />
-                  {!text.trim() && <span>Todo mês</span>}
+                  <Icon name="repeat" size={16} />
+                  {!text.trim() && <span>todo mês</span>}
                 </button>
               }
             />
           )}
-        </Accessory>
+        </Dock>
       }
     >
-      <div className="month-switch">
-        <strong aria-live="polite">
+      <div className="month-bar">
+        <button className="icon-button" onClick={() => goMonth(-1)} aria-label="Mês anterior"><Icon name="left" size={18} /></button>
+        <div className="month-name" aria-live="polite">
           <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span key={month} style={{ display: 'inline-block' }} initial={{ opacity: 0, y: reduced ? 0 : 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : -6 }} transition={{ duration: 0.16 }}>
-              {cap(monthLabel(month))}
+            <motion.span key={month} initial={{ opacity: 0, y: reduced ? 0 : 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : -6 }} transition={{ duration: 0.16 }}>
+              {monthLabel(month)}
             </motion.span>
           </AnimatePresence>
-        </strong>
-        {!isCurrentMonth(month) && <button className="today" onClick={() => { sound.tick(); haptic('light'); onMonthChange(monthKey()) }}>Hoje</button>}
-        <button className="glass-button" onClick={() => goMonth(-1)} aria-label="Mês anterior"><Icon name="left" size={17} weight={2.4} /></button>
-        <button className="glass-button" onClick={() => goMonth(1)} aria-label="Próximo mês"><Icon name="right" size={17} weight={2.4} /></button>
+        </div>
+        <button className="icon-button" onClick={() => goMonth(1)} aria-label="Próximo mês"><Icon name="right" size={18} /></button>
+        {!isCurrentMonth(month) && <button className="link-button" onClick={() => { sound.tick(); haptic('light'); onMonthChange(monthKey()) }}>hoje</button>}
       </div>
 
-      <section className="summary" aria-label="Resumo do mês">
-        <p className="summary-head">
-          <span>{summary.pendingCents > 0 ? 'Falta pagar' : summary.totalCents > 0 ? 'Mês pago' : 'Nada lançado'}</span>
-          <span><Rolling value={paid.length} /> de {shown.length} pagas</span>
-        </p>
+      <section className="summary">
+        <p className="summary-label">{summary.pendingCents > 0 ? 'falta pagar' : summary.totalCents > 0 ? 'mês pago' : 'nada lançado'}{filter !== 'all' ? ` · ${filterTitle}` : ''}</p>
         <Money className="summary-value" cents={summary.pendingCents > 0 ? summary.pendingCents : summary.paidCents} />
         <div className="meter" role="progressbar" aria-label="Contas pagas no mês" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
           <motion.span initial={false} animate={{ scaleX: progress }} transition={{ type: 'spring', stiffness: 200, damping: 30 }} />
         </div>
         <p className="summary-line">
-          <span>{filterTitle}</span>
+          <span><Rolling value={paid.length} /> de {shown.length} pagas</span>
           <span>{formatAmount(summary.paidCents)} de {formatAmount(summary.totalCents)}</span>
         </p>
       </section>
 
-      {summary.debt && (
-        <Section>
-          <Row
-            icon={<Avatar person={summary.debt.from} size={30} />}
-            title={summary.debt.from === me ? <>Você deve <strong>{formatBRL(summary.debt.cents)}</strong> para {summary.debt.to}</> : <>{summary.debt.from} te deve <strong>{formatBRL(summary.debt.cents)}</strong></>}
-            detail="Conta do que já foi pago no mês"
-          >
-            <button className="pill" onClick={() => { sound.settle(); haptic('success'); settleMonth() }}>Acertar</button>
-          </Row>
-        </Section>
-      )}
-      {!summary.debt && paid.length > 0 && <p className="section-footer quits" style={{ margin: '10px var(--margin) 0' }}>Vocês estão quites.</p>}
+      <AnimatePresence initial={false}>
+        {summary.debt ? (
+          <motion.div key={`debt-${summary.debt.from}-${summary.debt.cents}`} className="debt" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+            <Avatar person={summary.debt.from} size={28} />
+            <span className="debt-text">
+              {summary.debt.from === me
+                ? <>você deve <strong>{formatBRL(summary.debt.cents)}</strong> para {summary.debt.to}</>
+                : <>{summary.debt.from} te deve <strong>{formatBRL(summary.debt.cents)}</strong></>}
+            </span>
+            <button className="btn btn-tinted" onClick={() => { sound.settle(); haptic('success'); settleMonth() }}>acertamos</button>
+          </motion.div>
+        ) : shown.length > 0 ? (
+          <motion.p key="quites" className="quits" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>vocês estão quites</motion.p>
+        ) : null}
+      </AnimatePresence>
 
       <FolderChips folders={folders} active={filter} counts={counts} onChange={(next) => { sound.tick(); setFilter(next); cancelSelection() }} onAdd={() => setFolderSheet({ folder: null })} />
+      {activeFolder && <button className="link-button folder-edit" onClick={() => setFolderSheet({ folder: activeFolder })}>editar pasta {activeFolder.name}</button>}
 
       {error && <button className="banner" onClick={clearError}>{error}</button>}
       {!ready && <Skeleton rows={3} />}
-      {ready && shown.length === 0 && <Empty icon={<Glyph name="doc" size={56} />} title={filter === 'all' ? 'Nenhuma conta' : `Nada em ${filterTitle}`} hint="Escreva abaixo: “Luz 180”. Ligue “Todo mês” para ela voltar sozinha." />}
+      {ready && shown.length === 0 && <Empty title={`nada em ${filterTitle}`} hint="escreva abaixo: “luz 180”. ligue “todo mês” para ela voltar sozinha." />}
 
-      {pending.length > 0 && (
-        <Section header={<>A pagar · <Rolling value={pending.length} /></>} action={activeFolder && <button className="link" onClick={() => setFolderSheet({ folder: activeFolder })}>Editar pasta</button>}>
-          <ul className="list bill-list"><AnimatePresence initial={false} mode="popLayout">{pending.map(row)}</AnimatePresence></ul>
-        </Section>
-      )}
-      {pending.length === 0 && activeFolder && (
-        <div className="section-header" style={{ padding: '18px calc(var(--margin) + 16px) 0', justifyContent: 'flex-end' }}>
-          <button className="link" onClick={() => setFolderSheet({ folder: activeFolder })}>Editar pasta</button>
+      {ready && shown.length > 0 && (
+        <div className="section-head">
+          <h2>{pending.length > 0 ? 'a pagar' : 'tudo pago'}{pending.length > 0 && <small><Rolling value={pending.length} /></small>}</h2>
+          <button className="link-button" onClick={() => { sound.tick(); if (selecting) cancelSelection(); else setSelecting(true) }}>{selecting ? 'cancelar' : 'selecionar'}</button>
         </div>
       )}
 
+      <ul className="list">
+        <AnimatePresence initial={false} mode="popLayout">
+          {pending.map((expense) => (
+            <SwipeRow key={expense.id} lead={{ label: 'pagar', onTrigger: () => pay(expense) }} onRemove={() => handleRemove(expense)} onPress={() => (selecting ? toggleSelection(expense) : setEditing(expense))} disabled={selecting}>
+              <BillRow {...rowProps(expense)} overdue={Boolean(expense.due_day && expense.due_day < today && isCurrentMonth(month))} />
+            </SwipeRow>
+          ))}
+        </AnimatePresence>
+      </ul>
+
       {paid.length > 0 && (
-        <Section header={`Pagas · ${paid.length}`}>
-          <ul className="list bill-list"><AnimatePresence initial={false} mode="popLayout">{paid.map(row)}</AnimatePresence></ul>
-        </Section>
+        <>
+          <div className="section-head"><h2>pagas<small>{paid.length}</small></h2></div>
+          <ul className="list">
+            <AnimatePresence initial={false} mode="popLayout">
+              {paid.map((expense) => (
+                <SwipeRow key={expense.id} onPress={() => (selecting ? toggleSelection(expense) : setEditing(expense))} disabled={selecting}>
+                  <BillRow {...rowProps(expense)} overdue={false} />
+                </SwipeRow>
+              ))}
+            </AnimatePresence>
+          </ul>
+        </>
       )}
 
       <EditExpenseSheet
         expense={editing}
         me={me}
         onClose={() => setEditing(null)}
-        onSave={(expense, changes, scope) => { edit(expense, changes, scope); sound.add(); setEditing(null) }}
+        onSave={(expense, entry, scope) => { edit(expense, entry, scope); sound.add(); setEditing(null) }}
         onSplit={setSplit}
         onRemove={handleRemove}
       />
 
-      <ActionSheet
-        open={Boolean(asking)}
-        onClose={() => setAsking(null)}
-        title={asking ? `Apagar ${asking.title}?` : ''}
-        message="Esta conta se repete todo mês. As que já foram pagas não são apagadas."
-        actions={asking ? [
-          { label: `Apagar só a de ${monthLabel(asking.month)}`, destructive: true, onSelect: () => { removeThisMonth(asking); setAsking(null) } },
-          {
-            label: 'Apagar esta e as próximas',
-            destructive: true,
-            onSelect: () => {
+      <Sheet open={Boolean(asking)} onClose={() => setAsking(null)} title={asking ? `apagar ${asking.title}?` : 'apagar'}>
+        {asking && (
+          <div className="sheet-form">
+            <p className="sheet-text">Essa conta se repete todo mês.</p>
+            <button className="btn btn-tinted" onClick={() => { removeThisMonth(asking); setAsking(null) }}>só de {monthLabel(asking.month)}</button>
+            <button className="btn btn-danger" onClick={() => {
               sound.undo(); haptic('medium'); stopRecurring(asking); setAsking(null)
               setNotice(`${asking.title} parou de se repetir`)
-            },
-          },
-        ] : []}
-      />
+            }}>de {monthLabel(asking.month)} em diante</button>
+            <p className="field-hint">Em diante, ela para de se repetir. As contas já pagas ficam.</p>
+          </div>
+        )}
+      </Sheet>
 
       <FolderSheet
         open={folderSheet !== null}
@@ -318,7 +314,7 @@ export function FinanceScreen({ store, me, month, onMonthChange }: Props) {
         }}
       />
       <MoveSheet open={moving} count={selectedIds.length} folders={folders} onMove={finishMove} onClose={() => setMoving(false)} />
-      <Done show={closing} label="Mês pago" />
+      <Done show={closing} label="mês pago" />
     </Screen>
   )
 }
@@ -329,28 +325,31 @@ function BillRow({ expense, me, selecting, selected, onToggleSelect, onPay, over
   selecting: boolean
   selected: boolean
   onToggleSelect: (expense: Expense) => void
+  onEdit: (expense: Expense) => void
   onPay: (expense: Expense) => void
   overdue: boolean
 }) {
   const paid = expense.status === 'pago'
   const meta = [
     paid
-      ? expense.paid_by ? `Paga por ${expense.paid_by === me ? 'você' : expense.paid_by}` : 'Paga'
-      : expense.due_day ? `${overdue ? 'Venceu' : 'Vence'} dia ${expense.due_day}` : 'Sem vencimento',
+      ? expense.paid_by ? `paga por ${expense.paid_by === me ? 'você' : expense.paid_by}` : 'paga'
+      : expense.due_day ? `vence dia ${expense.due_day}` : 'sem vencimento',
     expense.recurrence_id ? 'todo mês' : null,
-    expense.split !== 'meio' ? (expense.split === me ? 'só sua' : `só ${expense.split}`) : null,
+    expense.split !== 'meio' ? splitLabel(expense, me) : null,
     expense.settled ? 'acertada' : null,
   ].filter(Boolean)
   return (
-    <div className={`item${paid ? ' is-done' : ''}`}>
-      {selecting
-        ? <Check variant="select" checked={selected} onClick={() => onToggleSelect(expense)} label={`${selected ? 'Desmarcar' : 'Selecionar'} ${expense.title}`} />
-        : <Check checked={paid} onClick={() => onPay(expense)} label={`${paid ? 'Desmarcar' : 'Pagar'} ${expense.title}`} />}
+    <div className={`item bill${paid ? ' is-done' : ''}`}>
+      {selecting && <Check checked={selected} onClick={() => onToggleSelect(expense)} label={`${selected ? 'Desmarcar' : 'Selecionar'} ${expense.title}`} />}
       <span className="item-text">
         <span className="item-name">{expense.title}</span>
-        <span className={`item-meta${overdue ? ' is-overdue' : ''}`}>{meta.join(' · ')}</span>
+        <span className={`item-meta${overdue ? ' is-overdue' : ''}`}>
+          {paid && expense.paid_by && <Avatar person={expense.paid_by} size={15} />}
+          {meta.join(' · ')}
+        </span>
       </span>
       <span className="item-amount">{formatAmount(expense.amount_cents)}</span>
+      {!selecting && <Check checked={paid} onClick={() => onPay(expense)} label={`${paid ? 'Desmarcar' : 'Pagar'} ${expense.title}`} />}
     </div>
   )
 }
@@ -359,14 +358,13 @@ function EditExpenseSheet({ expense, me, onClose, onSave, onSplit, onRemove }: {
   expense: Expense | null
   me: string
   onClose: () => void
-  onSave: (expense: Expense, entry: ExpenseEntry, scope: 'mes' | 'futuro') => void
+  onSave: (expense: Expense, entry: NonNullable<ReturnType<typeof parseExpenseEntry>>, scope: 'mes' | 'futuro') => void
   onSplit: (expense: Expense, split: string) => void
   onRemove: (expense: Expense) => void
 }) {
   const [text, setText] = useState('')
   const [last, setLast] = useState<Expense | null>(null)
   const [split, setSplitState] = useState('meio')
-  const [scopeAsk, setScopeAsk] = useState(false)
   useEffect(() => {
     if (!expense) return
     setLast(expense)
@@ -377,42 +375,33 @@ function EditExpenseSheet({ expense, me, onClose, onSave, onSplit, onRemove }: {
   const understood = parseExpenseEntry(text)
   const label = current ? monthLabel(current.month) : ''
   const save = (scope: 'mes' | 'futuro') => { if (current && understood) onSave(current, understood, scope) }
-  // conta que se repete pergunta o alcance, como o Calendário ao salvar um evento repetido
-  const done = () => { if (!understood || !current) return; if (current.recurrence_id) setScopeAsk(true); else save('mes') }
-
   return (
-    <>
-      <Sheet open={Boolean(expense)} onClose={onClose} title="Editar conta" onDone={done} doneDisabled={!understood}>
-        {current && (
-          <form onSubmit={(e) => { e.preventDefault(); done() }}>
-            <Section footer={understood ? `${understood.title} · ${formatBRL(understood.amountCents)}${understood.dueDay ? ` · dia ${understood.dueDay}` : ''}` : 'Escreva o nome'}>
-              <input className="field" data-autofocus value={text} onChange={(e) => setText(e.target.value)} aria-label="Editar conta" autoComplete="off" enterKeyHint="done" />
-            </Section>
-            <Section header="Divisão">
-              <div className="pad">
-                <Segmented
-                  label="Divisão da conta"
-                  value={split}
-                  onChange={(value) => { setSplitState(value); onSplit(current, value) }}
-                  options={[{ value: 'meio', label: 'Meio a meio' }, ...PEOPLE.map((person) => ({ value: person as string, label: person === me ? `Só ${person}` : `Só ${person}` }))]}
-                />
-              </div>
-            </Section>
-            <Section>
-              <Row title="Apagar conta" danger center onClick={() => onRemove(current)} />
-            </Section>
-          </form>
-        )}
-      </Sheet>
-      <ActionSheet
-        open={scopeAsk}
-        onClose={() => setScopeAsk(false)}
-        title="Esta conta se repete todo mês."
-        actions={[
-          { label: `Salvar só em ${label}`, onSelect: () => { setScopeAsk(false); save('mes') } },
-          { label: `Salvar de ${label} em diante`, onSelect: () => { setScopeAsk(false); save('futuro') } },
-        ]}
-      />
-    </>
+    <Sheet open={Boolean(expense)} onClose={onClose} title="editar conta">
+      {current && (
+        <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); if (!current.recurrence_id) save('mes') }}>
+          <input className="field" data-autofocus value={text} onChange={(e) => setText(e.target.value)} aria-label="Editar conta" autoComplete="off" enterKeyHint="done" />
+          <p className="field-hint">{understood ? `${understood.title} · ${formatBRL(understood.amountCents)}${understood.dueDay ? ` · dia ${understood.dueDay}` : ''}` : 'escreva o nome'}</p>
+
+          <span className="field-label" id="split-label">divisão</span>
+          <Segmented
+            label="Divisão da conta"
+            value={split}
+            onChange={(value) => { setSplitState(value); onSplit(current, value) }}
+            options={[{ value: 'meio', label: 'meio a meio' }, ...PEOPLE.map((person) => ({ value: person as string, label: person === me ? `só ${person} (você)` : `só ${person}` }))]}
+          />
+
+          {current.recurrence_id ? (
+            <>
+              <button type="button" className="btn btn-primary" disabled={!understood} onClick={() => save('mes')}>só de {label}</button>
+              <button type="button" className="btn btn-tinted" disabled={!understood} onClick={() => save('futuro')}>de {label} em diante</button>
+              <p className="field-hint">Em diante, a conta que se repete passa a ser assim.</p>
+            </>
+          ) : (
+            <button type="submit" className="btn btn-primary" disabled={!understood}>salvar</button>
+          )}
+          <button type="button" className="btn btn-plain is-danger" onClick={() => onRemove(current)}>apagar conta</button>
+        </form>
+      )}
+    </Sheet>
   )
 }
