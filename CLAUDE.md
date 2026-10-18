@@ -2,15 +2,16 @@
 
 Nome escolhido: **Despensa** — joga com o duplo sentido "despensa" (onde se guarda mantimento) e "des-pensa" (não precisa pensar, é rápido). Reforça a proposta central do produto: tirar o atrito de pensar demais para adicionar um item.
 
-## Redesign completo (17/10/2026): caderno da casa
-Pedido do Lucas: experiência acima de tudo. Testamos o padrão Apple (iOS 26) e ele **não gostou**; escolheu o
-caminho "Caderno", o Notion levado a sério. **Substitui** as seções "Linguagem visual por módulo", "A peça",
+## Redesign completo (17/10/2026): padrão Notion
+Pedido do Lucas: experiência acima de tudo. Foram testados três caminhos no mesmo dia: a primeira versão
+Notion, um padrão Apple (iOS 26) e um "caderno" com páginas do Notion. O Lucas **rejeitou os dois últimos** e
+ficou com a **primeira versão Notion**, polida. **Substitui** as seções "Linguagem visual por módulo", "A peça",
 "Navegação", "Redesign mobile", "Polimento" e as regras de marca/tipografia/cor/tema abaixo, no que conflitarem.
 Detalhes em DESIGN.md. Resumo:
-- Cada módulo é uma página: caminho no topo, ícone (🛒 🧾 🎁), título, propriedades e blocos. Mercado é lista de tarefas, Contas é tabela com pastas como abas, Desejos é galeria. Itens abrem como página numa folha.
-- Paleta e etiquetas do Notion, uma cor de ação (azul `#2383E2`), tema claro e escuro, textos em frase normal (só "despensa" em caixa baixa).
-- Não voltar ao padrão Apple nem à arte antiga (bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola, jazz).
-- **Ícone (17/10/2026, desenho do Lucas)**: pote visto de frente (contorno arredondado preto) com um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. Geometria em `src/lib/brand.ts` e `scripts/icons.mjs`; `node scripts/icons.mjs` gera todos os ícones. `Mark` é o desenho sozinho; `AppIcon` é o ícone recortado. Não mexer no desenho sem o Lucas.
+- Sistema único: título grande em caixa baixa, barra de abas embaixo (lateral no computador), listas com gesto, folhas que sobem, campo de adicionar fixo embaixo. Componentes em `src/components/ui.tsx`.
+- Branco, cinzas quentes, régua fina, azul como cor de ação, tema claro e escuro. Textos em caixa baixa.
+- Não voltar ao padrão Apple, ao caderno com propriedades, nem à arte antiga (bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola, jazz).
+- **Ícone (desenho do Lucas)**: pote visto de frente (contorno arredondado preto) com um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. Geometria em `src/lib/brand.ts` e `scripts/icons.mjs`; `node scripts/icons.mjs` gera todos os ícones. `Mark` é o desenho sozinho; `AppIcon` é o ícone recortado. Não mexer no desenho sem o Lucas.
 - Fila offline, sync, push, hooks e lógica intactos. Hooks ganharam `setSplit` e `setLevel`.
 - Testes e2e em `e2e/` (mercado, contas, desejos, geral). `?demo=1&acesso=1` mostra a tela de entrar.
 

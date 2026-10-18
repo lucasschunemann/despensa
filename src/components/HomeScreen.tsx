@@ -1,20 +1,20 @@
 import { useRef, useState } from 'react'
 import type { ExpensesStore } from '../hooks/useExpenses'
 import type { ItemsStore } from '../hooks/useItems'
-import { useViewportFit } from '../hooks/useViewportFit'
 import type { WishesStore } from '../hooks/useWishes'
+import { useViewportFit } from '../hooks/useViewportFit'
 import { summarize } from '../lib/balance'
 import { haptic } from '../lib/haptics'
 import { formatBRL, parseExpenseEntry } from '../lib/money'
 import { parseEntry } from '../lib/parse'
-import { productEmoji } from '../lib/products'
 import { sound } from '../lib/sound'
 import { PEOPLE } from '../lib/types'
 import { forecast, sortWishes, whenLabel } from '../lib/wishes'
-import { PAGE_ICON, type View } from './TabBar'
-import { Callout, Composer, GroupHead, Icon, Menu, Page } from './ui'
+import { Avatar } from './Avatar'
+import type { View } from './TabBar'
+import { Composer, Group, Icon, Row, Screen, Segmented } from './ui'
 
-type Destination = 'lista' | 'contas' | 'desejos'
+type CaptureMode = 'lista' | 'contas' | 'desejos'
 
 interface Props {
   me: string
@@ -28,22 +28,22 @@ const TODAY = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric'
 
 function greeting(date = new Date()) {
   const hour = date.getHours()
-  if (hour < 5) return 'Boa madrugada'
-  if (hour < 12) return 'Bom dia'
-  if (hour < 18) return 'Boa tarde'
-  return 'Boa noite'
+  if (hour < 5) return 'boa madrugada'
+  if (hour < 12) return 'bom dia'
+  if (hour < 18) return 'boa tarde'
+  return 'boa noite'
 }
 
-const DESTINATIONS: Record<Destination, { name: string; placeholder: string; aria: string; action: string }> = {
-  lista: { name: 'Mercado', placeholder: '2 leites', aria: 'Adicionar ao mercado', action: 'Adicionar à lista' },
-  contas: { name: 'Contas', placeholder: 'Internet 129,90 dia 15', aria: 'Adicionar conta', action: 'Adicionar conta' },
-  desejos: { name: 'Desejos', placeholder: 'Poltrona 1.490', aria: 'Adicionar desejo', action: 'Adicionar desejo' },
+const CAPTURE: Record<CaptureMode, { aria: string; placeholder: string; action: string; where: string }> = {
+  lista: { aria: 'Adicionar ao mercado', placeholder: '2 leites', action: 'Adicionar à lista', where: 'na lista' },
+  contas: { aria: 'Adicionar conta', placeholder: 'internet 129,90 dia 15', action: 'Adicionar conta', where: 'nas contas' },
+  desejos: { aria: 'Adicionar desejo', placeholder: 'poltrona 1.490', action: 'Adicionar desejo', where: 'nos desejos' },
 }
 
 export function HomeScreen({ me, items, expenses, wishes, onOpen }: Props) {
   useViewportFit()
   const input = useRef<HTMLInputElement>(null)
-  const [dest, setDest] = useState<Destination>('lista')
+  const [mode, setMode] = useState<CaptureMode>('lista')
   const [entry, setEntry] = useState('')
   const [feedback, setFeedback] = useState('')
 
@@ -52,124 +52,130 @@ export function HomeScreen({ me, items, expenses, wishes, onOpen }: Props) {
   const pendingBills = expenses.expenses.filter((expense) => expense.status === 'pendente')
   const month = summarize(expenses.expenses, PEOPLE)
   const nextBill = [...pendingBills].sort((a, b) => (a.due_day ?? 99) - (b.due_day ?? 99))[0]
-  const overdue = pendingBills.filter((bill) => bill.due_day && bill.due_day < new Date().getDate())
+  const overdue = pendingBills.filter((bill) => bill.due_day && bill.due_day < new Date().getDate()).length
   const queue = sortWishes(wishes.wishes.filter((wish) => wish.status === 'querendo'))
   const nextWish = queue[0]
   const plan = forecast(queue, wishes.savingsCents)
   const nextWhen = nextWish ? whenLabel(plan.get(nextWish.id)?.monthsAway ?? null) : null
   const ready = items.ready && expenses.ready && wishes.ready
 
-  const parsedMarket = dest === 'lista' ? parseEntry(entry) : null
-  const parsedMoney = dest !== 'lista' ? parseExpenseEntry(entry) : null
-  const canSubmit = dest === 'lista' ? Boolean(parsedMarket && items.ready) : Boolean(parsedMoney && (dest === 'contas' ? expenses.ready : wishes.ready))
+  const parsedMarket = mode === 'lista' ? parseEntry(entry) : null
+  const parsedMoney = mode !== 'lista' ? parseExpenseEntry(entry) : null
+  const canSubmit = mode === 'lista' ? Boolean(parsedMarket && items.ready) : Boolean(parsedMoney && (mode === 'contas' ? expenses.ready : wishes.ready))
+
+  const selectMode = (next: CaptureMode) => {
+    setMode(next)
+    setFeedback('')
+    requestAnimationFrame(() => input.current?.focus())
+  }
 
   const submit = () => {
     if (!canSubmit) return
-    let name = ''
-    if (dest === 'lista' && parsedMarket) {
+    if (mode === 'lista' && parsedMarket) {
       items.add(parsedMarket.name, parsedMarket.quantity)
-      name = parsedMarket.name
-    } else if (dest === 'contas' && parsedMoney) {
+      setFeedback(`${parsedMarket.name} ${CAPTURE.lista.where}`)
+    } else if (mode === 'contas' && parsedMoney) {
       expenses.add(parsedMoney, {})
-      name = parsedMoney.title
-    } else if (dest === 'desejos' && parsedMoney) {
+      setFeedback(`${parsedMoney.title} ${CAPTURE.contas.where}`)
+    } else if (mode === 'desejos' && parsedMoney) {
       wishes.add(parsedMoney.title, parsedMoney.amountCents)
-      name = parsedMoney.title
+      setFeedback(`${parsedMoney.title} ${CAPTURE.desejos.where}`)
     }
-    setFeedback(`${name} foi para ${DESTINATIONS[dest].name}`)
     sound.unlock()
     sound.add()
     haptic('success')
     setEntry('')
   }
 
-  // o que o app entendeu do que está escrito
+  // o campo devolve o que o app entendeu do que está escrito
   const understood = parsedMoney
     ? `${parsedMoney.title}${parsedMoney.amountCents ? ` · ${formatBRL(parsedMoney.amountCents)}` : ''}${parsedMoney.dueDay ? ` · dia ${parsedMoney.dueDay}` : ''}`
     : parsedMarket
-      ? `${productEmoji(parsedMarket.name) ?? ''} ${parsedMarket.name}${parsedMarket.quantity ? ` · ${parsedMarket.quantity}` : ''}`.trim()
+      ? `${parsedMarket.name}${parsedMarket.quantity ? ` · ${parsedMarket.quantity}` : ''}`
       : ''
+  const hint = entry ? understood : feedback
 
   const open = (view: View) => {
     haptic('light')
     onOpen(view)
   }
 
-  const list = pendingItems.slice(0, 3).map((item) => item.name).join(', ')
-
   return (
-    <Page title={`${greeting()}, ${me}`} eyebrow={TODAY.format(new Date())}>
-      <div className="capture">
-        <Composer
-          inputRef={input}
-          value={entry}
-          onChange={(value) => { setEntry(value); setFeedback('') }}
-          onSubmit={submit}
-          canSubmit={canSubmit}
-          placeholder={DESTINATIONS[dest].placeholder}
-          label={DESTINATIONS[dest].aria}
-          sendLabel={DESTINATIONS[dest].action}
-          leading={
-            <Menu<Destination>
-              label="Onde adicionar"
-              value={dest}
-              placement="down"
-              onChange={(next) => { setDest(next); setFeedback(''); requestAnimationFrame(() => input.current?.focus()) }}
-              options={(Object.keys(DESTINATIONS) as Destination[]).map((key) => ({ value: key, label: DESTINATIONS[key].name, icon: PAGE_ICON[key] }))}
-            >
-              <span className="dest"><span aria-hidden>{PAGE_ICON[dest]}</span>{DESTINATIONS[dest].name}<Icon name="down" size={14} /></span>
-            </Menu>
-          }
+    <Screen title={`${greeting()}, ${me}`} subtitle={TODAY.format(new Date())}>
+      <Group title="adicionar" className="capture">
+        <div className="capture-body">
+          <Segmented
+            label="Onde adicionar"
+            value={mode}
+            onChange={selectMode}
+            options={[
+              { value: 'lista', label: 'mercado' },
+              { value: 'contas', label: 'conta' },
+              { value: 'desejos', label: 'desejo' },
+            ]}
+          />
+          <Composer
+            inputRef={input}
+            value={entry}
+            onChange={(value) => { setEntry(value); setFeedback('') }}
+            onSubmit={submit}
+            canSubmit={canSubmit}
+            placeholder={CAPTURE[mode].placeholder}
+            label={CAPTURE[mode].aria}
+            sendLabel={CAPTURE[mode].action}
+          />
+          <p className="capture-hint" role="status">{hint}</p>
+        </div>
+      </Group>
+
+      <Group title="resumo">
+        <Row
+          icon={<Icon name="basket" size={20} />}
+          title="mercado"
+          detail={cartItems.length ? `${cartItems.length} no carrinho` : undefined}
+          value={!ready ? '' : pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : 'lista limpa'}
+          chevron
+          onClick={() => open('lista')}
         />
-        <p className="capture-hint" role="status">{entry ? understood : feedback}</p>
-      </div>
+        <Row
+          icon={<Icon name="receipt" size={20} />}
+          title="contas"
+          detail={nextBill ? `${nextBill.title}${nextBill.due_day ? ` · dia ${nextBill.due_day}` : ''}` : undefined}
+          value={!ready ? '' : month.pendingCents ? formatBRL(month.pendingCents) : 'tudo pago'}
+          chevron
+          onClick={() => open('contas')}
+        />
+        <Row
+          icon={<Icon name="heart" size={20} />}
+          title="desejos"
+          detail={nextWish ? `${nextWish.title}${nextWhen ? ` · ${nextWhen === 'já dá' ? nextWhen : `dá em ${nextWhen}`}` : ''}` : undefined}
+          value={!ready ? '' : queue.length ? `${queue.length} ${queue.length === 1 ? 'desejo' : 'desejos'}` : 'nenhum'}
+          chevron
+          onClick={() => open('desejos')}
+        />
+      </Group>
 
-      {overdue.length > 0 && (
-        <Callout icon="⏰" tone="red">
-          <button type="button" onClick={() => open('contas')} style={{ textAlign: 'left' }}>
-            {overdue.length === 1 ? `${overdue[0].title} venceu dia ${overdue[0].due_day}` : `${overdue.length} contas atrasadas`}
-          </button>
-        </Callout>
+      {(overdue > 0 || month.debt) && (
+        <Group title="atenção">
+          {overdue > 0 && (
+            <Row
+              icon={<Icon name="bell" size={20} />}
+              title={`${overdue} ${overdue === 1 ? 'conta atrasada' : 'contas atrasadas'}`}
+              danger
+              chevron
+              onClick={() => open('contas')}
+            />
+          )}
+          {month.debt && (
+            <Row
+              icon={<Avatar person={month.debt.from} size={26} />}
+              title={month.debt.from === me ? `você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}`}
+              chevron
+              onClick={() => open('contas')}
+            />
+          )}
+        </Group>
       )}
-      {month.debt && (
-        <Callout icon="🤝">
-          {month.debt.from === me ? `Você deve ${formatBRL(month.debt.cents)} para ${month.debt.to}.` : `${month.debt.from} te deve ${formatBRL(month.debt.cents)}.`}
-        </Callout>
-      )}
-
-      <GroupHead>Páginas</GroupHead>
-      <ul className="links">
-        <li>
-          <button type="button" className="link-row" onClick={() => open('lista')}>
-            <span className="link-icon" aria-hidden>{PAGE_ICON.lista}</span>
-            <span className="link-text">
-              <span className="link-title">Mercado</span>
-              <span className="link-detail">{list ? `${list}${pendingItems.length > 3 ? '…' : ''}` : cartItems.length ? `${cartItems.length} no carrinho` : 'Nada faltando'}</span>
-            </span>
-            <span className="link-value">{ready ? (pendingItems.length ? `${pendingItems.length} ${pendingItems.length === 1 ? 'item' : 'itens'}` : '') : ''}</span>
-          </button>
-        </li>
-        <li>
-          <button type="button" className="link-row" onClick={() => open('contas')}>
-            <span className="link-icon" aria-hidden>{PAGE_ICON.contas}</span>
-            <span className="link-text">
-              <span className="link-title">Contas</span>
-              <span className="link-detail">{nextBill ? `Próxima: ${nextBill.title}${nextBill.due_day ? `, dia ${nextBill.due_day}` : ''}` : month.totalCents ? 'Tudo pago no mês' : 'Nada lançado no mês'}</span>
-            </span>
-            <span className="link-value">{ready && month.pendingCents ? formatBRL(month.pendingCents) : ''}</span>
-          </button>
-        </li>
-        <li>
-          <button type="button" className="link-row" onClick={() => open('desejos')}>
-            <span className="link-icon" aria-hidden>{PAGE_ICON.desejos}</span>
-            <span className="link-text">
-              <span className="link-title">Desejos</span>
-              <span className="link-detail">{nextWish ? `${nextWish.title}${nextWhen ? (nextWhen === 'já dá' ? ', já dá para comprar' : `, sai em ${nextWhen}`) : ''}` : 'Nenhum desejo na fila'}</span>
-            </span>
-            <span className="link-value">{ready && queue.length ? `${queue.length} na fila` : ''}</span>
-          </button>
-        </li>
-      </ul>
-    </Page>
+    </Screen>
   )
 }

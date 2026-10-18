@@ -1,29 +1,34 @@
-# despensa: caderno da casa (17/10/2026)
+# despensa: sistema visual (17/10/2026)
 
-Caminho escolhido pelo Lucas depois de testar o padrão Apple e não gostar: o Notion levado a sério. Cada módulo é uma página, e o conteúdo é feito de blocos. Componentes em `src/components/ui.tsx`, estilos em `src/index.css`.
+Primeira versão do redesign, no padrão Notion. Testamos depois um padrão Apple (iOS 26) e um "caderno" com páginas do Notion; o Lucas preferiu esta, com polimento.
+
+Referência: estrutura e gestos do iOS, limpeza do Notion. Um sistema só para os três módulos.
 
 ## Fundação
-- **Paleta do Notion**: texto `#37352F`, cinzas quentes em transparência, régua `rgb(55 53 47 / .09)`, azul `#2383E2` como única cor de ação, barra lateral `#F7F7F5`. Tema claro e escuro (escuro `#191919`).
-- **Etiquetas** nas nove cores das opções de seleção do Notion (cinza, marrom, laranja, amarelo, verde, azul, roxo, rosa, vermelho), com fundo claro e texto escuro.
-- **Fonte do sistema** (a mesma pilha do Notion), Inter onde não houver. Título de página 32px (40px no computador), corpo 16px, propriedades 14px.
-- **Textos em frase normal**, como o Notion escreve em português. Só "despensa" fica em caixa baixa.
+- Tokens em `src/index.css`: `--bg`, `--surface`, `--fill`, `--text`, `--text-2`, `--text-3`, `--line`, `--accent` (azul), `--good` (verde de concluir), `--danger`. Tema claro e escuro, automático, com escolha nas configurações.
+- Fonte do sistema (SF Pro no iPhone e no Mac). Inter hospedada só como alternativa onde não há SF. Números com `tabular-nums`.
+- Escala: título grande 34/700, corpo 17, apoio 15, legenda 13. Margem única `--gutter` (16px, 24px no tablet).
+- Cor de ação: uma só. Verde só para concluir (pegar, pagar), vermelho só para apagar e atraso.
 
 ## Estrutura
-- `Page`: barra fina com o caminho ("Casa / 🛒 Mercado", tocar em Casa volta ao início), presença e avatar à direita. Abaixo, ícone grande (emoji da página, ou a marca no início), título e **propriedades** (rótulo cinza com ícone, valor à direita).
-- Celular: barra de abas embaixo, simples. Computador: barra lateral com as páginas, como no Notion.
-- Campo de adicionar fixo embaixo, sempre pronto. A linha "+ Novo" no fim de cada lista leva até ele.
-- Itens abrem como **página numa folha**: título grande (o mesmo jeito de escrever: "2 pão integral", "Luz 213,50 dia 22"), propriedades e ações. Salvar fica no canto direito.
-- Escolha com consequência (apagar ou mudar conta que se repete) usa uma confirmação pequena no centro.
-
-## Páginas
-- **Início**: data, saudação, o campo com um menu para escolher o destino, callouts quando há atraso ou dívida, e a lista das páginas com o resumo de cada uma.
-- **🛒 Mercado**: lista de tarefas com a caixa quadrada do Notion e o emoji do produto no começo. Propriedades: falta pegar, no carrinho. O que foi pego vai para o bloco recolhível "No carrinho", com "Finalizar compra".
-- **🧾 Contas**: propriedades do mês (mês, falta pagar, pagas, acerto), pastas como abas de visão de um banco de dados, e uma tabela agrupada em "A pagar" e "Pagas", com etiquetas (todo mês, divisão, pasta).
-- **🎁 Desejos**: propriedades do cofre (na fila, poupança por mês, fila completa) e uma galeria de cartões com capa, preço, vontade e previsão.
-- **Apresentação**: uma página de primeiros passos com três tarefas que dá para marcar.
+- `Screen` (`ui.tsx`): barra de navegação sobre o conteúdo, título grande que vira título compacto ao rolar, com desfoque de material.
+- Barra de abas inferior no celular (início, mercado, contas, desejos); vira barra lateral a partir de 900px. Some com o teclado aberto.
+- Folhas (`Sheet`) para qualquer edição ou pergunta: editar item, conta ou desejo, finalizar compra, pasta, configurações. Arrastam para fechar.
+- Listas planas com régua fina (`SwipeRow`) nos módulos; listas agrupadas (`Group`, `Row`) em início e configurações.
 
 ## Gestos (iguais nos três módulos)
-Direita conclui (pegar, pagar, realizar). Esquerda mostra Apagar; arrastar até o fim apaga direto. Sempre com Desfazer. Arrastar nunca vira toque.
+- Direita: pegar, pagar, realizar. Esquerda: apagar, sempre com desfazer.
+- Tocar no círculo conclui; tocar na linha abre a edição.
+- Arrastar nunca vira toque no que estava embaixo do dedo.
+
+## Entrada
+Um campo só, fixo acima da barra de abas (`Composer`): "2 leite", "luz 180 dia 10", "abajur 320". O campo mostra o que entendeu. Edição usa a mesma gramática.
+
+## Movimento
+Molas curtas, resposta ao toque, sem decoração parada. Três momentos de feedback: adicionar, concluir e lista ou mês completo (`Done`). Reduzir movimento do sistema é respeitado.
+
+## Acessibilidade
+Foco visível, fundo inert sob folhas, Escape fecha, retorno do foco ao gatilho, `prefers-reduced-motion` e `prefers-reduced-transparency`.
 
 ## Ícone
 Desenho do Lucas: um pote visto de frente, contorno preto `#161616` com cantos arredondados e um ponto verde `#3E9E68`, sobre papel `#FAFAF7`. A geometria fica em `src/lib/brand.ts` e em `scripts/icons.mjs` (tela de 560), e `node scripts/icons.mjs` gera tudo, do jeito que a Apple entrega:
@@ -32,7 +37,4 @@ Desenho do Lucas: um pote visto de frente, contorno preto `#161616` com cantos a
 - **Android** (`maskable-512.png`, `icon-1024.png`): quadrado cheio; o desenho cabe na zona segura.
 - **Aba do navegador** (`favicon.svg`, 32 e 48px): ícone recortado, com o desenho um pouco maior para ler pequeno.
 - **Safari** (`mask-icon.svg`): só o desenho, em uma cor.
-Dentro do app: `Mark` (o desenho na cor do texto, ponto verde) e `AppIcon` (o ícone recortado, na tela de entrar).
-
-## Acessibilidade
-Foco visível e contido nas folhas, Escape fecha, foco volta ao gatilho. Respeita Reduzir Movimento, Reduzir Transparência (vidro sólido) e Aumentar Contraste.
+Dentro do app, `Mark` (o desenho na cor do texto, com o ponto verde) aparece na tela de entrar, no carregamento e na barra lateral. `AppIcon` é o ícone recortado, para quando for preciso mostrar o ícone inteiro.

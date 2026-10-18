@@ -1,4 +1,5 @@
 import type { User } from '@supabase/supabase-js'
+import { motion } from 'motion/react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { AuthScreen, PasswordSetup } from './components/AuthScreen'
 import { Mark } from './components/Avatar'
@@ -75,7 +76,7 @@ export default function App() {
     return () => { alive = false }
   }, [auth.ready, auth.user?.id, auth.user?.is_anonymous, auth.profile?.id, code])
 
-  if (!isConfigured) return <Gate title="despensa"><p className="gate-text">O Supabase não está configurado. Preencha o arquivo <code>.env</code>.</p></Gate>
+  if (!isConfigured) return <Gate title="despensa"><p className="gate-text">Supabase não configurado. Preencha o arquivo <code>.env</code>.</p></Gate>
   if (!auth.ready) return <Loading label="abrindo…" />
   if (!auth.session || !auth.user) return <AuthScreen />
   if (auth.user.is_anonymous) return <AuthScreen legacy initialUsername={load(PERSON_KEY) ?? ''} />
@@ -87,7 +88,7 @@ export default function App() {
     void auth.refreshProfile()
   }} />
 
-  if (!auth.profile) return <Loading label="Preparando seu perfil…" />
+  if (!auth.profile) return <Loading label="preparando seu perfil…" />
   if (roomBusy) return <Loading label="sincronizando…" />
   if (!roomId) return <RoomGate error={roomError} onJoin={(value) => { rememberRoom(value); setCode(value) }} onCreate={async () => {
     const room = await createRoom(); rememberRoom(room.code); setCode(room.code); setRoomId(room.id)
@@ -113,19 +114,7 @@ function RoomGate({ error, onJoin, onCreate }: { error: string | null; onJoin: (
     const value = new FormData(event.currentTarget).get('code')?.toString().trim()
     if (value) onJoin(value)
   }
-  return (
-    <Gate title="Sua casa">
-      <p className="gate-text">Crie uma casa nova ou entre com o código de uma casa que já existe.</p>
-      <div className="room-choice">
-        <button className="button is-primary" disabled={busy} onClick={() => { setBusy(true); setLocalError(null); void onCreate().catch((cause) => setLocalError(friendlyAuthError(cause))).finally(() => setBusy(false)) }}>{busy ? 'Criando…' : 'Criar uma casa'}</button>
-        <form className="gate-form" onSubmit={submit}>
-          <input className="field" name="code" placeholder="Código da casa" autoComplete="off" aria-label="Código da casa" />
-          <button type="submit" className="button is-secondary">Entrar</button>
-        </form>
-      </div>
-      {(error || localError) && <p className="form-error" role="alert">{error ?? localError}</p>}
-    </Gate>
-  )
+  return <Gate title="sua casa"><p className="gate-text">Crie um espaço novo ou entre com o código de uma casa que já existe.</p><div className="room-choice"><button className="btn btn-primary" disabled={busy} onClick={() => { setBusy(true); setLocalError(null); void onCreate().catch((cause) => setLocalError(friendlyAuthError(cause))).finally(() => setBusy(false)) }}>{busy ? 'criando…' : 'criar uma casa'}</button><span>ou</span><form className="gate-form" onSubmit={submit}><input name="code" placeholder="código da casa" autoComplete="off" aria-label="Código da casa" /><button type="submit" className="btn btn-secondary">entrar</button></form></div>{(error || localError) && <p className="form-error" role="alert">{error ?? localError}</p>}</Gate>
 }
 
 function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: string; user: User; profile: Profile; onProfileChange: (profile: Profile) => void; onSignOut: () => void }) {
@@ -172,15 +161,15 @@ function Room({ roomId, user, profile, onProfileChange, onSignOut }: { roomId: s
   useEffect(() => { if (location.hash) history.replaceState(null, '', `${location.pathname}${location.search}`) }, [])
 
   return (
-    <Shell.Provider value={{ me: person, presence, openSettings: () => setSettingsOpen(true), goHome: () => changeView('inicio') }}>
+    <Shell.Provider value={{ me: person, presence, openSettings: () => setSettingsOpen(true) }}>
       <div className="shell">
         <main className="view">
-          <div key={view} className="view-inner">
+          <motion.div key={view} className="view-inner" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
             {view === 'inicio' && <HomeScreen me={person} items={items} expenses={expenses} wishes={wishes} onOpen={changeView} />}
             {view === 'lista' && <ListScreen store={items} me={person} onRegisterMarket={(amountCents) => expenses.add({ title: 'Mercado', amountCents, dueDay: null }, { paid: true })} />}
             {view === 'contas' && <FinanceScreen store={expenses} me={person} month={month} onMonthChange={setMonth} />}
             {view === 'desejos' && <WishesScreen store={wishes} me={person} presence={presence} onRegisterExpense={(title, amountCents) => expenses.add({ title, amountCents, dueDay: null }, { paid: true })} />}
-          </div>
+          </motion.div>
         </main>
         <TabBar view={view} onChange={changeView} badges={{ contas: overdueBills }} />
       </div>

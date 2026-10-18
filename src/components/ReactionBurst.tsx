@@ -59,7 +59,7 @@ export function ReactionBurst({ reaction, me }: { reaction: Reaction | null; me:
           >
             <Avatar person={current.person} size={22} />
             <span>
-              {current.person === me ? 'Você mandou' : `${current.person} mandou`} {current.emoji}
+              {current.person === me ? 'você mandou' : `${current.person} mandou`} {current.emoji}
               {current.about ? ` em ${current.about}` : ''}
             </span>
           </motion.div>

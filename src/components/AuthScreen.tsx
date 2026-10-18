@@ -3,6 +3,7 @@ import { continueWith, friendlyAuthError, getSocialProviders, sendPasswordReset,
 import { haptic } from '../lib/haptics'
 import { Mark } from './Avatar'
 import { AvatarPicker } from './UserAvatar'
+import { Segmented } from './ui'
 import { supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'signup' | 'forgot'
@@ -38,7 +39,7 @@ export function AuthScreen({ legacy = false, initialUsername = '' }: { legacy?: 
           setNotice('Abra o e-mail de confirmação neste aparelho. Depois, você criará sua senha.')
         } else {
           const result = await signUp(email.trim(), password, username, avatar)
-          if (!result.session) setNotice('Conta criada. Confirme pelo e-mail e depois abra a despensa de novo pela Tela de Início.')
+          if (!result.session) setNotice('Conta criada. Confirme pelo e-mail e depois abra novamente o Despensa na tela inicial.')
         }
       }
     } catch (cause) {
@@ -47,58 +48,67 @@ export function AuthScreen({ legacy = false, initialUsername = '' }: { legacy?: 
     } finally { setBusy(false) }
   }
 
-  const title = legacy ? 'Proteja o acesso da casa' : mode === 'signin' ? 'Entrar' : mode === 'signup' ? 'Criar conta' : 'Recuperar acesso'
+  const title = legacy ? 'proteja o acesso da casa' : mode === 'signin' ? 'entrar' : mode === 'signup' ? 'criar conta' : 'recuperar acesso'
   const subtitle = legacy
-    ? 'Crie uma conta com e-mail. Os itens, contas e desejos que já estão aqui continuam.'
-    : mode === 'signin' ? 'Mercado, contas e desejos da casa, no mesmo lugar.'
+    ? 'Crie uma conta com e-mail e senha. Os itens, contas e desejos que já estão aqui continuam.'
+    : mode === 'signin' ? 'Use o e-mail e a senha da sua conta.'
       : mode === 'signup' ? 'Um espaço privado para quem divide a casa.'
         : 'Enviamos um link de uso único para o seu e-mail.'
 
   return (
     <main className="auth">
       <div className="auth-card">
-        <div className="auth-brand"><Mark size={22} /><span>despensa</span></div>
+        <div className="auth-brand"><Mark size={30} /><span>despensa</span></div>
         <div className="auth-heading"><h1>{title}</h1><p>{subtitle}</p></div>
 
-        {mode !== 'forgot' && (
-          <div className="auth-social">
-            <button type="button" className="button is-secondary" disabled={!providers.apple} title={!providers.apple ? 'Disponível depois de configurar o acesso com a Apple' : undefined} onClick={() => void social('apple', legacy, setBusy, setError)}><AppleIcon />Continuar com a Apple{!providers.apple && <small>em breve</small>}</button>
-            <button type="button" className="button is-secondary" disabled={!providers.google} title={!providers.google ? 'Disponível depois de configurar o acesso com o Google' : undefined} onClick={() => void social('google', legacy, setBusy, setError)}><GoogleIcon />Continuar com o Google{!providers.google && <small>em breve</small>}</button>
-            <div className="auth-or" aria-hidden />
-          </div>
+        {!legacy && mode !== 'forgot' && (
+          <Segmented<'signin' | 'signup'>
+            label="Acesso"
+            value={mode}
+            onChange={(next) => { setMode(next); setError(null); setNotice(null) }}
+            options={[{ value: 'signin', label: 'entrar' }, { value: 'signup', label: 'criar conta' }]}
+          />
         )}
 
         <form className="auth-form" onSubmit={submit} key={`${mode}-${legacy}`}>
           {(mode === 'signup' || legacy) && (
             <>
-              <label className="field-label" htmlFor="auth-name">Nome</label>
-              <input id="auth-name" className="field" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" maxLength={32} placeholder="Como te chamam na casa" required />
-              <span className="field-label">Ícone</span>
+              <label className="field-label" htmlFor="auth-name">nome de usuário</label>
+              <input id="auth-name" className="field" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" maxLength={32} placeholder="como devemos te chamar?" required />
+              <span className="field-label">avatar</span>
               <AvatarPicker value={avatar} onChange={setAvatar} />
             </>
           )}
-          <label className="field-label" htmlFor="auth-email">E-mail</label>
+          <label className="field-label" htmlFor="auth-email">e-mail</label>
           <input id="auth-email" className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="voce@exemplo.com" required />
           {mode !== 'forgot' && !legacy && (
             <>
-              <label className="field-label" htmlFor="auth-password">Senha</label>
+              <label className="field-label" htmlFor="auth-password">senha</label>
               <div className="field-password">
-                <input id="auth-password" className="field" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} placeholder="Mínimo de 8 caracteres" required minLength={8} />
-                <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? 'Ocultar' : 'Mostrar'}</button>
+                <input id="auth-password" className="field" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} placeholder="mínimo de 8 caracteres" required minLength={8} />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? 'ocultar' : 'mostrar'}</button>
               </div>
-              {mode === 'signup' && <span className={`password-strength s${strength}`}><i /><i /><i /><i /><small>{['Muito curta', 'Fraca', 'Boa', 'Forte', 'Excelente'][strength]}</small></span>}
+              {mode === 'signup' && <span className={`password-strength s${strength}`}><i /><i /><i /><i /><small>{['muito curta', 'fraca', 'boa', 'forte', 'excelente'][strength]}</small></span>}
             </>
           )}
           {(error || notice) && <p className={error ? 'form-error' : 'form-notice'} role={error ? 'alert' : 'status'}>{error ?? notice}</p>}
-          <button className="button is-primary" type="submit" disabled={busy}>
-            {busy ? 'Um instante…' : mode === 'signin' ? 'Continuar' : mode === 'forgot' ? 'Enviar link' : 'Criar conta'}
+          <button className="btn btn-primary" type="submit" disabled={busy}>
+            {busy ? 'um instante…' : mode === 'signin' ? 'entrar' : mode === 'forgot' ? 'enviar link' : legacy ? 'criar conta' : 'criar minha conta'}
           </button>
+          {mode === 'signin' && <button className="btn btn-plain" type="button" onClick={() => setMode('forgot')}>esqueci minha senha</button>}
+          {mode === 'forgot' && <button className="btn btn-plain" type="button" onClick={() => setMode('signin')}>voltar para entrar</button>}
         </form>
 
-        {!legacy && mode === 'signin' && <p className="auth-switch"><button type="button" onClick={() => setMode('forgot')}>Esqueceu a senha?</button> · Não tem conta? <button type="button" onClick={() => { setMode('signup'); setError(null); setNotice(null) }}>Criar conta</button></p>}
-        {!legacy && mode === 'signup' && <p className="auth-switch">Já tem conta? <button type="button" onClick={() => { setMode('signin'); setError(null); setNotice(null) }}>Entrar</button></p>}
-        {mode === 'forgot' && <p className="auth-switch"><button type="button" onClick={() => setMode('signin')}>Voltar para entrar</button></p>}
-        {legacy && <p className="auth-switch"><button type="button" onClick={() => void supabase.auth.signOut()}>Já tenho uma conta</button></p>}
+        {mode !== 'forgot' && (
+          <>
+            <p className="auth-divider"><span>ou continue com</span></p>
+            <div className="social-buttons">
+              <button type="button" className="btn btn-secondary" disabled={!providers.apple} title={!providers.apple ? 'Disponível após configurar o provedor Apple' : undefined} onClick={() => void social('apple', legacy, setBusy, setError)}><AppleIcon /><span>Apple{!providers.apple && <small> em breve</small>}</span></button>
+              <button type="button" className="btn btn-secondary" disabled={!providers.google} title={!providers.google ? 'Disponível após configurar o provedor Google' : undefined} onClick={() => void social('google', legacy, setBusy, setError)}><GoogleIcon /><span>Google{!providers.google && <small> em breve</small>}</span></button>
+            </div>
+          </>
+        )}
+        {legacy && <button className="btn btn-plain" type="button" onClick={() => void supabase.auth.signOut()}>já tenho uma conta</button>}
       </div>
     </main>
   )
@@ -119,15 +129,15 @@ export function PasswordSetup({ recovery = false, onDone }: { recovery?: boolean
   return (
     <main className="auth">
       <div className="auth-card">
-        <div className="auth-brand"><Mark size={22} /><span>despensa</span></div>
-        <div className="auth-heading"><h1>{recovery ? 'Nova senha' : 'Crie sua senha'}</h1><p>{recovery ? 'Escolha uma senha nova para recuperar a conta.' : 'O e-mail foi confirmado. Falta escolher a senha.'}</p></div>
+        <div className="auth-brand"><Mark size={30} /><span>despensa</span></div>
+        <div className="auth-heading"><h1>{recovery ? 'nova senha' : 'crie sua senha'}</h1><p>{recovery ? 'Escolha uma senha nova para recuperar a conta.' : 'O e-mail foi confirmado. Falta escolher a senha.'}</p></div>
         <form className="auth-form" onSubmit={submit}>
-          <label className="field-label" htmlFor="setup-password">Senha</label>
+          <label className="field-label" htmlFor="setup-password">senha</label>
           <input id="setup-password" className="field" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <label className="field-label" htmlFor="setup-confirm">Confirme a senha</label>
+          <label className="field-label" htmlFor="setup-confirm">confirme a senha</label>
           <input id="setup-confirm" className="field" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
           {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="button is-primary" disabled={busy}>{busy ? 'Salvando…' : 'Continuar'}</button>
+          <button className="btn btn-primary" disabled={busy}>{busy ? 'salvando…' : 'salvar e continuar'}</button>
         </form>
       </div>
     </main>
