@@ -1,32 +1,34 @@
-# despensa: sistema visual (redesign de 17/10/2026)
+# despensa: sistema visual (17/10/2026, segunda versão)
 
-Referência: estrutura e gestos do iOS, limpeza do Notion. Um sistema só para os três módulos.
+Referência: como se a Apple tivesse feito o app, no iOS 26. Componentes em `src/components/ui.tsx`, estilos em `src/index.css`.
 
 ## Fundação
-- Tokens em `src/index.css`: `--bg`, `--surface`, `--fill`, `--text`, `--text-2`, `--text-3`, `--line`, `--accent` (azul), `--good` (verde de concluir), `--danger`. Tema claro e escuro, automático, com escolha nas configurações.
-- Fonte do sistema (SF Pro no iPhone e no Mac). Inter hospedada só como alternativa onde não há SF. Números com `tabular-nums`.
-- Escala: título grande 34/700, corpo 17, apoio 15, legenda 13. Margem única `--gutter` (16px, 24px no tablet).
-- Cor de ação: uma só. Verde só para concluir (pegar, pagar), vermelho só para apagar e atraso.
+- **Cores do sistema** do iOS, claras e escuras: fundo agrupado `#F2F2F7` (preto puro no escuro), cartões brancos (`#1C1C1E`), rótulos em quatro níveis de cinza, régua fina de 0,5px. Azul do sistema é a cor de ação.
+- **Cor por módulo**, como as categorias do Saúde: Mercado verde, Contas azul, Desejos rosa (`--tint`). Aparece no ícone do cartão, no círculo de concluir e no gesto de arrastar.
+- **Tipografia do sistema**: SF Pro no iPhone e no Mac (Inter onde não houver). Título grande 34/41, corpo 17/22, apoio 15/20, legenda 13/18. Números grandes em SF Pro Rounded, como no Saúde.
+- **Textos em frase normal** ("Mercado", "Salvar"), como a Apple escreve em português. Só a marca "despensa" fica em caixa baixa.
+- **Vidro só na navegação** (barra de abas, campo flutuante, botões da barra, menus, folha de ação). Conteúdo nunca é de vidro.
 
 ## Estrutura
-- `Screen` (`ui.tsx`): barra de navegação sobre o conteúdo, título grande que vira título compacto ao rolar, com desfoque de material.
-- Barra de abas inferior no celular (início, mercado, contas, desejos); vira barra lateral a partir de 900px. Some com o teclado aberto.
-- Folhas (`Sheet`) para qualquer edição ou pergunta: editar item, conta ou desejo, finalizar compra, pasta, configurações. Arrastam para fechar.
-- Listas planas com régua fina (`SwipeRow`) nos módulos; listas agrupadas (`Group`, `Row`) em início e configurações.
+- `Screen`: título grande, data acima no Início, avatar na linha do título (como a App Store). Ao rolar, o título vai para a barra com a borda de rolagem desfocada do iOS 26.
+- Barra de abas: cápsula de vidro flutuante com símbolos preenchidos e lente na aba atual. Tocar de novo na aba atual volta ao topo. A partir de 900px vira barra lateral, como no iPad.
+- Campo de adicionar: cápsula de vidro acima da barra de abas (acessório). No Início, um menu escolhe o destino (Mercado, Contas, Desejos).
+- Folhas flutuantes, com × à esquerda e ✓ azul à direita; o conteúdo vem em seções agrupadas.
+- Escolhas com consequência (apagar ou salvar conta que se repete) usam a folha de ação do iOS, como o Calendário.
+
+## Telas
+- **Início**: cartões no estilo do Saúde, um por módulo, com o número grande e o que importa (atraso, dívida, próximo desejo).
+- **Mercado**: como o Lembretes. Fundo branco, círculo à esquerda que enche na cor do módulo, linha "2 no carrinho · Finalizar compra · Mostrar".
+- **Contas**: mês com setas, cartão de resumo, acerto como linha com botão, pastas em cápsulas, seções "A pagar" e "Pagas".
+- **Desejos**: cartão do cofre, linha "Guardar por mês" editável como nos Ajustes, fila com foto, preço e previsão.
+- **Configurações**: no formato do Ajustes, com ícones coloridos.
+- **Apresentação**: tela única de boas-vindas, com três novidades e Continuar.
 
 ## Gestos (iguais nos três módulos)
-- Direita: pegar, pagar, realizar. Esquerda: apagar, sempre com desfazer.
-- Tocar no círculo conclui; tocar na linha abre a edição.
-- Arrastar nunca vira toque no que estava embaixo do dedo.
-
-## Entrada
-Um campo só, fixo acima da barra de abas (`Composer`): "2 leite", "luz 180 dia 10", "abajur 320". O campo mostra o que entendeu. Edição usa a mesma gramática.
-
-## Movimento
-Molas curtas, resposta ao toque, sem decoração parada. Três momentos de feedback: adicionar, concluir e lista ou mês completo (`Done`). Reduzir movimento do sistema é respeitado.
+Direita conclui (pegar, pagar, realizar). Esquerda mostra Apagar; arrastar até o fim apaga direto, como no Mail. Sempre com Desfazer. Arrastar nunca vira toque.
 
 ## Marca
-Provisória: wordmark "despensa" em caixa baixa e um "d" geométrico (`Mark` em `Avatar.tsx`, `public/brand/mark.svg`). Os ícones saem de `node scripts/icons.mjs`. Trocar o logo é editar esses dois arquivos.
+Provisória: "d" geométrico (`Mark` em `Avatar.tsx`, `public/brand/mark.svg`). Os ícones saem de `node scripts/icons.mjs`.
 
 ## Acessibilidade
-Foco visível, fundo inert sob folhas, Escape fecha, retorno do foco ao gatilho, `prefers-reduced-motion` e `prefers-reduced-transparency`.
+Foco visível e contido nas folhas, Escape fecha, foco volta ao gatilho. Respeita Reduzir Movimento, Reduzir Transparência (vidro sólido) e Aumentar Contraste.

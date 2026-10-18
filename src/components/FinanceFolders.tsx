@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react'
 import { haptic } from '../lib/haptics'
 import type { ExpenseFolder } from '../lib/types'
-import { Icon, Row, Sheet } from './ui'
+import { Icon, Row, Section, Sheet } from './ui'
 
 export type FolderFilter = 'all' | 'unfiled' | string
 
-const COLORS = ['blue', 'mint', 'orange', 'rose', 'violet', 'slate'] as const
+const COLORS: Array<[string, string]> = [
+  ['blue', 'azul'],
+  ['mint', 'verde-água'],
+  ['orange', 'laranja'],
+  ['rose', 'rosa'],
+  ['violet', 'roxo'],
+  ['slate', 'cinza'],
+]
 
 export function FolderDot({ color = 'slate' }: { color?: string }) {
   return <span className={`folder-dot folder-${color}`} aria-hidden />
 }
 
-/** Filtro por pasta: uma faixa de chips que rola junto com a lista. */
+/** Filtro por pasta: uma faixa de cápsulas que rola junto com a lista. */
 export function FolderChips({ folders, active, counts, onChange, onAdd }: {
   folders: ExpenseFolder[]
   active: FolderFilter
@@ -38,10 +45,10 @@ export function FolderChips({ folders, active, counts, onChange, onAdd }: {
   )
   return (
     <nav className="chips" aria-label="Pastas das contas">
-      {chip('all', 'todas', counts.all)}
+      {chip('all', 'Todas', counts.all)}
       {folders.map((folder) => chip(folder.id, folder.name, counts.byFolder[folder.id] ?? 0, folder.color))}
-      {chip('unfiled', 'sem pasta', counts.unfiled)}
-      <button type="button" className="chip chip-add" onClick={onAdd} aria-label="Nova pasta"><Icon name="plus" size={16} /></button>
+      {chip('unfiled', 'Sem pasta', counts.unfiled)}
+      <button type="button" className="chip chip-add" onClick={onAdd} aria-label="Nova pasta"><Icon name="plus" size={17} weight={2.3} /></button>
     </nav>
   )
 }
@@ -61,19 +68,27 @@ export function FolderSheet({ open, folder, onClose, onSave, onDelete }: {
     setName(folder?.name ?? '')
     setColor(folder?.color ?? 'blue')
   }, [open, folder])
+  const save = () => { if (name.trim()) onSave(name.trim(), color) }
   return (
-    <Sheet open={open} onClose={onClose} title={folder ? 'editar pasta' : 'nova pasta'}>
-      <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); if (name.trim()) onSave(name.trim(), color) }}>
-        <input className="field" data-autofocus value={name} onChange={(e) => setName(e.target.value)} placeholder="ex.: casa" maxLength={36} aria-label="Nome da pasta" enterKeyHint="done" />
-        <div className="swatches" role="radiogroup" aria-label="Cor da pasta">
-          {COLORS.map((choice) => (
-            <button type="button" key={choice} role="radio" aria-checked={color === choice} aria-label={`Cor ${choice}`} className={`swatch folder-${choice}`} onClick={() => { haptic('light'); setColor(choice) }}>
-              {color === choice && <Icon name="check" size={16} />}
-            </button>
-          ))}
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={!name.trim()}>{folder ? 'salvar' : 'criar pasta'}</button>
-        {folder && <button type="button" className="btn btn-plain is-danger" onClick={() => onDelete(folder)}>apagar pasta</button>}
+    <Sheet open={open} onClose={onClose} title={folder ? 'Editar pasta' : 'Nova pasta'} onDone={save} doneLabel={folder ? 'Salvar' : 'Criar pasta'} doneDisabled={!name.trim()}>
+      <form onSubmit={(e) => { e.preventDefault(); save() }}>
+        <Section>
+          <input className="field" data-autofocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome, ex.: Casa" maxLength={36} aria-label="Nome da pasta" enterKeyHint="done" />
+        </Section>
+        <Section header="Cor">
+          <div className="swatches" role="radiogroup" aria-label="Cor da pasta">
+            {COLORS.map(([choice, label]) => (
+              <button type="button" key={choice} role="radio" aria-checked={color === choice} aria-label={`Cor ${label}`} className={`swatch folder-${choice}`} onClick={() => { haptic('light'); setColor(choice) }}>
+                {color === choice && <Icon name="check" size={18} weight={2.6} />}
+              </button>
+            ))}
+          </div>
+        </Section>
+        {folder && (
+          <Section>
+            <Row title="Apagar pasta" danger center onClick={() => onDelete(folder)} />
+          </Section>
+        )}
       </form>
     </Sheet>
   )
@@ -88,13 +103,13 @@ export function MoveSheet({ open, count, folders, onMove, onClose }: {
   onClose: () => void
 }) {
   return (
-    <Sheet open={open} onClose={onClose} title={`mover ${count} ${count === 1 ? 'conta' : 'contas'}`}>
-      <div className="group-body">
+    <Sheet open={open} onClose={onClose} title={`Mover ${count} ${count === 1 ? 'conta' : 'contas'}`}>
+      <Section>
         {folders.map((folder) => (
           <Row key={folder.id} icon={<FolderDot color={folder.color} />} title={folder.name} chevron onClick={() => onMove(folder.id)} />
         ))}
-        <Row icon={<FolderDot color="slate" />} title="sem pasta" chevron onClick={() => onMove(null)} />
-      </div>
+        <Row icon={<FolderDot color="slate" />} title="Sem pasta" chevron onClick={() => onMove(null)} />
+      </Section>
     </Sheet>
   )
 }

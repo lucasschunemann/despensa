@@ -7,7 +7,7 @@ import { prefs, useSoundOn, useThemePreference, type ThemePreference } from '../
 import { supabase } from '../lib/supabase'
 import { PushSettings } from './PushSettings'
 import { AvatarPicker, UserAvatar } from './UserAvatar'
-import { Group, Icon, Row, Segmented, Sheet, Switch } from './ui'
+import { Icon, Row, Section, Segmented, Sheet, Switch, Tile } from './ui'
 
 interface Props {
   open: boolean
@@ -21,27 +21,29 @@ interface Props {
   onClosed?: () => void
 }
 
+/** Configurações no formato do app Ajustes. */
 export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProfileChange, onSignOut, onReplayOnboarding, onClosed }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
   const [username, setUsername] = useState(profile.username)
-  const [avatar, setAvatar] = useState(profile.avatar_value)
   const [busy, setBusy] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const soundOn = useSoundOn()
   const theme = useThemePreference()
 
-  useEffect(() => { setUsername(profile.username); setAvatar(profile.avatar_value) }, [profile])
+  useEffect(() => { setUsername(profile.username) }, [profile])
   useEffect(() => { if (!open) { setMessage(null); setPasswordOpen(false) } }, [open])
 
-  async function saveProfile(nextAvatar = avatar, avatarType: Profile['avatar_type'] = 'preset') {
-    if (username.trim().length < 2) return setMessage('Escolha um nome com pelo menos 2 caracteres.')
+  async function saveProfile(nextAvatar = profile.avatar_value, avatarType: Profile['avatar_type'] = profile.avatar_type) {
+    const name = username.trim()
+    if (name.length < 2) return setMessage({ text: 'Escolha um nome com pelo menos 2 caracteres.', error: true })
+    if (name === profile.username && nextAvatar === profile.avatar_value) return
     setBusy('profile'); setMessage(null)
     try {
-      const next = await updateProfile(user.id, { username: username.trim(), avatar_type: avatarType, avatar_value: nextAvatar })
-      onProfileChange(next); setMessage('Perfil atualizado.')
+      const next = await updateProfile(user.id, { username: name, avatar_type: avatarType, avatar_value: nextAvatar })
+      onProfileChange(next)
       haptic('success')
-    } catch (cause) { setMessage(friendlyAuthError(cause)); haptic('medium') } finally { setBusy(null) }
+    } catch (cause) { setMessage({ text: friendlyAuthError(cause), error: true }); haptic('medium') } finally { setBusy(null) }
   }
 
   async function chooseFile(file?: File) {
@@ -50,77 +52,81 @@ export function UserSettingsSheet({ open, user, profile, roomId, onClose, onProf
     try {
       const url = await uploadProfileAvatar(user.id, file)
       const next = await updateProfile(user.id, { username: username.trim(), avatar_type: 'upload', avatar_value: url })
-      onProfileChange(next); setMessage('Foto atualizada.'); haptic('success')
-    } catch (cause) { setMessage(friendlyAuthError(cause)); haptic('medium') } finally { setBusy(null) }
+      onProfileChange(next); haptic('success')
+    } catch (cause) { setMessage({ text: friendlyAuthError(cause), error: true }); haptic('medium') } finally { setBusy(null) }
   }
 
   async function logout() {
     setBusy('logout')
     const { error } = await supabase.auth.signOut()
-    if (error) { setMessage(friendlyAuthError(error)); setBusy(null); return }
+    if (error) { setMessage({ text: friendlyAuthError(error), error: true }); setBusy(null); return }
     onSignOut()
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="configurações" onClosed={onClosed}>
-      <div className="settings">
-        <div className="profile-card">
-          <div className="profile-avatar">
-            <UserAvatar profile={profile} size={64} />
-            <button type="button" className="profile-camera" onClick={() => fileInput.current?.click()} aria-label="Enviar foto" disabled={busy === 'avatar'}><Icon name="camera" size={14} /></button>
-            <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => void chooseFile(e.target.files?.[0])} />
-          </div>
-          <div>
-            <strong>{profile.username}</strong>
-            <span>{user.email}</span>
-          </div>
+    <Sheet open={open} onClose={onClose} title="Configurações" onClosed={onClosed}>
+      <div className="profile">
+        <div className="profile-avatar">
+          <UserAvatar profile={profile} size={84} />
+          <button type="button" className="profile-camera" onClick={() => fileInput.current?.click()} aria-label="Enviar foto" disabled={busy === 'avatar'}><Icon name="camera" size={15} weight={2.1} /></button>
+          <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => void chooseFile(e.target.files?.[0])} />
         </div>
-
-        <Group title="perfil">
-          <div className="group-pad">
-            <label className="field-label" htmlFor="settings-name">nome de usuário</label>
-            <input id="settings-name" className="field" value={username} maxLength={32} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
-            <span className="field-label">ícone</span>
-            <AvatarPicker value={profile.avatar_type === 'preset' ? avatar : ''} onChange={(value) => { setAvatar(value); void saveProfile(value, 'preset') }} />
-            <button className="btn btn-primary" disabled={busy === 'profile' || username.trim() === profile.username} onClick={() => void saveProfile()}>{busy === 'profile' ? 'salvando…' : 'salvar perfil'}</button>
-          </div>
-        </Group>
-
-        <Group>
-          <Row icon={<Icon name="lock" size={20} />} title="senha e segurança" detail="alterar a senha de acesso" onClick={() => setPasswordOpen((v) => !v)} ariaLabel="Senha e segurança" value={<Icon name="down" size={16} className={`row-chevron${passwordOpen ? ' is-open' : ''}`} />} />
-          <AnimatePresence initial={false}>
-            {passwordOpen && (
-              <motion.div className="group-pad" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-                <PasswordChange user={user} onDone={() => { setPasswordOpen(false); setMessage('Senha alterada.') }} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Group>
-
-        <Group title="neste aparelho">
-          <div className="group-pad">
-            <span className="field-label">aparência</span>
-            <Segmented<ThemePreference>
-              label="Aparência do app"
-              value={theme}
-              onChange={(value) => prefs.setTheme(value)}
-              options={[{ value: 'system', label: 'auto' }, { value: 'light', label: 'claro' }, { value: 'dark', label: 'escuro' }]}
-            />
-          </div>
-          <Row icon={<Icon name="sound" size={20} />} title="sons do app" detail="um som curto ao adicionar, pegar e pagar">
-            <Switch checked={soundOn} onChange={(value) => prefs.setSoundOn(value)} label="Sons do app" />
-          </Row>
-          <Row icon={<Icon name="play" size={20} />} title="ver a apresentação de novo" chevron onClick={() => { haptic('light'); onReplayOnboarding() }} />
-        </Group>
-
-        {roomId && <PushSettings roomId={roomId} me={profile.username} />}
-
-        {message && <p className="settings-message" role="status">{message}</p>}
-        <Group>
-          <Row icon={<Icon name="logout" size={20} />} title={busy === 'logout' ? 'saindo…' : 'sair desta conta'} danger onClick={() => void logout()} disabled={busy === 'logout'} />
-        </Group>
-        <p className="settings-footnote">Os dados da casa ficam disponíveis só para quem faz parte dela.</p>
+        <strong>{profile.username}</strong>
+        <span>{user.email}</span>
       </div>
+
+      {message && <p className={message.error ? 'form-error' : 'form-notice'} role={message.error ? 'alert' : 'status'}>{message.text}</p>}
+
+      <Section header="Perfil" footer="É assim que você aparece para quem divide a casa.">
+        <label className="field-row">
+          <span>Nome</span>
+          <input
+            className="field is-end"
+            value={username}
+            maxLength={32}
+            onChange={(e) => setUsername(e.target.value)}
+            onBlur={() => void saveProfile()}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+            autoComplete="username"
+            aria-label="Nome de usuário"
+          />
+        </label>
+        <AvatarPicker value={profile.avatar_type === 'preset' ? profile.avatar_value : ''} onChange={(value) => void saveProfile(value, 'preset')} />
+      </Section>
+
+      <Section header="Neste aparelho">
+        <div className="pad">
+          <Segmented<ThemePreference>
+            label="Aparência do app"
+            value={theme}
+            onChange={(value) => prefs.setTheme(value)}
+            options={[{ value: 'system', label: 'Automático' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Escuro' }]}
+          />
+        </div>
+        <Row icon={<Tile color="pink"><Icon name="speaker" size={18} /></Tile>} title="Sons">
+          <Switch checked={soundOn} onChange={(value) => prefs.setSoundOn(value)} label="Sons do app" />
+        </Row>
+        <Row icon={<Tile color="orange"><Icon name="play" size={18} /></Tile>} title="Ver a apresentação" chevron onClick={() => { haptic('light'); onReplayOnboarding() }} />
+      </Section>
+
+      {roomId && <PushSettings roomId={roomId} me={profile.username} />}
+
+      <Section>
+        <Row icon={<Tile color="gray"><Icon name="lock" size={18} /></Tile>} title="Alterar senha" onClick={() => setPasswordOpen((v) => !v)} ariaLabel="Alterar senha">
+          <Icon name="right" size={14} weight={2.6} className={`row-chevron${passwordOpen ? ' is-open' : ''}`} />
+        </Row>
+        <AnimatePresence initial={false}>
+          {passwordOpen && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
+              <PasswordChange user={user} onDone={() => { setPasswordOpen(false); setMessage({ text: 'Senha alterada.' }) }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Section>
+
+      <Section footer="Os dados da casa ficam disponíveis só para quem faz parte dela.">
+        <Row title={busy === 'logout' ? 'Saindo…' : 'Sair'} danger center onClick={() => void logout()} disabled={busy === 'logout'} />
+      </Section>
     </Sheet>
   )
 }
@@ -144,14 +150,12 @@ function PasswordChange({ user, onDone }: { user: User; onDone: () => void }) {
     } catch (cause) { setError(friendlyAuthError(cause)); haptic('medium') } finally { setBusy(false) }
   }
   return (
-    <form className="sheet-form" onSubmit={submit}>
-      {hasEmailIdentity && <><label className="field-label" htmlFor="pw-current">senha atual</label><input id="pw-current" className="field" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required /></>}
-      <label className="field-label" htmlFor="pw-new">nova senha</label>
-      <input id="pw-new" className="field" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
-      <label className="field-label" htmlFor="pw-confirm">confirmar nova senha</label>
-      <input id="pw-confirm" className="field" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} required />
-      {error && <p className="form-error" role="alert">{error}</p>}
-      <button className="btn btn-primary" disabled={busy}>{busy ? 'alterando…' : 'alterar senha'}</button>
+    <form className="password-change" onSubmit={submit}>
+      {hasEmailIdentity && <input className="field" type="password" placeholder="Senha atual" aria-label="Senha atual" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />}
+      <input className="field" type="password" placeholder="Nova senha" aria-label="Nova senha" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
+      <input className="field" type="password" placeholder="Confirmar nova senha" aria-label="Confirmar nova senha" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} required />
+      {error && <p className="form-error" role="alert" style={{ margin: '0 0 6px' }}>{error}</p>}
+      <div className="pad"><button className="button is-filled" disabled={busy}>{busy ? 'Alterando…' : 'Alterar senha'}</button></div>
     </form>
   )
 }

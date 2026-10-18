@@ -3,15 +3,16 @@
 Nome escolhido: **Despensa** — joga com o duplo sentido "despensa" (onde se guarda mantimento) e "des-pensa" (não precisa pensar, é rápido). Reforça a proposta central do produto: tirar o atrito de pensar demais para adicionar um item.
 
 ## Redesign completo (17/10/2026)
-Pedido do Lucas: experiência acima de tudo, UI como se fosse Notion + Apple. **Substitui** as seções
-"Linguagem visual por módulo", "A peça", "Navegação", "Redesign mobile" e as regras de marca/tipografia/
-avatares acima, no que conflitarem. Detalhes em DESIGN.md. Resumo:
-- Sistema único: título grande, barra de abas (lateral no desktop), folhas, listas com gesto (`src/components/ui.tsx`). Bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola e jazz saíram.
-- Tema claro e escuro; fonte do sistema; uma cor de ação (azul).
-- **Logo em aberto**: o camarão saiu. Marca provisória é o "d" geométrico (`Mark`, `public/brand/mark.svg`). Não escolher logo sem o Lucas.
-- Mercado: finalizar compra é uma folha (valor opcional), sem segurar nem créditos.
-- Fila offline, sync, push, hooks e lógica ficaram intactos. Hooks ganharam `setSplit` e `setLevel`.
-- Testes e2e reescritos em `e2e/` (mercado, contas, desejos, geral).
+Pedido do Lucas: experiência acima de tudo, "como se a Apple tivesse feito o app". **Substitui** as seções
+"Linguagem visual por módulo", "A peça", "Navegação", "Redesign mobile", "Polimento" e as regras de
+marca/tipografia/cor/tema abaixo, no que conflitarem. Detalhes em DESIGN.md. Resumo:
+- Padrão iOS 26: cores e tipos do sistema, listas agrupadas, título grande, barra de abas de vidro flutuante, campo de adicionar flutuando acima dela, folhas com × e ✓, folha de ação para escolhas com consequência. Componentes em `src/components/ui.tsx`.
+- Cor por módulo (Mercado verde, Contas azul, Desejos rosa). Tema claro e escuro. Textos em frase normal; só "despensa" em caixa baixa.
+- Mercado no estilo Lembretes (círculo à esquerda, "Mostrar" os pegos); Início com cartões no estilo Saúde; Configurações no estilo Ajustes; apresentação é uma tela única de boas-vindas.
+- Bilhetes, névoa, grão, letreiro, camarão, créditos, gôndola e jazz saíram.
+- **Logo em aberto**: marca provisória é o "d" geométrico (`Mark`, `public/brand/mark.svg`). Não escolher logo sem o Lucas.
+- Fila offline, sync, push, hooks e lógica intactos. Hooks ganharam `setSplit` e `setLevel`.
+- Testes e2e em `e2e/` (mercado, contas, desejos, geral). `?demo=1&acesso=1` mostra a tela de entrar.
 
 ## Contexto
 App privado, uso restrito a duas pessoas (Lucas e Bela), que moram juntos. Objetivo: resolver a lista de compras de mercado compartilhada entre os dois, com uma experiência de uso muito acima do que Notion, WhatsApp ou apps de lista genéricos oferecem hoje. Não é um produto público, não terá onboarding nem marketing. É validação de uma hipótese de design (tensão entre rapidez e experiência satisfatória) através de um caso real de uso diário.

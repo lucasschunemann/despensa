@@ -1,4 +1,4 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, useReducedMotion } from 'motion/react'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { ItemsStore } from '../hooks/useItems'
 import { useViewportFit } from '../hooks/useViewportFit'
@@ -12,7 +12,7 @@ import type { Item } from '../lib/types'
 import { Avatar } from './Avatar'
 import { Rolling } from './Rolling'
 import { Toss } from './Toss'
-import { Check, Composer, Dock, Done, Empty, Icon, Screen, Shell, Sheet, Skeleton, SwipeRow, Toast } from './ui'
+import { Accessory, Check, Composer, Done, Empty, Glyph, Icon, Row, Screen, Section, Shell, Sheet, Skeleton, SwipeRow, Toast, Typing } from './ui'
 
 interface Props {
   store: ItemsStore
@@ -28,13 +28,12 @@ const normalize = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, 
 /** O emoji do produto (dicionário local) ou a inicial, quando a palavra não está lá. */
 function ProductMark({ name }: { name: string }) {
   const emoji = productEmoji(name)
-  return <span className={emoji ? 'product-mark' : 'product-mark is-initial'} aria-hidden>{emoji ?? name.charAt(0).toUpperCase()}</span>
+  return emoji ? <span className="item-emoji" aria-hidden>{emoji}</span> : <span className="item-initial" aria-hidden>{name.charAt(0).toUpperCase()}</span>
 }
 
 export function ListScreen({ store, me, onRegisterMarket }: Props) {
   const { items, arrivals, ready, error, clearError, add, toggle, edit, remove, restore, finishShopping } = store
   const shell = useContext(Shell)
-  const reduced = useReducedMotion()
 
   const [text, setText] = useState('')
   const [search, setSearch] = useState('')
@@ -44,7 +43,7 @@ export function ListScreen({ store, me, onRegisterMarket }: Props) {
   const [finishing, setFinishing] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [deleted, setDeleted] = useState<Item | null>(null)
-  const [cartOpen, setCartOpen] = useState(false)
+  const [showDone, setShowDone] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   // começa falso: ao abrir, a lista aparece do começo; só acompanha o fim depois de rolar até lá
   const nearBottom = useRef(false)
@@ -69,8 +68,8 @@ export function ListScreen({ store, me, onRegisterMarket }: Props) {
     const previous = wasAllPicked.current
     wasAllPicked.current = allPicked
     if (!ready || previous === null || previous || !allPicked) return
-    const start = setTimeout(() => { sound.complete(); haptic('success'); setCelebrating(true) }, 500)
-    const stop = setTimeout(() => setCelebrating(false), 2200)
+    const start = setTimeout(() => { sound.complete(); haptic('success'); setCelebrating(true) }, 450)
+    const stop = setTimeout(() => setCelebrating(false), 2000)
     return () => { clearTimeout(start); clearTimeout(stop) }
   }, [allPicked, ready])
 
@@ -105,107 +104,83 @@ export function ListScreen({ store, me, onRegisterMarket }: Props) {
     setDeleted(item)
   }
 
-  const subtitle = !ready
-    ? undefined
-    : items.length === 0
-      ? undefined
-      : allPicked
-        ? 'tudo no carrinho'
-        : <><Rolling value={inCart.length} /> de {items.length} no carrinho</>
-
   return (
     <Screen
-      title="mercado"
-      subtitle={subtitle}
+      title="Mercado"
+      plain
+      tint="green"
       scrollRef={scroller}
       onScroll={(el) => { nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80 }}
-      footer={
-        <Dock
+      accessory={
+        <Accessory
           toasts={<>
             {notice && <Toast key="notice" duration={4000} onDismiss={() => setNotice(null)}>{notice}</Toast>}
             {deleted && (
-              <Toast key="deleted" duration={5000} action={{ label: 'desfazer', onClick: () => { haptic('light'); restore(deleted); setDeleted(null) } }} onDismiss={() => setDeleted(null)}>
+              <Toast key="deleted" duration={5000} action={{ label: 'Desfazer', onClick: () => { haptic('light'); restore(deleted); setDeleted(null) } }} onDismiss={() => setDeleted(null)}>
                 {deleted.name} apagado
               </Toast>
             )}
           </>}
+          above={shell?.presence.typing ? <Typing key="typing" person={shell.presence.typing} /> : null}
         >
-          <AnimatePresence>
-            {shell?.presence.typing && (
-              <motion.p className="typing" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
-                <Avatar person={shell.presence.typing} size={18} />
-                {shell.presence.typing} está escrevendo
-              </motion.p>
-            )}
-          </AnimatePresence>
           <Composer
             value={text}
             onChange={(value) => { setText(value); if (value.trim()) shell?.presence.notifyTyping() }}
             onSubmit={handleAdd}
             canSubmit={Boolean(entry)}
-            placeholder="o que está faltando?"
+            placeholder="O que está faltando?"
             label="Novo item"
             onFocus={() => scrollToEnd()}
-            chip={entry && (productEmoji(entry.name) || entry.quantity) ? <>{productEmoji(entry.name)}{entry.quantity ? ` ${entry.quantity}` : ''}</> : null}
+            chip={entry && (productEmoji(entry.name) || entry.quantity) ? [productEmoji(entry.name), entry.quantity].filter(Boolean).join(' ') : null}
           />
-        </Dock>
+        </Accessory>
       }
     >
-      {ready && items.length > 0 && (
-        <div className="market-tools">
-          <div className="meter" role="progressbar" aria-label="Itens no carrinho" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={inCart.length}>
-            <motion.span animate={{ scaleX: inCart.length / items.length }} transition={{ duration: reduced ? 0 : 0.35 }} />
-          </div>
-          {(items.length > 5 || search) && (
-            <label className="search">
-              <Icon name="search" size={16} />
-              <input type="search" aria-label="Buscar na lista" placeholder="buscar" value={search} onChange={(e) => setSearch(e.target.value)} />
-            </label>
-          )}
+      {ready && items.length > 5 && (
+        <label className="search-field">
+          <Icon name="search" size={17} weight={2.2} />
+          <input type="search" aria-label="Buscar na lista" placeholder="Buscar" value={search} onChange={(e) => setSearch(e.target.value)} />
+          {search && <button type="button" aria-label="Limpar busca" onClick={() => setSearch('')}><Icon name="close" size={14} weight={2.6} /></button>}
+        </label>
+      )}
+
+      {ready && inCart.length > 0 && (
+        <div className="done-line">
+          <span><Rolling value={inCart.length} /> no carrinho</span>
+          <span className="dot" aria-hidden>•</span>
+          <button type="button" onClick={() => { haptic('light'); setFinishing(true) }}>Finalizar compra</button>
+          <button type="button" className="show" onClick={() => setShowDone((v) => !v)} aria-expanded={showDone}>{showDone ? 'Ocultar' : 'Mostrar'}</button>
         </div>
       )}
 
       {error && <button className="banner" onClick={clearError}>{error}</button>}
 
       {!ready && <Skeleton />}
-      {ready && items.length === 0 && <Empty title="nada faltando" hint="escreva abaixo. a quantidade pode vir junto: “2 leite”." />}
+      {ready && items.length === 0 && <Empty icon={<Glyph name="cart" size={56} />} title="Nada faltando" hint="Escreva abaixo. A quantidade pode vir junto: “2 leite”." />}
+      {ready && allPicked && !showDone && <Empty icon={<Glyph name="check" size={56} />} title="Tudo no carrinho" hint="Finalize a compra quando passar no caixa." />}
       {search && visible.length === 0 && (
-        <p className="search-empty" role="status">nada pendente com “{search}”. <button onClick={() => setSearch('')}>ver toda a lista</button></p>
+        <p className="search-empty" role="status">Nada pendente com “{search}”. <button onClick={() => setSearch('')}>Ver a lista toda</button></p>
       )}
 
-      <ul className="list">
+      <ul className="list market-list">
         <AnimatePresence initial={false} mode="popLayout">
           {visible.map((item) => (
             <MarketRow key={item.id} item={item} me={me} fresh={arrivals.includes(item.id)} onPick={handlePick} onEdit={setEditing} onRemove={handleRemove} />
           ))}
+          {showDone && inCart.map((item) => (
+            <SwipeRow key={item.id} onRemove={() => handleRemove(item)} onPress={() => setEditing(item)}>
+              <div className="item is-done">
+                <Check checked onClick={() => handleReturn(item)} label={`Devolver ${item.name} à lista`} />
+                <ProductMark name={item.name} />
+                <span className="item-text">
+                  <span className="item-name">{item.name}</span>
+                  {item.quantity && <span className="item-meta">{item.quantity}</span>}
+                </span>
+              </div>
+            </SwipeRow>
+          ))}
         </AnimatePresence>
       </ul>
-
-      {inCart.length > 0 && (
-        <section className="cart">
-          <button className="cart-head" onClick={() => setCartOpen((v) => !v)} aria-expanded={cartOpen}>
-            <Icon name="right" size={14} className={`cart-caret${cartOpen ? ' is-open' : ''}`} />
-            <span>no carrinho</span>
-            <span className="cart-count"><Rolling value={inCart.length} /></span>
-          </button>
-          <AnimatePresence initial={false}>
-            {cartOpen && (
-              <motion.ul className="list cart-items" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 40 }}>
-                {inCart.map((item) => (
-                  <li key={item.id} className="item is-done">
-                    <ProductMark name={item.name} />
-                    <span className="item-text"><span className="item-name">{item.name}</span></span>
-                    <Check checked onClick={() => handleReturn(item)} label={`Devolver ${item.name} à lista`} />
-                  </li>
-                ))}
-              </motion.ul>
-            )}
-          </AnimatePresence>
-          <button className="btn btn-tinted cart-finish" onClick={() => { haptic('light'); setFinishing(true) }}>
-            finalizar compra
-          </button>
-        </section>
-      )}
 
       <EditItemSheet
         item={editing}
@@ -226,6 +201,7 @@ export function ListScreen({ store, me, onRegisterMarket }: Props) {
           haptic('success')
           finishShopping()
           setFinishing(false)
+          setShowDone(false)
           if (cents && onRegisterMarket) {
             onRegisterMarket(cents)
             setNotice(`${formatBRL(cents)} lançado nas contas do mês`)
@@ -234,7 +210,7 @@ export function ListScreen({ store, me, onRegisterMarket }: Props) {
       />
 
       <AnimatePresence>{egg && <Toss key={egg.id} emoji={egg.emoji} onDone={() => setEgg(null)} />}</AnimatePresence>
-      <Done show={celebrating} label="tudo no carrinho" />
+      <Done show={celebrating} label="Tudo no carrinho" />
     </Screen>
   )
 }
@@ -242,26 +218,22 @@ export function ListScreen({ store, me, onRegisterMarket }: Props) {
 function MarketRow({ item, me, fresh, onPick, onEdit, onRemove }: { item: Item; me: string; fresh: boolean; onPick: (item: Item) => void; onEdit: (item: Item) => void; onRemove: (item: Item) => void }) {
   const reduced = useReducedMotion()
   const [checking, setChecking] = useState(false)
-  // o check desenha primeiro; só então o item sai da lista
+  // como no Lembretes: o círculo enche, e só então o item sai da lista
   const pick = () => {
     if (checking) return
     setChecking(true)
-    setTimeout(() => onPick(item), reduced ? 0 : 220)
+    setTimeout(() => onPick(item), reduced ? 0 : 420)
   }
   return (
-    <SwipeRow className={fresh ? 'is-fresh' : ''} lead={{ label: 'pegar', onTrigger: pick }} onRemove={() => onRemove(item)} onPress={() => onEdit(item)}>
-      <div className="item">
+    <SwipeRow className={fresh ? 'is-fresh' : ''} lead={{ label: 'Pegar', onTrigger: pick }} onRemove={() => onRemove(item)} onPress={() => onEdit(item)}>
+      <div className={`item${checking ? ' is-done' : ''}`}>
+        <Check checked={checking} onClick={pick} label={`Pegar ${item.name}`} />
         <ProductMark name={item.name} />
         <span className="item-text">
-          <span className={`item-name${checking ? ' is-struck' : ''}`}>{item.name}</span>
-          {(item.quantity || item.added_by !== me) && (
-            <span className="item-meta">
-              {item.quantity && <span>{item.quantity}</span>}
-              {item.added_by !== me && <Avatar person={item.added_by} size={15} />}
-            </span>
-          )}
+          <span className="item-name">{item.name}</span>
+          {item.quantity && <span className="item-meta">{item.quantity}</span>}
         </span>
-        <Check checked={checking} onClick={pick} label={`Pegar ${item.name}`} />
+        {item.added_by !== me && <Avatar person={item.added_by} size={22} />}
       </div>
     </SwipeRow>
   )
@@ -275,19 +247,24 @@ function EditItemSheet({ item, onClose, onSave, onRemove, onReact }: { item: Ite
   }, [item])
   const current = item ?? last
   const understood = parseEntry(text)
+  const save = () => { if (current && understood) onSave(current, understood.name, understood.quantity) }
   return (
-    <Sheet open={Boolean(item)} onClose={onClose} title="editar item">
+    <Sheet open={Boolean(item)} onClose={onClose} title="Editar item" onDone={save} doneDisabled={!understood}>
       {current && (
-        <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); if (understood) onSave(current, understood.name, understood.quantity) }}>
-          <input className="field" data-autofocus value={text} onChange={(e) => setText(e.target.value)} aria-label="Editar item" autoComplete="off" enterKeyHint="done" />
-          <p className="field-hint">{understood ? `${understood.name}${understood.quantity ? ` · ${understood.quantity}` : ''}` : 'escreva o nome'}</p>
-          <button type="submit" className="btn btn-primary" disabled={!understood}>salvar</button>
-          <div className="reactions" role="group" aria-label="Enviar uma reação">
-            {REACTIONS.map((emoji) => (
-              <button type="button" key={emoji} onClick={() => onReact(emoji, current)} aria-label={`Enviar ${emoji}`}>{emoji}</button>
-            ))}
-          </div>
-          <button type="button" className="btn btn-plain is-danger" onClick={() => onRemove(current)}>apagar item</button>
+        <form onSubmit={(e) => { e.preventDefault(); save() }}>
+          <Section footer={understood ? `${understood.name}${understood.quantity ? ` · ${understood.quantity}` : ''}` : 'Escreva o nome'}>
+            <input className="field" data-autofocus value={text} onChange={(e) => setText(e.target.value)} aria-label="Editar item" autoComplete="off" enterKeyHint="done" />
+          </Section>
+          <Section header="Reagir">
+            <div className="reactions" role="group" aria-label="Enviar uma reação">
+              {REACTIONS.map((emoji) => (
+                <button type="button" key={emoji} onClick={() => onReact(emoji, current)} aria-label={`Enviar ${emoji}`}>{emoji}</button>
+              ))}
+            </div>
+          </Section>
+          <Section>
+            <Row title="Apagar item" danger center onClick={() => onRemove(current)} />
+          </Section>
         </form>
       )}
     </Sheet>
@@ -299,24 +276,25 @@ function FinishSheet({ open, picked, pending, canRegister, onClose, onConfirm }:
   useEffect(() => { if (open) setAmount('') }, [open])
   const cents = amount.trim() ? toCents(amount.trim().replace(/^r\$\s*/i, '')) : 0
   const valid = Number.isFinite(cents) && cents > 0
+  const confirm = () => onConfirm(valid ? cents : null)
   return (
-    <Sheet open={open} onClose={onClose} title="finalizar compra">
-      <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); onConfirm(valid ? cents : null) }}>
+    <Sheet open={open} onClose={onClose} title="Finalizar compra">
+      <form onSubmit={(e) => { e.preventDefault(); confirm() }}>
         <p className="sheet-text">
-          {picked} {picked === 1 ? 'item pego' : 'itens pegos'} saem da lista.
-          {pending > 0 ? ` ${pending} ${pending === 1 ? 'fica' : 'ficam'} para a próxima.` : ''}
+          {picked} {picked === 1 ? 'item sai' : 'itens saem'} da lista.
+          {pending > 0 ? ` ${pending} ${pending === 1 ? 'fica' : 'ficam'} para a próxima compra.` : ''}
         </p>
         {canRegister && (
-          <>
-            <label className="field-label" htmlFor="market-total">quanto deu?</label>
-            <div className="field-money">
+          <Section header="Quanto deu" footer={valid ? `Entra nas contas do mês como “Mercado”, ${formatBRL(cents)}, já paga.` : 'Opcional. Entra nas contas do mês, já paga.'}>
+            <label className="field-row">
               <span>R$</span>
-              <input id="market-total" className="field" data-autofocus value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" aria-label="Valor" />
-            </div>
-            <p className="field-hint">{valid ? `entra nas contas do mês como “Mercado”, ${formatBRL(cents)}, já paga` : 'opcional. entra nas contas do mês, já paga.'}</p>
-          </>
+              <input className="field" data-autofocus value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" inputMode="decimal" aria-label="Valor" />
+            </label>
+          </Section>
         )}
-        <button type="submit" className="btn btn-primary">finalizar</button>
+        <div className="pad" style={{ paddingTop: 20 }}>
+          <button type="submit" className="button is-filled">Finalizar</button>
+        </div>
       </form>
     </Sheet>
   )

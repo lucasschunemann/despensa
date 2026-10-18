@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { disablePush, enablePush, pushState, testPush, type PushState } from '../lib/push'
-import { Group } from './ui'
+import { Icon, Row, Section, Switch, Tile } from './ui'
 
-const COPY: Record<PushState, { title: string; detail: string; action?: string }> = {
-  ligado: { title: 'avisos ligados', detail: 'Novidades da lista, das contas e dos desejos chegam mesmo com o app fechado.' },
-  desligado: { title: 'avisos desligados', detail: 'Saiba quando a outra pessoa adicionar algo ou pagar uma conta.', action: 'ativar avisos' },
-  reconectar: { title: 'reconectar este aparelho', detail: 'A permissão existe. Falta conectar este aparelho à sua casa.', action: 'reconectar aparelho' },
-  bloqueado: { title: 'avisos bloqueados', detail: 'Abra Ajustes, Notificações, despensa, e permita os avisos. Depois volte aqui.' },
-  'instale-primeiro': { title: 'adicione à tela de início', detail: 'No Safari, toque em Compartilhar e depois em Adicionar à Tela de Início. Abra o app pelo novo ícone para ativar. Requer iOS 16.4 ou posterior.' },
-  indisponível: { title: 'avisos indisponíveis aqui', detail: 'No iPhone, use o app da tela inicial com iOS 16.4 ou posterior. O endereço precisa usar HTTPS.' },
-  configurar: { title: 'avisos ainda não configurados', detail: 'Falta concluir a configuração do serviço. A lista e as contas continuam funcionando.' },
+const HELP: Record<PushState, string> = {
+  ligado: 'Novidades do mercado, das contas e dos desejos chegam mesmo com o app fechado.',
+  desligado: 'Saiba quando a outra pessoa adicionar algo ou pagar uma conta.',
+  reconectar: 'A permissão existe. Falta conectar este aparelho à sua casa.',
+  bloqueado: 'Os avisos estão bloqueados. Abra Ajustes, Notificações, despensa, e permita. Depois volte aqui.',
+  'instale-primeiro': 'No Safari, toque em Compartilhar e em Adicionar à Tela de Início. Abra o app pelo novo ícone para ligar os avisos (iOS 16.4 ou posterior).',
+  indisponível: 'No iPhone, use o app da Tela de Início com iOS 16.4 ou posterior. O endereço precisa usar HTTPS.',
+  configurar: 'O serviço de avisos ainda não foi configurado. O resto do app funciona normalmente.',
 }
 
 export function PushSettings({ roomId, me }: { roomId?: string; me: string }) {
@@ -35,27 +35,25 @@ export function PushSettings({ roomId, me }: { roomId?: string; me: string }) {
 
   const run = (action: () => Promise<unknown>) => {
     setBusy(true); setError(''); setSent(false)
-    void action().catch((e: Error) => setError(e.message || 'Não deu certo. Tente novamente.')).finally(() => setBusy(false))
+    void action().catch((e: Error) => setError(e.message || 'Não deu certo. Tente de novo.')).finally(() => setBusy(false))
   }
-  const copy = COPY[state]
+
+  const canToggle = Boolean(roomId) && (state === 'ligado' || state === 'desligado' || state === 'reconectar')
+  const footer = error || (sent ? 'Teste enviado. Se não chegar, confira se o modo Foco está ligado.' : roomId ? HELP[state] : 'Na sua casa, você liga os avisos deste aparelho aqui.')
 
   return (
-    <Group title="avisos no celular">
-      <div className="group-pad push">
-        <strong>{loading ? 'conferindo…' : copy.title}</strong>
-        <p className="push-detail">{roomId ? copy.detail : 'Esta é uma prévia. Na sua casa, você conecta o aparelho e envia um aviso de teste.'}</p>
-        <div className="push-actions">
-          {roomId && copy.action && <button className="btn btn-primary" disabled={busy || loading} onClick={() => run(async () => setState(await enablePush(roomId, me)))}>{busy ? 'conectando…' : copy.action}</button>}
-          {roomId && state === 'ligado' && (
-            <>
-              <button className="btn btn-tinted" disabled={busy} onClick={() => run(async () => { await testPush(roomId); setSent(true) })}>{busy ? 'enviando…' : 'enviar um teste'}</button>
-              <button className="btn btn-plain" disabled={busy} onClick={() => run(async () => setState(await disablePush()))}>desligar</button>
-            </>
-          )}
-          {roomId && (error || state === 'bloqueado') && <button className="btn btn-plain" disabled={busy} onClick={() => run(async () => setState(await pushState(roomId, me)))}>conferir de novo</button>}
-        </div>
-        {(error || sent) && <p className={error ? 'form-error' : 'push-detail'} role={error ? 'alert' : 'status'}>{error || 'Teste enviado. Confira os avisos do aparelho; o modo Foco pode silenciá-lo.'}</p>}
-      </div>
-    </Group>
+    <Section header="Avisos" footer={footer}>
+      <Row icon={<Tile color="red"><Icon name="bell" size={18} /></Tile>} title="Avisos no celular" detail={loading ? 'Conferindo…' : undefined}>
+        {canToggle && (
+          <Switch
+            checked={state === 'ligado'}
+            label="Avisos no celular"
+            onChange={(on) => run(async () => setState(on ? await enablePush(roomId!, me) : await disablePush()))}
+          />
+        )}
+      </Row>
+      {roomId && state === 'ligado' && <Row title={<span className="link">{busy ? 'Enviando…' : 'Enviar um aviso de teste'}</span>} onClick={() => run(async () => { await testPush(roomId); setSent(true) })} disabled={busy} />}
+      {roomId && (error || state === 'bloqueado') && <Row title={<span className="link">Conferir de novo</span>} onClick={() => run(async () => setState(await pushState(roomId, me)))} disabled={busy} />}
+    </Section>
   )
 }

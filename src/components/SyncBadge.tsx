@@ -58,7 +58,7 @@ export function SyncBadge() {
                 <path d="M7.5 18.5h9.8a4.2 4.2 0 0 0 .8-8.3 6 6 0 0 0-10.9-1.6" />
                 <path d="M5.2 9.5A4.5 4.5 0 0 0 7.5 18.5M3 3l18 18" />
               </svg>
-              {pending > 0 ? `sem sinal · ${pending} ${pending === 1 ? 'guardada' : 'guardadas'}` : 'sem sinal'}
+              {pending > 0 ? `Sem conexão · ${pending} ${pending === 1 ? 'guardada' : 'guardadas'}` : 'Sem conexão'}
             </>
           )}
           {state === 'sending' && (
@@ -71,7 +71,7 @@ export function SyncBadge() {
               >
                 <path d="M12 3a9 9 0 1 1-9 9" />
               </motion.svg>
-              enviando
+              Enviando
             </>
           )}
           {state === 'sent' && (
@@ -84,7 +84,7 @@ export function SyncBadge() {
                   transition={{ duration: 0.3 }}
                 />
               </svg>
-              tudo enviado
+              Enviado
             </>
           )}
         </motion.span>

@@ -1,8 +1,9 @@
 // Só existe em desenvolvimento (?demo=1): roda a interface com dados de mentira,
 // sem Supabase e sem tocar na lista real.
-// Variações: &vazio=1, &digitando=1, &contas=1, &desejos=1, &lista=1, &settings=1, &onboarding=1
+// Variações: &acesso=1 (tela de entrar), &vazio=1, &digitando=1, &contas=1, &desejos=1, &lista=1, &settings=1, &onboarding=1
 import { useCallback, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { AuthScreen } from '../components/AuthScreen'
 import { FinanceScreen } from '../components/FinanceScreen'
 import { HomeScreen } from '../components/HomeScreen'
 import { ListScreen } from '../components/ListScreen'
@@ -339,6 +340,8 @@ export default function DemoApp() {
     notifyTyping: () => {},
     sendReaction: (emoji, about) => setReaction({ id: Date.now(), person: 'Lucas', emoji, about }),
   }
+
+  if (params.has('acesso')) return <AuthScreen />
 
   return (
     <Shell.Provider value={{ me: 'Lucas', presence, openSettings: () => setSettingsOpen(true) }}>
